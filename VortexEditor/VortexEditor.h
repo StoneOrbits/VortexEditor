@@ -2,5 +2,10 @@
 
 class VortexEditor
 {
+public:
+  VortexEditor();
+  ~VortexEditor();
+
+
 };
 
