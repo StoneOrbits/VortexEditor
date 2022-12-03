@@ -1,0 +1,3 @@
+[submodule "VortexEditor/VortexEngine"]
+	path = VortexEditor/VortexEngine
+	url = https://github.com/Unreal-Dan/VortexEngine
