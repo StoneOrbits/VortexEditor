@@ -237,16 +237,16 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\VortexEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Arduino.cpp">
+    <ClCompile Include="EngineDependencies\Arduino.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ArduinoSerial.cpp">
+    <ClCompile Include="EngineDependencies\ArduinoSerial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FastLED.cpp">
+    <ClCompile Include="EngineDependencies\FastLED.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FlashStorage.cpp">
+    <ClCompile Include="EngineDependencies\FlashStorage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -485,19 +485,19 @@
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Adafruit_Dotstar.h">
+    <ClInclude Include="EngineDependencies\Adafruit_Dotstar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Arduino.h">
+    <ClInclude Include="EngineDependencies\Arduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ArduinoSerial.h">
+    <ClInclude Include="EngineDependencies\ArduinoSerial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FastLED.h">
+    <ClInclude Include="EngineDependencies\FastLED.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FlashStorage.h">
+    <ClInclude Include="EngineDependencies\FlashStorage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

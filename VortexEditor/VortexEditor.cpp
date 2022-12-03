@@ -40,8 +40,8 @@ bool VortexEditor::init(HINSTANCE hInstance)
   // create the window
   m_hwnd = CreateWindow(m_wc.lpszClassName, L"Vortex Editor " VORTEX_VERSION,
     WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-    (desktop.right / 2) - 240, (desktop.bottom / 2) - 84,
-    420, 340, nullptr, nullptr, hInstance, nullptr);
+    (desktop.right / 2) - 420, (desktop.bottom / 2) - 340,
+    840, 680, nullptr, nullptr, hInstance, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, L"Failed to open window", L"Error", 0);
     return 0;
