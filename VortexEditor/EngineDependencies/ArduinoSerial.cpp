@@ -13,13 +13,13 @@ ArduinoSerial::ArduinoSerial() :
 {
 }
 
-ArduinoSerial::ArduinoSerial(const wstring &portName) :
+ArduinoSerial::ArduinoSerial(const string &portName) :
   ArduinoSerial()
 {
   connect(portName);
 }
 
-bool ArduinoSerial::connect(const wstring &portName)
+bool ArduinoSerial::connect(const string &portName)
 {
   m_port = portName;
   // We're not yet connected
@@ -39,9 +39,9 @@ bool ArduinoSerial::connect(const wstring &portName)
     // If not success full display an Error
     int err = GetLastError();
     if (err == ERROR_FILE_NOT_FOUND) {
-      wprintf(L"ERROR: Handle was not attached. Reason: %s not available.\n", m_port.c_str());
+      printf("ERROR: Handle was not attached. Reason: %s not available.\n", m_port.c_str());
     } else {
-      wprintf(L"ERROR: %u\n", err);
+      printf("ERROR: %u\n", err);
     }
     return false;
   }

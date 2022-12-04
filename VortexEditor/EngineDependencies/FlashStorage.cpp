@@ -58,7 +58,7 @@ static inline uint32_t read_unaligned_uint32(const void *data)
 
 void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_t size)
 {
-  HANDLE hFile = CreateFile(L"FlashStorage.flash", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = CreateFile("FlashStorage.flash", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -88,7 +88,7 @@ void FlashClass::erase(const volatile void *flash_ptr)
 void FlashClass::read(const volatile void *flash_ptr, void *data, uint32_t size)
 {
   memcpy((void *)flash_ptr, data, size);
-  HANDLE hFile = CreateFile(L"FlashStorage.flash", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = CreateFile("FlashStorage.flash", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;

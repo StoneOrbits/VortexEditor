@@ -30,27 +30,27 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -88,7 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>EDITOR_FRAMEWORK;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)/EngineDependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\EngineDependencies;$(ProjectDir)\VortexEngine\VortexEngine\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -103,7 +103,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>EDITOR_FRAMEWORK;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)/EngineDependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\EngineDependencies;$(ProjectDir)\VortexEngine\VortexEngine\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>EDITOR_FRAMEWORK;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)/EngineDependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\EngineDependencies;$(ProjectDir)\VortexEngine\VortexEngine\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -133,7 +133,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>EDITOR_FRAMEWORK;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)/EngineDependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\EngineDependencies;$(ProjectDir)\VortexEngine\VortexEngine\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -147,6 +147,7 @@
     <ClCompile Include="EngineDependencies\ArduinoSerial.cpp" />
     <ClCompile Include="EngineDependencies\FastLED.cpp" />
     <ClCompile Include="EngineDependencies\FlashStorage.cpp" />
+    <ClCompile Include="GUI\VButton.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Buttons\Button.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Buttons\Buttons.cpp" />
@@ -220,14 +221,17 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Time\TimeControl.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Time\Timer.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\VortexEngine.cpp" />
+    <ClCompile Include="GUI\VWindow.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="EditorConfig.h" />
     <ClInclude Include="EngineDependencies\Adafruit_Dotstar.h" />
     <ClInclude Include="EngineDependencies\Arduino.h" />
     <ClInclude Include="EngineDependencies\ArduinoSerial.h" />
     <ClInclude Include="EngineDependencies\FastLED.h" />
     <ClInclude Include="EngineDependencies\FlashStorage.h" />
+    <ClInclude Include="GUI\VButton.h" />
     <ClInclude Include="VortexEditor.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Buttons\Button.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Buttons\Buttons.h" />
@@ -306,6 +310,7 @@
     <ClInclude Include="VortexEngine\VortexEngine\src\Time\Timings.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexConfig.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexEngine.h" />
+    <ClInclude Include="GUI\VWindow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

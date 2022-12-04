@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+#include "GUI/VWindow.h"
+
 class VortexEditor
 {
 public:
@@ -14,15 +16,8 @@ public:
   void run();
 
 private:
-  const COLORREF bkcolor = RGB(40, 40, 40);
-
-  static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
   HINSTANCE m_hInstance;
-  HBRUSH m_bkbrush;
-  WNDCLASS m_wc;
-  HWND m_hwnd;
-
+  VWindow m_window;
 };
 
 extern VortexEditor *g_pEditor;
