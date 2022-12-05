@@ -232,6 +232,7 @@
     <ClInclude Include="EngineDependencies\FastLED.h" />
     <ClInclude Include="EngineDependencies\FlashStorage.h" />
     <ClInclude Include="GUI\VButton.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="VortexEditor.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Buttons\Button.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Buttons\Buttons.h" />
@@ -311,6 +312,9 @@
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexConfig.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexEngine.h" />
     <ClInclude Include="GUI\VWindow.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VortexEditor.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
