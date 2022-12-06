@@ -148,5 +148,6 @@ bool ArduinoSerial::WriteData(const void *buffer, unsigned int nbChar)
     ClearCommError(m_hSerial, &m_errors, &m_status);
     return false;
   }
+  FlushFileBuffers(m_hSerial);
   return true;
 }

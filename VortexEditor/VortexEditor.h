@@ -32,6 +32,7 @@ private:
   std::vector<std::pair<uint32_t, ArduinoSerial>> m_ports;
 
   // callbacks for actions
+  void connect();
   void push();
   void pull();
   void load();
@@ -40,7 +41,8 @@ private:
 
   // various other actions
   void scanPorts();
-  void readPort(uint32_t port);
+  std::string readPort(uint32_t port);
+  void writePort(uint32_t port, std::string data);
 
   // ==================================
   // GUI Members
@@ -48,6 +50,7 @@ private:
   // main window
   VWindow m_window;
   // the four buttons
+  VButton m_connectButton;
   VButton m_pushButton;
   VButton m_pullButton;
   VButton m_loadButton;
@@ -59,11 +62,12 @@ private:
   FILE *m_consoleHandle;
 
   // callbacks wrappers
-  static void pushCallback(void *button);
-  static void pullCallback(void *button);
-  static void loadCallback(void *button);
-  static void saveCallback(void *button);
-  static void selectPortCallback(void *comboBox);
+  static void connectCallback(void *arg);
+  static void pushCallback(void *arg);
+  static void pullCallback(void *arg);
+  static void loadCallback(void *arg);
+  static void saveCallback(void *arg);
+  static void selectPortCallback(void *arg);
 };
 
 extern VortexEditor *g_pEditor;
