@@ -19,6 +19,22 @@ ArduinoSerial::ArduinoSerial(const string &portName) :
   connect(portName);
 }
 
+ArduinoSerial::ArduinoSerial(ArduinoSerial &&other) :
+  ArduinoSerial()
+{
+  m_port = other.m_port;
+  m_hSerial = other.m_hSerial;
+  m_connected = other.m_connected;
+  m_status = other.m_status;
+  m_errors = other.m_errors;
+
+  other.m_port.clear();
+  other.m_hSerial = nullptr;
+  other.m_connected = false;
+  memset(&other.m_status, 0, sizeof(other.m_status));
+  other.m_errors = 0;
+}
+
 bool ArduinoSerial::connect(const string &portName)
 {
   m_port = portName;
@@ -38,9 +54,7 @@ bool ArduinoSerial::connect(const string &portName)
   if (m_hSerial == INVALID_HANDLE_VALUE) {
     // If not success full display an Error
     int err = GetLastError();
-    if (err == ERROR_FILE_NOT_FOUND) {
-      printf("ERROR: Handle was not attached. Reason: %s not available.\n", m_port.c_str());
-    } else {
+    if (err != ERROR_FILE_NOT_FOUND) {
       printf("ERROR: %u\n", err);
     }
     return false;
@@ -108,6 +122,10 @@ int ArduinoSerial::ReadData(void *buffer, unsigned int nbChar)
       toRead = nbChar;
     } else {
       toRead = m_status.cbInQue;
+    }
+
+    if (!buffer || !nbChar) {
+      return m_status.cbInQue;
     }
 
     // Try to read the require number of chars, and return the number of read bytes on success

@@ -13,15 +13,19 @@ using namespace std;
 WNDCLASS VWindow::m_wc = {0};
 
 VWindow::VWindow() :
-  m_hwnd(nullptr)
+  m_hwnd(nullptr),
+  m_children(),
+  m_pParent(nullptr),
+  m_callbackArg(nullptr)
 {
 }
 
 VWindow::VWindow(HINSTANCE hinstance, const string &title, 
-  COLORREF backcol, uint32_t width, uint32_t height) :
+  COLORREF backcol, uint32_t width, uint32_t height,
+  void *callbackArg) :
   VWindow()
 {
-  init(hinstance, title, backcol, width, height);
+  init(hinstance, title, backcol, width, height, callbackArg);
 }
 
 VWindow::~VWindow()
@@ -30,8 +34,12 @@ VWindow::~VWindow()
 }
 
 void VWindow::init(HINSTANCE hInstance, const string title, 
-  COLORREF backcol, uint32_t width, uint32_t height)
+  COLORREF backcol, uint32_t width, uint32_t height,
+  void *callbackArg)
 {
+  // store callback
+  m_callbackArg = callbackArg;
+
   // register a window class for the window if not done yet
   registerWindowClass(hInstance, backcol);
 
@@ -102,6 +110,8 @@ void VWindow::releaseButton()
 
 uint32_t VWindow::addChild(HMENU menuID, VWindow *child)
 {
+  child->m_pParent = this;
+  child->m_callbackArg = m_callbackArg;
   m_children.insert(make_pair(menuID, child));
   return m_children.size() - 1;
 }

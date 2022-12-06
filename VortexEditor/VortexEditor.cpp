@@ -1,14 +1,28 @@
 #include "VortexEditor.h"
 #include "EditorConfig.h"
 
+#include "ArduinoSerial.h"
+
 #include "GUI/VWindow.h"
 
 #include "resource.h"
 
+#include <string>
+
+using namespace std;
+
 VortexEditor *g_pEditor = nullptr;
 
 VortexEditor::VortexEditor() :
-  m_hInstance(NULL)
+  m_hInstance(NULL),
+  m_ports(),
+  m_window(),
+  m_pushButton(),
+  m_pullButton(),
+  m_loadButton(),
+  m_saveButton(),
+  m_portSelection(),
+  m_consoleHandle(nullptr)
 {
 }
 
@@ -22,13 +36,23 @@ bool VortexEditor::init(HINSTANCE hInstance)
     return false;
   }
   g_pEditor = this;
+  if (!m_consoleHandle) {
+    AllocConsole();
+    freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
+  }
+
   m_hInstance = hInstance;
   // initialize the window accordingly
-  m_window.init(hInstance, EDITOR_TITLE, EDITOR_BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT);
+  m_window.init(hInstance, EDITOR_TITLE, EDITOR_BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
   m_pushButton.init(hInstance, m_window, "Push", EDITOR_BACK_COL, 72, 28, 16, 16, ID_FILE_PUSH, pushCallback);
   m_pullButton.init(hInstance, m_window, "Pull", EDITOR_BACK_COL, 72, 28, 16, 48, ID_FILE_PULL, pullCallback);
   m_loadButton.init(hInstance, m_window, "Load", EDITOR_BACK_COL, 72, 28, 16, 80, ID_FILE_LOAD, loadCallback);
   m_saveButton.init(hInstance, m_window, "Save", EDITOR_BACK_COL, 72, 28, 16, 112, ID_FILE_SAVE, saveCallback);
+  m_portSelection.init(hInstance, m_window, "Select Port", EDITOR_BACK_COL, 150, 300, 16, 148, 0, selectPortCallback);
+
+  // scan for any connections
+  scanPorts();
+
   return true;
 }
 
@@ -45,22 +69,112 @@ void VortexEditor::run()
   }
 }
 
-void VortexEditor::pushCallback(const VButton &button)
+void VortexEditor::push()
 {
-  MessageBox(0, "Push", "", 0);
 }
 
-void VortexEditor::pullCallback(const VButton &button)
+void VortexEditor::pull()
 {
-  MessageBox(0, "Pull", "", 0);
+  int sel = m_portSelection.getSelection();
+  readPort(sel);
 }
 
-void VortexEditor::loadCallback(const VButton &button)
+void VortexEditor::load()
 {
-  MessageBox(0, "Load", "", 0);
 }
 
-void VortexEditor::saveCallback(const VButton &button)
+void VortexEditor::save()
 {
-  MessageBox(0, "Save", "", 0);
+}
+
+void VortexEditor::selectPort()
+{
+}
+
+void VortexEditor::scanPorts()
+{
+  for (uint32_t i = 0; i < 16; ++i) {
+    string port = "\\\\.\\COM" + to_string(i);
+    ArduinoSerial serialPort(port);
+    if (serialPort.IsConnected()) {
+      m_ports.push_back(make_pair(i, move(serialPort)));
+    }
+  }
+
+  for (auto port = m_ports.begin(); port != m_ports.end(); ++port) {
+    m_portSelection.addItem(to_string(port->first));
+    printf("Connected port %u\n", port->first);
+  }
+}
+
+void VortexEditor::readPort(uint32_t portIndex)
+{
+  if (portIndex >= m_ports.size()) {
+    return;
+  }
+  ArduinoSerial *serial = &m_ports[portIndex].second;
+  // read with NULL args to get expected amount
+  int32_t amt = serial->ReadData(NULL, 0);
+  if (amt == -1 || amt == 0) {
+    // no data to read
+    return;
+  }
+  // allocate buffer for amount
+  char *buf = (char *)calloc(1, amt + 1);
+  if (!buf) {
+    // ???
+    return;
+  }
+  // read the data into the buffer
+  serial->ReadData(buf, amt);
+  // just print the buffer
+  printf("Data on port %u: [%s]\n", m_ports[portIndex].first, buf);
+  free(buf);
+}
+
+void VortexEditor::pushCallback(void *editor)
+{
+  ((VortexEditor *)editor)->push();
+}
+
+void VortexEditor::pullCallback(void *editor)
+{
+  ((VortexEditor *)editor)->pull();
+}
+
+void VortexEditor::loadCallback(void *editor)
+{
+  ((VortexEditor *)editor)->load();
+}
+
+void VortexEditor::saveCallback(void *editor)
+{
+  ((VortexEditor *)editor)->save();
+}
+
+void VortexEditor::selectPortCallback(void *editor)
+{
+  ((VortexEditor *)editor)->selectPort();
+}
+
+void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)
+{
+  string strMsg;
+  if (file) {
+    strMsg = file;
+    if (strMsg.find_last_of('\\') != string::npos) {
+      strMsg = strMsg.substr(strMsg.find_last_of('\\') + 1);
+    }
+    strMsg += ":";
+    strMsg += to_string(line);
+  }
+  if (func) {
+    strMsg += " ";
+    strMsg += func;
+    strMsg += "(): ";
+  }
+  strMsg += msg;
+  strMsg += "\n";
+  vfprintf(g_pEditor->m_consoleHandle, strMsg.c_str(), list);
+  //vfprintf(g_pEditor->m_logHandle, strMsg.c_str(), list);
 }

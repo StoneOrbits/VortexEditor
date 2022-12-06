@@ -9,6 +9,7 @@ public:
   ArduinoSerial();
   // Initialize Serial communication with the given COM port
   ArduinoSerial(const std::string &portName);
+  ArduinoSerial(ArduinoSerial &&other);
   // Close the connection
   ~ArduinoSerial();
 

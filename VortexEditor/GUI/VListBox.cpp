@@ -1,4 +1,4 @@
-#include "VButton.h"
+#include "VListBox.h"
 
 // Windows includes
 #include <CommCtrl.h>
@@ -11,26 +11,26 @@
 
 using namespace std;
 
-VButton::VButton() :
+VListBox::VListBox() :
   VWindow(),
   m_callback(nullptr)
 {
 }
 
-VButton::VButton(HINSTANCE hInstance, VWindow &parent, const string &title,
+VListBox::VListBox(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uint32_t menuID, VWindowCallback callback) :
-  VButton()
+  VListBox()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
 }
 
-VButton::~VButton()
+VListBox::~VListBox()
 {
   cleanup();
 }
 
-void VButton::init(HINSTANCE hInstance, VWindow &parent, const string &title,
+void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uint32_t menuID, VWindowCallback callback)
 {
@@ -40,7 +40,7 @@ void VButton::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   parent.addChild((HMENU)menuID, this);
 
   // create the window
-  m_hwnd = CreateWindow(WC_BUTTON, title.c_str(),
+  m_hwnd = CreateWindow(WC_LISTBOX, title.c_str(),
     WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | WS_TABSTOP,
     x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
@@ -55,29 +55,29 @@ void VButton::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   ShowWindow(m_hwnd, SW_NORMAL);
 }
 
-void VButton::cleanup()
+void VListBox::cleanup()
 {
 }
 
-void VButton::create()
+void VListBox::create()
 {
 }
 
-void VButton::paint()
+void VListBox::paint()
 {
 }
 
-void VButton::command(WPARAM wParam, LPARAM lParam)
+void VListBox::command(WPARAM wParam, LPARAM lParam)
 {
   m_callback(m_callbackArg);
 }
 
-void VButton::pressButton()
+void VListBox::pressButton()
 {
   MessageBox(0, "", "", 0);
 }
 
-void VButton::releaseButton()
+void VListBox::releaseButton()
 {
 }
 

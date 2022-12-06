@@ -11,13 +11,18 @@
 class VWindow
 {
 public:
+  // typedef for callback params
+  typedef void (*VWindowCallback)(void *arg);
+
   VWindow();
   VWindow(HINSTANCE hinstance, const std::string &title, 
-    COLORREF backcol, uint32_t width, uint32_t height);
+    COLORREF backcol, uint32_t width, uint32_t height,
+    void *callbackArg);
   virtual ~VWindow();
 
   virtual void init(HINSTANCE hinstance, std::string title, 
-    COLORREF backcol, uint32_t width, uint32_t height);
+    COLORREF backcol, uint32_t width, uint32_t height,
+    void *callbackArg);
   virtual void cleanup();
 
   virtual bool process(MSG &msg);
@@ -40,7 +45,16 @@ protected:
   static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
   static WNDCLASS m_wc;
 
-  std::map<HMENU, VWindow *> m_children;
+  // window handle
   HWND m_hwnd;
+
+  // list of children
+  std::map<HMENU, VWindow *> m_children;
+
+  // pointer to parent
+  VWindow *m_pParent;
+
+  // arg to pass to callback
+  void *m_callbackArg;
 };
 
