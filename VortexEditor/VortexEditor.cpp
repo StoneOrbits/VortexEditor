@@ -1,12 +1,17 @@
 #include "VortexEditor.h"
+
+// VortexEngine includes
+#include "VortexEngine.h"
+#include "Serial/ByteStream.h"
 #include "EditorConfig.h"
+#include "Modes/Modes.h"
 
+// Editor includes
 #include "ArduinoSerial.h"
-
 #include "GUI/VWindow.h"
-
 #include "resource.h"
 
+// stl includes
 #include <string>
 
 using namespace std;
@@ -42,6 +47,11 @@ bool VortexEditor::init(HINSTANCE hInstance)
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
   }
 
+  // init the engine
+  VortexEngine::init();
+  // clear the modes
+  Modes::clearModes();
+
   m_hInstance = hInstance;
 
   // initialize the window accordingly
@@ -74,19 +84,58 @@ void VortexEditor::run()
 
 void VortexEditor::connect()
 {
-  string data = readPort(m_portSelection.getSelection());
-  if (data[0] == '=' && data[1] == '=') {
-    if (strncmp(data.c_str() + 3, "Vortex Framework v", sizeof("Vortex Framework v") - 1) == 0) {
-      printf("Connected to Vortex Gloveset\n");
-    }
-    writePort(m_portSelection.getSelection(), "Hello");
+  ByteStream stream;
+  // try to read the handshake
+  if (!readPort(m_portSelection.getSelection(), stream)) {
+    // failure
+    return;
   }
+  if (!validateHandshake(stream)) {
+    // failure
+    return;
+  }
+  printf("Connected to Vortex Gloveset\n");
+  writePort(m_portSelection.getSelection(), "Hello");
+  bool readMode = false;
   while (1) {
-    data = readPort(m_portSelection.getSelection());
-    if (data.size()) {
-      printf("Read: [%s]\n", data.c_str());
+    stream.clear();
+    if (!readPort(m_portSelection.getSelection(), stream)) {
+      // error?
+      continue;
     }
+    if (!stream.size()) {
+      continue;
+    }
+    break;
   }
+  if (!Modes::unserialize(stream)) {
+    printf("Unserialize failed\n");
+  }
+  printf("Unserialized %u modes\n", Modes::numModes());
+  writePort(m_portSelection.getSelection(), "Thanks");
+}
+
+bool VortexEditor::validateHandshake(const ByteStream &handshake)
+{
+  // check the handshake for valid data
+  if (handshake.size() < 10) {
+    printf("Handshake size bad: %u\n", handshake.size());
+    // bad handshake
+    return false;
+  }
+  if (handshake.data()[0] != '=' || handshake.data()[1] != '=') {
+    printf("Handshake start bad: [%c%c]\n", 
+      handshake.data()[0], handshake.data()[1]);
+    // bad handshake
+    return false;
+  }
+  if (memcmp(handshake.data(), "== Vortex Framework v", sizeof("== Vortex Framework v") - 1) != 0) {
+    printf("Handshake data bad: [%s]\n", handshake.data());
+    // bad handshake
+    return false;
+  }
+  // looks good
+  return true;
 }
 
 void VortexEditor::push()
@@ -124,31 +173,28 @@ void VortexEditor::scanPorts()
   }
 }
 
-std::string VortexEditor::readPort(uint32_t portIndex)
+bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
 {
   if (portIndex >= m_ports.size()) {
-    return "";
+    return false;
   }
   ArduinoSerial *serial = &m_ports[portIndex].second;
   // read with NULL args to get expected amount
   int32_t amt = serial->ReadData(NULL, 0);
   if (amt == -1 || amt == 0) {
     // no data to read
-    return "";
+    return false;
   }
-  // allocate buffer for amount
-  char *buf = (char *)calloc(1, amt + 1);
-  if (!buf) {
-    // ???
-    return "";
-  }
+  outStream.init(amt);
   // read the data into the buffer
-  serial->ReadData(buf, amt);
+  serial->ReadData((void *)outStream.data(), amt);
+  // size is the first param of the data, just override it
+  // idk I don't want to change the ByteStream class to accomodate
+  // the editor, maybe the Serial class should accomodate the Bytestream
+  *(uint32_t *)outStream.rawData() = amt;
   // just print the buffer
-  printf("Data on port %u: [%s]\n", m_ports[portIndex].first, buf);
-  string result = buf;
-  free(buf);
-  return result;
+  printf("Data on port %u: [%s] (%u bytes)\n", m_ports[portIndex].first, outStream.data(), amt);
+  return true;
 }
 
 void VortexEditor::writePort(uint32_t portIndex, std::string data)
@@ -157,7 +203,7 @@ void VortexEditor::writePort(uint32_t portIndex, std::string data)
     return;
   }
   ArduinoSerial *serial = &m_ports[portIndex].second;
-  // read the data into the buffer
+  // write the data into the serial port
   serial->WriteData(data.c_str(), data.size());
   // just print the buffer
   printf("Wrote to port %u: [%s]\n", m_ports[portIndex].first, data.c_str());

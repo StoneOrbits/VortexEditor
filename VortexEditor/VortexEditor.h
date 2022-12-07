@@ -10,6 +10,8 @@
 
 #include <vector>
 
+class ByteStream;
+
 class VortexEditor
 {
 public:
@@ -39,9 +41,11 @@ private:
   void save();
   void selectPort();
 
+  bool validateHandshake(const ByteStream &handshake);
+
   // various other actions
   void scanPorts();
-  std::string readPort(uint32_t port);
+  bool readPort(uint32_t port, ByteStream &outStream);
   void writePort(uint32_t port, std::string data);
 
   // ==================================
