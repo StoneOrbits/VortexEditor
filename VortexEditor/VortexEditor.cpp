@@ -121,27 +121,7 @@ void VortexEditor::connect()
 
   // ============================================
   //  here down is basically just 'pull'
-
-  // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_PULL);
-  // read data again
-  readInLoop(port, stream);
-  // now unserialize the stream of data that was read
-  if (!Modes::unserialize(stream)) {
-    printf("Unserialize failed\n");
-  }
-  // now send the pull ack, thx bro
-  writePort(port, EDITOR_VERB_PULL_ACK);
-  // unserialized all our modes
-  printf("Unserialized %u modes\n", Modes::numModes());
-  // now wait for the idle again
-  readInLoop(port, stream);
-  // check for idle
-  if (strcmp((char *)stream.data(), EDITOR_VERB_IDLE) != 0) {
-    // ???
-  }
-  // send idle ack
-  writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
+  pull();
 }
 
 bool VortexEditor::validateHandshake(const ByteStream &handshake)
@@ -173,6 +153,28 @@ void VortexEditor::push()
 
 void VortexEditor::pull()
 {
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
+  // now immediately tell it what to do
+  writePort(port, EDITOR_VERB_SEND_MODES);
+  // read data again
+  readInLoop(port, stream);
+  // now unserialize the stream of data that was read
+  if (!Modes::unserialize(stream)) {
+    printf("Unserialize failed\n");
+  }
+  // now send the pull ack, thx bro
+  writePort(port, EDITOR_VERB_SEND_MODES_ACK);
+  // unserialized all our modes
+  printf("Unserialized %u modes\n", Modes::numModes());
+  // now wait for the idle again
+  readInLoop(port, stream);
+  // check for idle
+  if (strcmp((char *)stream.data(), EDITOR_VERB_IDLE) != 0) {
+    // ???
+  }
+  // send idle ack
+  writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
 }
 
 void VortexEditor::load()
