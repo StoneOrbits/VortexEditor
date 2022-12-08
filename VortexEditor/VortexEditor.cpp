@@ -83,11 +83,27 @@ void VortexEditor::run()
   }
 }
 
+void VortexEditor::readInLoop(uint32_t port, ByteStream &outStream)
+{
+  while (1) {
+    outStream.clear();
+    if (!readPort(port, outStream)) {
+      // error?
+      continue;
+    }
+    if (!outStream.size()) {
+      continue;
+    }
+    break;
+  }
+}
+
 void VortexEditor::connect()
 {
   ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
   // try to read the handshake
-  if (!readPort(m_portSelection.getSelection(), stream)) {
+  if (!readPort(port, stream)) {
     // failure
     return;
   }
@@ -95,28 +111,37 @@ void VortexEditor::connect()
     // failure
     return;
   }
-  writePort(m_portSelection.getSelection(), "HELLO");
-  bool readMode = false;
-  while (1) {
-    stream.clear();
-    if (!readPort(m_portSelection.getSelection(), stream)) {
-      // error?
-      continue;
-    }
-    if (!stream.size()) {
-      continue;
-    }
-    break;
-  }
-  if (strcmp((char *)stream.data(), "IDLE") != 0) {
+  writePort(port, EDITOR_VERB_HELLO_ACK);
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_IDLE) != 0) {
     // ???
   }
-  writePort(m_portSelection.getSelection(), "MODESPLZ");
+  // k
+  writePort(port, EDITOR_VERB_IDLE_ACK);
+
+  // ============================================
+  //  here down is basically just 'pull'
+
+  // now immediately tell it what to do
+  writePort(port, EDITOR_VERB_PULL);
+  // read data again
+  readInLoop(port, stream);
+  // now unserialize the stream of data that was read
   if (!Modes::unserialize(stream)) {
     printf("Unserialize failed\n");
   }
+  // now send the pull ack, thx bro
+  writePort(port, EDITOR_VERB_PULL_ACK);
+  // unserialized all our modes
   printf("Unserialized %u modes\n", Modes::numModes());
-  writePort(m_portSelection.getSelection(), "Thanks");
+  // now wait for the idle again
+  readInLoop(port, stream);
+  // check for idle
+  if (strcmp((char *)stream.data(), EDITOR_VERB_IDLE) != 0) {
+    // ???
+  }
+  // send idle ack
+  writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
 }
 
 bool VortexEditor::validateHandshake(const ByteStream &handshake)

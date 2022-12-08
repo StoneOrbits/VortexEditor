@@ -46,6 +46,7 @@ private:
   // various other actions
   void scanPorts();
   bool readPort(uint32_t port, ByteStream &outStream);
+  void readInLoop(uint32_t port, ByteStream &outStream);
   void writePort(uint32_t port, std::string data);
 
   // ==================================
