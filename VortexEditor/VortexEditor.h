@@ -40,6 +40,7 @@ private:
   void load();
   void save();
   void selectPort();
+  void waitIdle();
 
   bool validateHandshake(const ByteStream &handshake);
 
@@ -47,6 +48,8 @@ private:
   void scanPorts();
   bool readPort(uint32_t port, ByteStream &outStream);
   void readInLoop(uint32_t port, ByteStream &outStream);
+  void writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size);
+  void writePort(uint32_t portIndex, const ByteStream &data);
   void writePort(uint32_t port, std::string data);
 
   // ==================================

@@ -85,8 +85,8 @@ void VortexEditor::run()
 
 void VortexEditor::readInLoop(uint32_t port, ByteStream &outStream)
 {
+  outStream.clear();
   while (1) {
-    outStream.clear();
     if (!readPort(port, outStream)) {
       // error?
       continue;
@@ -149,6 +149,29 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
 
 void VortexEditor::push()
 {
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
+  // now immediately tell it what to do
+  writePort(port, EDITOR_VERB_PUSH_MODES);
+  // read data again
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_PUSH_MODES_RDY) != 0) {
+    // ??
+  }
+  ByteStream modes;
+  Modes::clearModes();
+  Modes::addMode(PATTERN_SOLID0, RGBColor(0, 150, 150));
+  // now unserialize the stream of data that was read
+  Modes::serialize(modes);
+  // send the modes
+  writePort(port, modes);
+  // wait for the done response
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_PUSH_MODES_DONE) != 0) {
+    // ??
+  }
+  // now wait for idle
+  waitIdle();
 }
 
 void VortexEditor::pull()
@@ -156,7 +179,7 @@ void VortexEditor::pull()
   ByteStream stream;
   uint32_t port = m_portSelection.getSelection();
   // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_SEND_MODES);
+  writePort(port, EDITOR_VERB_PULL_MODES);
   // read data again
   readInLoop(port, stream);
   // now unserialize the stream of data that was read
@@ -164,9 +187,60 @@ void VortexEditor::pull()
     printf("Unserialize failed\n");
   }
   // now send the pull ack, thx bro
-  writePort(port, EDITOR_VERB_SEND_MODES_ACK);
+  writePort(port, EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
   printf("Unserialized %u modes\n", Modes::numModes());
+  // now wait for idle
+  waitIdle();
+}
+
+void VortexEditor::load()
+{
+  HANDLE hFile = CreateFile("SaveFile.vortex", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!hFile) {
+    // error
+    return;
+  }
+  DWORD bytesRead = 0;
+  ByteStream stream(4096);
+  if (!ReadFile(hFile, (void *)stream.rawData(), stream.capacity(), &bytesRead, NULL)) {
+    // error
+  }
+  CloseHandle(hFile);
+  stream.shrink();
+  if (!stream.checkCRC()) {
+    printf("Bad crc\n");
+    return;
+  }
+  // load the modes
+  Modes::unserialize(stream);
+}
+
+void VortexEditor::save()
+{
+  ByteStream stream;
+  Modes::serialize(stream);
+  HANDLE hFile = CreateFile("SaveFile.vortex", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!hFile) {
+    // error
+    return;
+  }
+  DWORD written = 0;
+  stream.recalcCRC();
+  if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
+    // error
+  }
+  CloseHandle(hFile);
+}
+
+void VortexEditor::selectPort()
+{
+}
+
+void VortexEditor::waitIdle()
+{
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
   // now wait for the idle again
   readInLoop(port, stream);
   // check for idle
@@ -175,18 +249,6 @@ void VortexEditor::pull()
   }
   // send idle ack
   writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
-}
-
-void VortexEditor::load()
-{
-}
-
-void VortexEditor::save()
-{
-}
-
-void VortexEditor::selectPort()
-{
 }
 
 void VortexEditor::scanPorts()
@@ -228,14 +290,31 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   return true;
 }
 
-void VortexEditor::writePort(uint32_t portIndex, std::string data)
+void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size)
 {
   if (portIndex >= m_ports.size()) {
     return;
   }
   ArduinoSerial *serial = &m_ports[portIndex].second;
   // write the data into the serial port
-  serial->WriteData(data.c_str(), data.size());
+  serial->WriteData(data, size);
+}
+
+void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
+{
+  if (portIndex >= m_ports.size()) {
+    return;
+  }
+  writePortRaw(portIndex, data.data(), data.size());
+}
+
+
+void VortexEditor::writePort(uint32_t portIndex, string data)
+{
+  if (portIndex >= m_ports.size()) {
+    return;
+  }
+  writePortRaw(portIndex, (uint8_t *)data.c_str(), data.size());
   // just print the buffer
   printf("Wrote to port %u: [%s]\n", m_ports[portIndex].first, data.c_str());
 }
