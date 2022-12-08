@@ -33,7 +33,7 @@ VWindow::~VWindow()
   cleanup();
 }
 
-void VWindow::init(HINSTANCE hInstance, const string title, 
+void VWindow::init(HINSTANCE hInstance, const string &title, 
   COLORREF backcol, uint32_t width, uint32_t height,
   void *callbackArg)
 {

@@ -144,7 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EngineDependencies\Arduino.cpp" />
-    <ClCompile Include="EngineDependencies\ArduinoSerial.cpp" />
+    <ClCompile Include="ArduinoSerial.cpp" />
     <ClCompile Include="EngineDependencies\FastLED.cpp" />
     <ClCompile Include="EngineDependencies\FlashStorage.cpp" />
     <ClCompile Include="GUI\VButton.cpp" />
@@ -163,6 +163,7 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Memory\Memory.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\Menu.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\ColorSelect.cpp" />
+    <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\EditorConnection.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\FactoryReset.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\GlobalBrightness.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\ModeSharing.cpp" />
@@ -230,7 +231,7 @@
     <ClInclude Include="EditorConfig.h" />
     <ClInclude Include="EngineDependencies\Adafruit_Dotstar.h" />
     <ClInclude Include="EngineDependencies\Arduino.h" />
-    <ClInclude Include="EngineDependencies\ArduinoSerial.h" />
+    <ClInclude Include="ArduinoSerial.h" />
     <ClInclude Include="EngineDependencies\FastLED.h" />
     <ClInclude Include="EngineDependencies\FlashStorage.h" />
     <ClInclude Include="GUI\VButton.h" />
@@ -252,6 +253,7 @@
     <ClInclude Include="VortexEngine\VortexEngine\src\Memory\Memory.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\Menu.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\ColorSelect.h" />
+    <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\EditorConnection.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\FactoryReset.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\GlobalBrightness.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\ModeSharing.h" />

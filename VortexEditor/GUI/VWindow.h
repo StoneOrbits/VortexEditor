@@ -20,7 +20,7 @@ public:
     void *callbackArg);
   virtual ~VWindow();
 
-  virtual void init(HINSTANCE hinstance, std::string title, 
+  virtual void init(HINSTANCE hinstance, const std::string &title, 
     COLORREF backcol, uint32_t width, uint32_t height,
     void *callbackArg);
   virtual void cleanup();

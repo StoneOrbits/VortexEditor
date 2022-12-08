@@ -240,7 +240,7 @@
     <ClCompile Include="EngineDependencies\Arduino.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EngineDependencies\ArduinoSerial.cpp">
+    <ClCompile Include="ArduinoSerial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="EngineDependencies\FastLED.cpp">
@@ -259,6 +259,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GUI\VComboBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\EditorConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -503,7 +506,7 @@
     <ClInclude Include="EngineDependencies\Arduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EngineDependencies\ArduinoSerial.h">
+    <ClInclude Include="ArduinoSerial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="EngineDependencies\FastLED.h">
@@ -528,6 +531,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GUI\VComboBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\EditorConnection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

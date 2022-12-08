@@ -22,6 +22,7 @@ VortexEditor::VortexEditor() :
   m_hInstance(NULL),
   m_ports(),
   m_window(),
+  m_connectButton(),
   m_pushButton(),
   m_pullButton(),
   m_loadButton(),
@@ -42,6 +43,8 @@ bool VortexEditor::init(HINSTANCE hInstance)
   }
   g_pEditor = this;
 
+  m_hInstance = hInstance;
+
   if (!m_consoleHandle) {
     AllocConsole();
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
@@ -51,8 +54,6 @@ bool VortexEditor::init(HINSTANCE hInstance)
   VortexEngine::init();
   // clear the modes
   Modes::clearModes();
-
-  m_hInstance = hInstance;
 
   // initialize the window accordingly
   m_window.init(hInstance, EDITOR_TITLE, EDITOR_BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
@@ -94,8 +95,7 @@ void VortexEditor::connect()
     // failure
     return;
   }
-  printf("Connected to Vortex Gloveset\n");
-  writePort(m_portSelection.getSelection(), "Hello");
+  writePort(m_portSelection.getSelection(), "HELLO");
   bool readMode = false;
   while (1) {
     stream.clear();
@@ -108,6 +108,10 @@ void VortexEditor::connect()
     }
     break;
   }
+  if (strcmp((char *)stream.data(), "IDLE") != 0) {
+    // ???
+  }
+  writePort(m_portSelection.getSelection(), "MODESPLZ");
   if (!Modes::unserialize(stream)) {
     printf("Unserialize failed\n");
   }
