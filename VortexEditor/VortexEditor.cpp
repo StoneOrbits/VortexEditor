@@ -3,8 +3,14 @@
 // VortexEngine includes
 #include "VortexEngine.h"
 #include "Serial/ByteStream.h"
+#include "Colors/Colorset.h"
 #include "EditorConfig.h"
 #include "Modes/Modes.h"
+#include "Modes/Mode.h"
+#include "Modes/ModeBuilder.h"
+
+// for random()
+#include "Arduino.h"
 
 // Editor includes
 #include "ArduinoSerial.h"
@@ -14,13 +20,20 @@
 // stl includes
 #include <string>
 
+// for registering ui elements for events
+#define SELECT_PORT_ID  50001
+#define SELECT_MODE_ID  50002
+#define ADD_MODE_ID     50003
+#define DEL_MODE_ID     50004
+
 using namespace std;
 
 VortexEditor *g_pEditor = nullptr;
 
 VortexEditor::VortexEditor() :
   m_hInstance(NULL),
-  m_ports(),
+  m_consoleHandle(nullptr),
+  m_portList(),
   m_window(),
   m_connectButton(),
   m_pushButton(),
@@ -28,7 +41,7 @@ VortexEditor::VortexEditor() :
   m_loadButton(),
   m_saveButton(),
   m_portSelection(),
-  m_consoleHandle(nullptr)
+  m_modeListBox()
 {
 }
 
@@ -57,12 +70,15 @@ bool VortexEditor::init(HINSTANCE hInstance)
 
   // initialize the window accordingly
   m_window.init(hInstance, EDITOR_TITLE, EDITOR_BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
-  m_portSelection.init(hInstance, m_window, "Select Port", EDITOR_BACK_COL, 150, 300, 16, 16, 0, selectPortCallback);
+  m_portSelection.init(hInstance, m_window, "Select Port", EDITOR_BACK_COL, 150, 300, 16, 16, SELECT_PORT_ID, selectPortCallback);
   m_connectButton.init(hInstance, m_window, "Connect", EDITOR_BACK_COL, 72, 28, 16, 48, ID_FILE_CONNECT, connectCallback);
   m_pushButton.init(hInstance, m_window, "Push", EDITOR_BACK_COL, 72, 28, 16, 80, ID_FILE_PUSH, pushCallback);
   m_pullButton.init(hInstance, m_window, "Pull", EDITOR_BACK_COL, 72, 28, 16, 112, ID_FILE_PULL, pullCallback);
   m_loadButton.init(hInstance, m_window, "Load", EDITOR_BACK_COL, 72, 28, 16, 144, ID_FILE_LOAD, loadCallback);
   m_saveButton.init(hInstance, m_window, "Save", EDITOR_BACK_COL, 72, 28, 16, 176, ID_FILE_SAVE, saveCallback);
+  m_modeListBox.init(hInstance, m_window, "Mode List", EDITOR_BACK_COL, 250, 300, 16, 210, SELECT_MODE_ID, selectModeCallback);
+  m_addModeButton.init(hInstance, m_window, "Add", EDITOR_BACK_COL, 74, 28, 92, 503, ADD_MODE_ID, addModeCallback);
+  m_delModeButton.init(hInstance, m_window, "Del", EDITOR_BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
 
   // scan for any connections
   scanPorts();
@@ -133,7 +149,7 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
     return false;
   }
   if (handshake.data()[0] != '=' || handshake.data()[1] != '=') {
-    printf("Handshake start bad: [%c%c]\n", 
+    printf("Handshake start bad: [%c%c]\n",
       handshake.data()[0], handshake.data()[1]);
     // bad handshake
     return false;
@@ -147,6 +163,29 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
   return true;
 }
 
+void VortexEditor::refreshModeList()
+{
+  m_modeListBox.clearItems();
+  int curSel = Modes::curModeIndex();
+  Modes::setCurMode(0);
+  for (uint32_t i = 0; i < Modes::numModes(); ++i) {
+    Mode *curMode = Modes::curMode();
+    if (!curMode) {
+      // ?
+      continue;
+    }
+    string modeName = "Mode " + to_string(i) + " (" + getPatternName(curMode->getPatternID()) + ")";
+    m_modeListBox.addItem(modeName);
+    printf("Added mode [%s]\n", modeName.c_str());
+    // go to next mode
+    Modes::nextMode();
+  }
+  // restore the selection
+  m_modeListBox.setSelection(curSel);
+  Modes::setCurMode(curSel);
+  printf("Refreshed mode list\n");
+}
+
 void VortexEditor::push()
 {
   ByteStream stream;
@@ -158,10 +197,8 @@ void VortexEditor::push()
   if (strcmp((char *)stream.data(), EDITOR_VERB_PUSH_MODES_RDY) != 0) {
     // ??
   }
-  ByteStream modes;
-  Modes::clearModes();
-  Modes::addMode(PATTERN_SOLID0, RGBColor(0, 150, 150));
   // now unserialize the stream of data that was read
+  ByteStream modes;
   Modes::serialize(modes);
   // send the modes
   writePort(port, modes);
@@ -192,6 +229,8 @@ void VortexEditor::pull()
   printf("Unserialized %u modes\n", Modes::numModes());
   // now wait for idle
   waitIdle();
+  // refresh the mode list
+  refreshModeList();
 }
 
 void VortexEditor::load()
@@ -237,6 +276,31 @@ void VortexEditor::selectPort()
 {
 }
 
+void VortexEditor::selectMode()
+{
+  Modes::setCurMode(m_modeListBox.getSelection());
+}
+
+void VortexEditor::addMode()
+{
+  Colorset set;
+  set.randomize();
+    // create a random pattern ID from all patterns
+  PatternID randomPattern;
+  do {
+    // continuously re-randomize the pattern so we don't get solids
+    randomPattern = (PatternID)random(PATTERN_FIRST, PATTERN_COUNT);
+  } while (randomPattern >= PATTERN_SOLID0 && randomPattern <= PATTERN_SOLID2);
+  Modes::addMode(randomPattern, &set);
+  refreshModeList();
+}
+
+void VortexEditor::delMode()
+{
+  Modes::deleteCurMode();
+  refreshModeList();
+}
+
 void VortexEditor::waitIdle()
 {
   ByteStream stream;
@@ -257,10 +321,10 @@ void VortexEditor::scanPorts()
     string port = "\\\\.\\COM" + to_string(i);
     ArduinoSerial serialPort(port);
     if (serialPort.IsConnected()) {
-      m_ports.push_back(make_pair(i, move(serialPort)));
+      m_portList.push_back(make_pair(i, move(serialPort)));
     }
   }
-  for (auto port = m_ports.begin(); port != m_ports.end(); ++port) {
+  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
     m_portSelection.addItem(to_string(port->first));
     printf("Connected port %u\n", port->first);
   }
@@ -268,10 +332,10 @@ void VortexEditor::scanPorts()
 
 bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
 {
-  if (portIndex >= m_ports.size()) {
+  if (portIndex >= m_portList.size()) {
     return false;
   }
-  ArduinoSerial *serial = &m_ports[portIndex].second;
+  ArduinoSerial *serial = &m_portList[portIndex].second;
   // read with NULL args to get expected amount
   int32_t amt = serial->ReadData(NULL, 0);
   if (amt == -1 || amt == 0) {
@@ -286,23 +350,23 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   // the editor, maybe the Serial class should accomodate the Bytestream
   *(uint32_t *)outStream.rawData() = amt;
   // just print the buffer
-  printf("Data on port %u: [%s] (%u bytes)\n", m_ports[portIndex].first, outStream.data(), amt);
+  printf("Data on port %u: [%s] (%u bytes)\n", m_portList[portIndex].first, outStream.data(), amt);
   return true;
 }
 
 void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size)
 {
-  if (portIndex >= m_ports.size()) {
+  if (portIndex >= m_portList.size()) {
     return;
   }
-  ArduinoSerial *serial = &m_ports[portIndex].second;
+  ArduinoSerial *serial = &m_portList[portIndex].second;
   // write the data into the serial port
   serial->WriteData(data, size);
 }
 
 void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
 {
-  if (portIndex >= m_ports.size()) {
+  if (portIndex >= m_portList.size()) {
     return;
   }
   writePortRaw(portIndex, data.data(), data.size());
@@ -311,42 +375,73 @@ void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
 
 void VortexEditor::writePort(uint32_t portIndex, string data)
 {
-  if (portIndex >= m_ports.size()) {
+  if (portIndex >= m_portList.size()) {
     return;
   }
   writePortRaw(portIndex, (uint8_t *)data.c_str(), data.size());
   // just print the buffer
-  printf("Wrote to port %u: [%s]\n", m_ports[portIndex].first, data.c_str());
+  printf("Wrote to port %u: [%s]\n", m_portList[portIndex].first, data.c_str());
 }
 
-void VortexEditor::connectCallback(void *editor)
+string VortexEditor::getPatternName(PatternID id) const
 {
-  ((VortexEditor *)editor)->connect();
-}
+  if (id == PATTERN_NONE || id >= PATTERN_COUNT) {
+    return "pattern_none";
+  }
+  static const char *patternNames[PATTERN_COUNT] = {
+    "basic",
+    "strobe",
+    "hyperstrobe",
+    "dops",
+    "dopish",
+    "ultradops",
+    "strobie",
+    "ribbon",
+    "miniribbon",
+    "tracer",
+    "dashdops",
+    "blinkie",
+    "ghostcrush",
+    "advanced",
+    "blend",
+    "complementary blend",
+    "brackets",
 
-void VortexEditor::pushCallback(void *editor)
-{
-  ((VortexEditor *)editor)->push();
-}
+    "solid0",
+    "solid1",
+    "solid2",
 
-void VortexEditor::pullCallback(void *editor)
-{
-  ((VortexEditor *)editor)->pull();
-}
-
-void VortexEditor::loadCallback(void *editor)
-{
-  ((VortexEditor *)editor)->load();
-}
-
-void VortexEditor::saveCallback(void *editor)
-{
-  ((VortexEditor *)editor)->save();
-}
-
-void VortexEditor::selectPortCallback(void *editor)
-{
-  ((VortexEditor *)editor)->selectPort();
+    "rabbit",
+    "hueshift",
+    "theater chase",
+    "chaser",
+    "zigzag",
+    "zipfade",
+    "tiptop",
+    "drip",
+    "dripmorph",
+    "crossdops",
+    "doublestrobe",
+    // TODO: SLoth Strobe doubleStrobe(5, 8, 1000)
+    "meteor",
+    "sparkletrace",
+    "vortexwipe",
+    // TODO: UltraWipe vortexWipe(2, 7, 50)
+    "warp",
+    "warpworm",
+    "snowball",
+    "lighthouse",
+    "pulsish",
+    "fill",
+    "bounce",
+    "impact",
+    "splitstrobie",
+    "backstrobe",
+    "flowers",
+    "jest",
+    "materia"
+  };
+  return patternNames[id];
 }
 
 void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)

@@ -1,16 +1,25 @@
 #pragma once
 
+// windows includes
 #include <windows.h>
 
+// arduino includes
+#include "Patterns/Patterns.h"
+
+// gui includes
 #include "GUI/VWindow.h"
 #include "GUI/VButton.h"
 #include "GUI/VComboBox.h"
+#include "GUI/VListBox.h"
 
+// editor includes
 #include "ArduinoSerial.h"
 
+// stl includes
 #include <vector>
 
 class ByteStream;
+class Mode;
 
 class VortexEditor
 {
@@ -23,16 +32,10 @@ public:
   // run the test framework
   void run();
 
-  // print to the log 
+  // print to the log
   void printlog(const char *file, const char *func, int line, const char *msg, va_list list);
 
 private:
-  // main instance
-  HINSTANCE m_hInstance;
-
-  // map of ports
-  std::vector<std::pair<uint32_t, ArduinoSerial>> m_ports;
-
   // callbacks for actions
   void connect();
   void push();
@@ -40,9 +43,29 @@ private:
   void load();
   void save();
   void selectPort();
+  void selectMode();
+  void addMode();
+  void delMode();
+
+  // special handler that is called after each action
   void waitIdle();
 
+  // callbacks wrappers so that the callback handlers of
+  // the gui elements can call a static routine
+  static void connectCallback(void *editor)    { ((VortexEditor *)editor)->connect(); }
+  static void pushCallback(void *editor)       { ((VortexEditor *)editor)->push(); }
+  static void pullCallback(void *editor)       { ((VortexEditor *)editor)->pull(); }
+  static void loadCallback(void *editor)       { ((VortexEditor *)editor)->load(); }
+  static void saveCallback(void *editor)       { ((VortexEditor *)editor)->save(); }
+  static void selectPortCallback(void *editor) { ((VortexEditor *)editor)->selectPort(); }
+  static void selectModeCallback(void *editor) { ((VortexEditor *)editor)->selectMode(); }
+  static void addModeCallback(void *editor)    { ((VortexEditor *)editor)->addMode(); }
+  static void delModeCallback(void *editor)    { ((VortexEditor *)editor)->delMode(); }
+
   bool validateHandshake(const ByteStream &handshake);
+
+  // refresh the mode list
+  void refreshModeList();
 
   // various other actions
   void scanPorts();
@@ -52,8 +75,22 @@ private:
   void writePort(uint32_t portIndex, const ByteStream &data);
   void writePort(uint32_t port, std::string data);
 
+  std::string getPatternName(PatternID id) const;
+
   // ==================================
-  // GUI Members
+  //  Member data
+
+  // main instance
+  HINSTANCE m_hInstance;
+
+  // Console handle for debugging
+  FILE *m_consoleHandle;
+
+  // map of ports
+  std::vector<std::pair<uint32_t, ArduinoSerial>> m_portList;
+
+  // ==================================
+  //  GUI Members
 
   // main window
   VWindow m_window;
@@ -65,17 +102,11 @@ private:
   VButton m_saveButton;
   // the list of com ports
   VComboBox m_portSelection;
-
-  // Console handle for debugging
-  FILE *m_consoleHandle;
-
-  // callbacks wrappers
-  static void connectCallback(void *arg);
-  static void pushCallback(void *arg);
-  static void pullCallback(void *arg);
-  static void loadCallback(void *arg);
-  static void saveCallback(void *arg);
-  static void selectPortCallback(void *arg);
+  // the list of modes
+  VListBox m_modeListBox;
+  // the add/remove mode button
+  VButton m_addModeButton;
+  VButton m_delModeButton;
 };
 
 extern VortexEditor *g_pEditor;

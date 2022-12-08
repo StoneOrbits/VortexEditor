@@ -25,6 +25,7 @@ public:
 
   void addItem(std::string item);
   int getSelection() const;
+  void setSelection(int selection);
 
 private:
   VWindowCallback m_callback;

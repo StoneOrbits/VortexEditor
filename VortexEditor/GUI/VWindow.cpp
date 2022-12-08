@@ -101,7 +101,6 @@ void VWindow::command(WPARAM wParam, LPARAM lParam)
 
 void VWindow::pressButton()
 {
-  MessageBox(0,"wndpres","", 0);
 }
 
 void VWindow::releaseButton()

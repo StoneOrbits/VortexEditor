@@ -2,6 +2,7 @@
 
 // Windows includes
 #include <CommCtrl.h>
+#include <windowsx.h>
 
 // Vortex Engine includes
 #include "EditorConfig.h"
@@ -41,7 +42,7 @@ void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 
   // create the window
   m_hwnd = CreateWindow(WC_LISTBOX, title.c_str(),
-    WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | WS_TABSTOP,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | LBS_NOTIFY | WS_TABSTOP,
     x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
@@ -81,4 +82,22 @@ void VListBox::releaseButton()
 {
 }
 
+void VListBox::addItem(string item)
+{
+  ListBox_AddString(m_hwnd, item.c_str());
+}
 
+int VListBox::getSelection() const
+{
+  return ListBox_GetCurSel(m_hwnd);
+}
+
+void VListBox::setSelection(int selection)
+{
+  ListBox_SetCurSel(m_hwnd, selection);
+}
+
+void VListBox::clearItems()
+{
+  SendMessage(m_hwnd, LB_RESETCONTENT, 0, 0);
+}

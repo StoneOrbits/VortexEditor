@@ -85,6 +85,9 @@ void VComboBox::releaseButton()
 void VComboBox::addItem(std::string item)
 {
   ComboBox_AddString(m_hwnd, item.c_str());
+  if (getSelection() == -1) {
+    setSelection(0);
+  }
 }
 
 int VComboBox::getSelection() const
@@ -92,3 +95,7 @@ int VComboBox::getSelection() const
   return ComboBox_GetCurSel(m_hwnd);
 }
 
+void VComboBox::setSelection(int selection)
+{
+  ComboBox_SetCurSel(m_hwnd, selection);
+}
