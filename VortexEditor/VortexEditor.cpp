@@ -134,10 +134,6 @@ void VortexEditor::connect()
   }
   // k
   writePort(port, EDITOR_VERB_IDLE_ACK);
-
-  // ============================================
-  //  here down is basically just 'pull'
-  pull();
 }
 
 bool VortexEditor::validateHandshake(const ByteStream &handshake)
@@ -176,7 +172,6 @@ void VortexEditor::refreshModeList()
     }
     string modeName = "Mode " + to_string(i) + " (" + getPatternName(curMode->getPatternID()) + ")";
     m_modeListBox.addItem(modeName);
-    printf("Added mode [%s]\n", modeName.c_str());
     // go to next mode
     Modes::nextMode();
   }
