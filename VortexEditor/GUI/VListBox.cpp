@@ -70,6 +70,10 @@ void VListBox::paint()
 
 void VListBox::command(WPARAM wParam, LPARAM lParam)
 {
+  int reason = HIWORD(wParam);
+  if (reason != LBN_SELCHANGE) {
+    return;
+  }
   m_callback(m_callbackArg);
 }
 
