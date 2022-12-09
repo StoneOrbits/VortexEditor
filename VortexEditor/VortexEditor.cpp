@@ -87,7 +87,7 @@ bool VortexEditor::init(HINSTANCE hInstance)
   m_addModeButton.init(hInstance, m_window, "Add", EDITOR_BACK_COL, 74, 28, 92, 503, ADD_MODE_ID, addModeCallback);
   m_delModeButton.init(hInstance, m_window, "Del", EDITOR_BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
   m_fingersListBox.init(hInstance, m_window, "Fingers", EDITOR_BACK_COL, 180, 300, 290, 210, SELECT_FINGER_ID, selectFingerCallback);
-  m_patternSelectComboBox.init(hInstance, m_window, "Select Pattern", EDITOR_BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPortCallback);
+  m_patternSelectComboBox.init(hInstance, m_window, "Select Pattern", EDITOR_BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPatternCallback);
 
   // scan for any connections
   scanPorts();
@@ -187,6 +187,7 @@ void VortexEditor::refreshModeList()
   // restore the selection
   m_modeListBox.setSelection(curSel);
   Modes::setCurMode(curSel);
+  refreshFingerList();
 }
 
 void VortexEditor::refreshFingerList()
@@ -204,6 +205,27 @@ void VortexEditor::refreshFingerList()
   }
   // restore the selection
   m_fingersListBox.setSelection(curSel);
+  refreshPatternSelect();
+}
+
+void VortexEditor::refreshPatternSelect()
+{
+  int sel = m_fingersListBox.getSelection();
+  if (sel < 0) {
+    return;
+  }
+  bool allow_multi = (sel == 0);
+  // get the pattern
+  const Pattern *pat = Modes::curMode()->getPattern((LedPos)sel);
+  for (PatternID id = PATTERN_FIRST; id < PATTERN_COUNT; ++id) {
+    if (!allow_multi && isMultiLedPatternID(id)) {
+      continue;
+    }
+    m_patternSelectComboBox.addItem(getPatternName(id));
+    if (id == pat->getPatternID()) {
+      m_patternSelectComboBox.setSelection(id);
+    }
+  }
 }
 
 void VortexEditor::push()
@@ -282,6 +304,7 @@ void VortexEditor::load()
   // load the modes
   Modes::unserialize(stream);
   printf("Loaded from [%s]\n", filename);
+  refreshModeList();
 }
 
 void VortexEditor::save()
@@ -309,7 +332,11 @@ void VortexEditor::selectPort()
 
 void VortexEditor::selectMode()
 {
-  Modes::setCurMode(m_modeListBox.getSelection());
+  int sel = m_modeListBox.getSelection();
+  if (sel < 0) {
+    return;
+  }
+  Modes::setCurMode(sel);
   refreshFingerList();
 }
 
@@ -340,10 +367,28 @@ void VortexEditor::delMode()
 
 void VortexEditor::selectFinger()
 {
+  refreshPatternSelect();
 }
 
 void VortexEditor::selectPattern()
 {
+  int pat = m_patternSelectComboBox.getSelection();
+  if (pat < 0) {
+    return;
+  }
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  if (pos == 0) {
+    // set the pattern on the entire mode
+    Modes::curMode()->setPattern((PatternID)pat);
+  } else {
+    // only set the pattern on a single position
+    Modes::curMode()->setSinglePat((PatternID)pat, (LedPos)pos);
+  }
+  Modes::saveStorage();
+  refreshModeList();
 }
 
 void VortexEditor::waitIdle()

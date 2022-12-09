@@ -72,6 +72,7 @@ private:
   // refresh the mode list
   void refreshModeList();
   void refreshFingerList();
+  void refreshPatternSelect();
 
   // various other actions
   void scanPorts();

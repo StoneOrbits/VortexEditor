@@ -42,7 +42,7 @@ void VComboBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 
   // create the window
   m_hwnd = CreateWindow(WC_COMBOBOX, title.c_str(),
-    CBS_SIMPLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP,
+    CBS_SIMPLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_VSCROLL | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP,
     x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
