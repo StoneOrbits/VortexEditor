@@ -178,7 +178,6 @@ void VortexEditor::refreshModeList()
   // restore the selection
   m_modeListBox.setSelection(curSel);
   Modes::setCurMode(curSel);
-  printf("Refreshed mode list\n");
 }
 
 void VortexEditor::push()
@@ -289,6 +288,10 @@ void VortexEditor::selectMode()
 
 void VortexEditor::addMode()
 {
+  if (Modes::numModes() >= MAX_MODES) {
+    return;
+  }
+  printf("Adding mode %u\n", Modes::numModes() + 1);
   Colorset set;
   set.randomize();
     // create a random pattern ID from all patterns
@@ -303,6 +306,7 @@ void VortexEditor::addMode()
 
 void VortexEditor::delMode()
 {
+  printf("Deleting mode %u\n", Modes::curModeIndex());
   Modes::deleteCurMode();
   refreshModeList();
 }
