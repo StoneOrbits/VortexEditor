@@ -217,8 +217,15 @@ void VortexEditor::pull()
   uint32_t port = m_portSelection.getSelection();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_PULL_MODES);
-  // read data again
-  readInLoop(port, stream);
+  stream.clear();
+  if (!readModes(port, stream) || !stream.size()) {
+    printf("Couldn't read anything\n");
+    return;
+  }
+  if (!stream.checkCRC()) {
+    printf("BAD CRC !\n");
+    return;
+  }
   // now unserialize the stream of data that was read
   if (!Modes::unserialize(stream)) {
     printf("Unserialize failed\n");
@@ -354,6 +361,41 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   return true;
 }
 
+bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
+{
+  if (portIndex >= m_portList.size()) {
+    return false;
+  }
+  ArduinoSerial *serial = &m_portList[portIndex].second;
+  uint32_t size = 0;
+
+  // first check how much is in the serial port
+  int32_t amt = 0;
+  do {
+    // read with NULL args to get expected amount
+    amt = serial->ReadData(NULL, 0);
+    // we need at least a size value
+  } while (amt < sizeof(size));
+
+  // read the size out of the serial port
+  serial->ReadData((void *)&size, sizeof(size));
+  if (!size || size > 4096) {
+    DEBUG_LOGF("Bad IR Data size: %u", size);
+    return false;
+  }
+
+  // init outmodes so it's big enough
+  outModes.init(size);
+  uint32_t amtRead = 0;
+  do {
+    // read straight into the raw buffer, this will always have enough
+    // space because outModes is big enough to hold the entire data
+    uint8_t *readPos = ((uint8_t *)outModes.rawData()) + amtRead;
+    amtRead += serial->ReadData((void *)readPos, size);
+  } while (amtRead < size);
+  return true;
+}
+
 void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size)
 {
   if (portIndex >= m_portList.size()) {
@@ -369,9 +411,11 @@ void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
   if (portIndex >= m_portList.size()) {
     return;
   }
-  writePortRaw(portIndex, data.data(), data.size());
+  uint32_t size = data.rawSize();
+  writePortRaw(portIndex, (uint8_t *)&size, sizeof(size));
+  writePortRaw(portIndex, (uint8_t *)data.rawData(), size);
+  printf("Wrote %u bytes of raw data\n", size);
 }
-
 
 void VortexEditor::writePort(uint32_t portIndex, string data)
 {

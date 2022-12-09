@@ -70,6 +70,7 @@ private:
   // various other actions
   void scanPorts();
   bool readPort(uint32_t port, ByteStream &outStream);
+  bool readModes(uint32_t portIndex, ByteStream &outModes);
   void readInLoop(uint32_t port, ByteStream &outStream);
   void writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size);
   void writePort(uint32_t portIndex, const ByteStream &data);
