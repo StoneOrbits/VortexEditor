@@ -3,6 +3,7 @@
 // VortexEngine includes
 #include "VortexEngine.h"
 #include "Serial/ByteStream.h"
+#include "Patterns/Pattern.h"
 #include "Colors/Colorset.h"
 #include "EditorConfig.h"
 #include "Modes/Modes.h"
@@ -21,10 +22,12 @@
 #include <string>
 
 // for registering ui elements for events
-#define SELECT_PORT_ID  50001
-#define SELECT_MODE_ID  50002
-#define ADD_MODE_ID     50003
-#define DEL_MODE_ID     50004
+#define SELECT_PORT_ID      50001
+#define SELECT_MODE_ID      50002
+#define ADD_MODE_ID         50003
+#define DEL_MODE_ID         50004
+#define SELECT_FINGER_ID    50005
+#define SELECT_PATTERN_ID   50006
 
 using namespace std;
 
@@ -35,13 +38,17 @@ VortexEditor::VortexEditor() :
   m_consoleHandle(nullptr),
   m_portList(),
   m_window(),
+  m_portSelection(),
   m_connectButton(),
   m_pushButton(),
   m_pullButton(),
   m_loadButton(),
   m_saveButton(),
-  m_portSelection(),
-  m_modeListBox()
+  m_modeListBox(),
+  m_addModeButton(),
+  m_delModeButton(),
+  m_fingersListBox(),
+  m_patternSelectComboBox()
 {
 }
 
@@ -79,6 +86,8 @@ bool VortexEditor::init(HINSTANCE hInstance)
   m_modeListBox.init(hInstance, m_window, "Mode List", EDITOR_BACK_COL, 250, 300, 16, 210, SELECT_MODE_ID, selectModeCallback);
   m_addModeButton.init(hInstance, m_window, "Add", EDITOR_BACK_COL, 74, 28, 92, 503, ADD_MODE_ID, addModeCallback);
   m_delModeButton.init(hInstance, m_window, "Del", EDITOR_BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
+  m_fingersListBox.init(hInstance, m_window, "Fingers", EDITOR_BACK_COL, 180, 300, 290, 210, SELECT_FINGER_ID, selectFingerCallback);
+  m_patternSelectComboBox.init(hInstance, m_window, "Select Pattern", EDITOR_BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPortCallback);
 
   // scan for any connections
   scanPorts();
@@ -178,6 +187,23 @@ void VortexEditor::refreshModeList()
   // restore the selection
   m_modeListBox.setSelection(curSel);
   Modes::setCurMode(curSel);
+}
+
+void VortexEditor::refreshFingerList()
+{
+  int curSel = m_fingersListBox.getSelection();
+  m_fingersListBox.clearItems();
+  for (LedPos pos = LED_FIRST; pos < LED_COUNT; ++pos) {
+    const Pattern *curPat = Modes::curMode()->getPattern(pos);
+    if (!curPat) {
+      // ?
+      continue;
+    }
+    string fingerName = getLedName(pos) + " (" + getPatternName(curPat->getPatternID()) + ")";
+    m_fingersListBox.addItem(fingerName);
+  }
+  // restore the selection
+  m_fingersListBox.setSelection(curSel);
 }
 
 void VortexEditor::push()
@@ -284,6 +310,7 @@ void VortexEditor::selectPort()
 void VortexEditor::selectMode()
 {
   Modes::setCurMode(m_modeListBox.getSelection());
+  refreshFingerList();
 }
 
 void VortexEditor::addMode()
@@ -309,6 +336,14 @@ void VortexEditor::delMode()
   printf("Deleting mode %u\n", Modes::curModeIndex());
   Modes::deleteCurMode();
   refreshModeList();
+}
+
+void VortexEditor::selectFinger()
+{
+}
+
+void VortexEditor::selectPattern()
+{
 }
 
 void VortexEditor::waitIdle()
@@ -489,6 +524,22 @@ string VortexEditor::getPatternName(PatternID id) const
     "materia"
   };
   return patternNames[id];
+}
+
+string VortexEditor::getLedName(LedPos pos) const
+{
+  if (pos >= LED_COUNT) {
+    return "led_none";
+  }
+  static const char *ledNames[LED_COUNT] = {
+    // tips       tops
+    "pinkie tip", "pinkie top",
+    "ring tip",   "ring top",
+    "middle tip", "middle top",
+    "index tip",  "index top",
+    "thumb tip",  "thumb top",
+  };
+  return ledNames[pos];
 }
 
 void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)
