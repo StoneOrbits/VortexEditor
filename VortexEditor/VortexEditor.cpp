@@ -237,7 +237,8 @@ void VortexEditor::pull()
 
 void VortexEditor::load()
 {
-  HANDLE hFile = CreateFile("SaveFile.vortex", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  const char filename[] = "SaveFile.vortex";
+  HANDLE hFile = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -255,13 +256,15 @@ void VortexEditor::load()
   }
   // load the modes
   Modes::unserialize(stream);
+  printf("Loaded from [%s]\n", filename);
 }
 
 void VortexEditor::save()
 {
   ByteStream stream;
   Modes::serialize(stream);
-  HANDLE hFile = CreateFile("SaveFile.vortex", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  const char filename[] = "SaveFile.vortex";
+  HANDLE hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -272,6 +275,7 @@ void VortexEditor::save()
     // error
   }
   CloseHandle(hFile);
+  printf("Saved to [%s]\n", filename);
 }
 
 void VortexEditor::selectPort()
