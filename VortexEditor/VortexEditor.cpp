@@ -214,6 +214,7 @@ void VortexEditor::refreshPatternSelect()
   if (sel < 0) {
     return;
   }
+  m_patternSelectComboBox.clearItems();
   bool allow_multi = (sel == 0);
   // get the pattern
   const Pattern *pat = Modes::curMode()->getPattern((LedPos)sel);

@@ -103,3 +103,8 @@ void VComboBox::setSelection(int selection)
 {
   ComboBox_SetCurSel(m_hwnd, selection);
 }
+
+void VComboBox::clearItems()
+{
+  SendMessage(m_hwnd, CB_RESETCONTENT, 0, 0);
+}
