@@ -75,7 +75,7 @@ static HBRUSH getBrushCol(DWORD rgbcol)
 {
   static std::map<COLORREF, HBRUSH> m_brushmap;
   HBRUSH br;
-  COLORREF col = RGB(rgbcol & 0xFF, (rgbcol >> 8) & 0xFF, (rgbcol >> 16) & 0xFF);
+  COLORREF col = RGB((rgbcol >> 16) & 0xFF, (rgbcol >> 8) & 0xFF, rgbcol & 0xFF);
   if (m_brushmap.find(col) == m_brushmap.end()) {
     br = CreateSolidBrush(col);
     m_brushmap[col] = br;
@@ -95,9 +95,9 @@ void VColorSelect::paint()
   if (m_active) {
     FillRect(hdc, &rect, getBrushCol(0x999999));
     // the front color will be the actual color
-    frontCol = m_color;
+    frontCol = getColor();
   } else {
-    FillRect(hdc, &rect, getBrushCol(0xFF));
+    FillRect(hdc, &rect, getBrushCol(0xFF0000));
     // the front color will be black
     frontCol = 0;
   }
@@ -123,10 +123,11 @@ void VColorSelect::pressButton()
   col.hwndOwner = m_hwnd;
   static COLORREF acrCustClr[16]; // array of custom colors 
   col.lpCustColors = (LPDWORD)acrCustClr;
-  col.rgbResult = m_color;
+  // windows uses BGR
+  col.rgbResult = getFlippedColor();
   col.Flags = CC_FULLOPEN | CC_RGBINIT;
   ChooseColor(&col);
-  setColor(col.rgbResult);
+  setFlippedColor(col.rgbResult);
   setActive(true);
   m_callback(m_callbackArg, this);
 }
@@ -152,18 +153,23 @@ void VColorSelect::clear()
 
 void VColorSelect::setColor(uint32_t col)
 {
-  m_color = ((col >> 16) & 0xFF) | (col & 0xFF00) | ((col << 16) & 0xFF0000);
+  m_color = col;
   RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
+}
+
+void VColorSelect::setFlippedColor(uint32_t col)
+{
+  setColor(((col >> 16) & 0xFF) | (col & 0xFF00) | ((col << 16) & 0xFF0000));
 }
 
 uint32_t VColorSelect::getColor() const
 {
-  return ((m_color >> 16) & 0xFF) | (m_color & 0xFF00) | ((m_color << 16) & 0xFF0000);
+  return m_color;
 }
 
-uint32_t VColorSelect::getRawColor() const
+uint32_t VColorSelect::getFlippedColor() const
 {
-  return m_color;
+  return ((m_color >> 16) & 0xFF) | (m_color & 0xFF00) | ((m_color << 16) & 0xFF0000);
 }
 
 bool VColorSelect::isActive() const

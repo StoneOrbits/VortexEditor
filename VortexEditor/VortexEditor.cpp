@@ -1,20 +1,18 @@
 #include "VortexEditor.h"
 
 // VortexEngine includes
-#include "VortexEngine.h"
 #include "Serial/ByteStream.h"
-#include "Patterns/Pattern.h"
+//#include "Patterns/Pattern.h"
 #include "Colors/Colorset.h"
-#include "EditorConfig.h"
-#include "Modes/Modes.h"
-#include "Modes/Mode.h"
-#include "Modes/ModeBuilder.h"
-
-// for random()
-#include "Arduino.h"
+//#include "EditorConfig.h"
+//#include "Modes/Modes.h"
+//#include "Modes/Mode.h"
+//#include "Modes/ModeBuilder.h"
 
 // Editor includes
+#include "EngineWrapper.h"
 #include "ArduinoSerial.h"
+#include "EditorConfig.h"
 #include "GUI/VWindow.h"
 #include "resource.h"
 
@@ -72,10 +70,8 @@ bool VortexEditor::init(HINSTANCE hInstance)
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
   }
 
-  // init the engine
-  VortexEngine::init();
-  // clear the modes
-  Modes::clearModes();
+  // initialize the system that wraps the vortex engine
+  VEngine::init();
 
   // initialize the window accordingly
   m_window.init(hInstance, EDITOR_TITLE, EDITOR_BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
@@ -176,8 +172,7 @@ void VortexEditor::push(VWindow *window)
   }
   // now unserialize the stream of data that was read
   ByteStream modes;
-  Modes::saveStorage();
-  Modes::serialize(modes);
+  VEngine::getModes(modes);
   // send the modes
   writePort(port, modes);
   // wait for the done response
@@ -200,19 +195,11 @@ void VortexEditor::pull(VWindow *window)
     printf("Couldn't read anything\n");
     return;
   }
-  if (!stream.checkCRC()) {
-    printf("BAD CRC !\n");
-    return;
-  }
-  // now unserialize the stream of data that was read
-  if (!Modes::unserialize(stream)) {
-    printf("Unserialize failed\n");
-  }
-  Modes::saveStorage();
+  VEngine::setModes(stream);
   // now send the pull ack, thx bro
   writePort(port, EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
-  printf("Unserialized %u modes\n", Modes::numModes());
+  printf("Unserialized %u modes\n", VEngine::numModes());
   // now wait for idle
   waitIdle();
   // refresh the mode list
@@ -233,21 +220,13 @@ void VortexEditor::load(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  stream.shrink();
-  if (!stream.checkCRC()) {
-    printf("Bad crc\n");
-    return;
-  }
-  // load the modes
-  Modes::unserialize(stream);
+  VEngine::setModes(stream);
   printf("Loaded from [%s]\n", filename);
   refreshModeList();
 }
 
 void VortexEditor::save(VWindow *window)
 {
-  ByteStream stream;
-  Modes::serialize(stream);
   const char filename[] = "SaveFile.vortex";
   HANDLE hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
@@ -255,7 +234,8 @@ void VortexEditor::save(VWindow *window)
     return;
   }
   DWORD written = 0;
-  stream.recalcCRC();
+  ByteStream stream;
+  VEngine::getModes(stream);
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
@@ -269,7 +249,7 @@ void VortexEditor::selectMode(VWindow *window)
   if (sel < 0) {
     return;
   }
-  Modes::setCurMode(sel);
+  VEngine::setCurMode(sel);
   // reselect first finger
   m_fingersListBox.setSelection(0);
   refreshFingerList();
@@ -277,28 +257,18 @@ void VortexEditor::selectMode(VWindow *window)
 
 void VortexEditor::addMode(VWindow *window)
 {
-  if (Modes::numModes() >= MAX_MODES) {
+  if (VEngine::numModes() >= MAX_MODES) {
     return;
   }
-  printf("Adding mode %u\n", Modes::numModes() + 1);
-  Colorset set;
-  set.randomize();
-    // create a random pattern ID from all patterns
-  PatternID randomPattern;
-  do {
-    // continuously re-randomize the pattern so we don't get solids
-    randomPattern = (PatternID)random(PATTERN_FIRST, PATTERN_COUNT);
-  } while (randomPattern >= PATTERN_SOLID0 && randomPattern <= PATTERN_SOLID2);
-  Modes::addMode(randomPattern, &set);
-  Modes::saveStorage();
+  printf("Adding mode %u\n", VEngine::numModes() + 1);
+  VEngine::addNewMode();
   refreshModeList();
 }
 
 void VortexEditor::delMode(VWindow *window)
 {
-  printf("Deleting mode %u\n", Modes::curModeIndex());
-  Modes::deleteCurMode();
-  Modes::saveStorage();
+  printf("Deleting mode %u\n", VEngine::curMode());
+  VEngine::delCurMode();
   refreshModeList();
 }
 
@@ -320,36 +290,36 @@ void VortexEditor::selectPattern(VWindow *window)
   }
   if (pos == 0) {
     // set the pattern on the entire mode
-    Modes::curMode()->setPattern((PatternID)pat);
+    VEngine::setPattern((PatternID)pat);
   } else {
     // only set the pattern on a single position
-    Modes::curMode()->setSinglePat((LedPos)pos, (PatternID)pat);
+    VEngine::setSinglePat((LedPos)pos, (PatternID)pat);
   }
-  Modes::saveStorage();
   refreshModeList();
 }
 
 void VortexEditor::selectColor(VWindow *window)
 {
+  if (!window) {
+    return;
+  }
   VColorSelect *colSelect = (VColorSelect *)window;
   int pos = m_fingersListBox.getSelection();
   if (pos < 0) {
     return;
   }
-  uintptr_t menuID = (uintptr_t)window->menu();
-  uint32_t colorIndex = menuID - SELECT_COLOR_ID;
-  const Colorset *set = Modes::curMode()->getPattern((LedPos)pos)->getColorset();
-  Colorset newSet(*set);
+  uint32_t colorIndex = (uintptr_t)window->menu() - SELECT_COLOR_ID;
+  Colorset newSet;
+  VEngine::getColorset((LedPos)pos, newSet);
   // if the color select was made inactive
   if (!colSelect->isActive()) {
     printf("Disabled color slot %u\n", colorIndex);
     newSet.removeColor(colorIndex);
   } else {
     printf("Updating color slot %u\n", colorIndex);
-    newSet.set(colorIndex, colSelect->getRawColor());
+    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
   }
-  ((Pattern *)Modes::curMode()->getPattern((LedPos)pos))->setColorset(&newSet);
-  Modes::saveStorage();
+  VEngine::setColorset((LedPos)pos, newSet);
   refreshColorSelect();
 }
 
@@ -393,22 +363,18 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
 void VortexEditor::refreshModeList()
 {
   m_modeListBox.clearItems();
-  int curSel = Modes::curModeIndex();
-  Modes::setCurMode(0);
-  for (uint32_t i = 0; i < Modes::numModes(); ++i) {
-    Mode *curMode = Modes::curMode();
-    if (!curMode) {
-      // ?
-      continue;
-    }
-    string modeName = "Mode " + to_string(i) + " (" + getPatternName(curMode->getPatternID()) + ")";
+  int curSel = VEngine::curMode();
+  VEngine::setCurMode(0);
+  for (uint32_t i = 0; i < VEngine::numModes(); ++i) {
+    // just use the pattern name from the first pattern
+    string modeName = "Mode " + to_string(i) + " (" + VEngine::getPatternName() + ")";
     m_modeListBox.addItem(modeName);
     // go to next mode
-    Modes::nextMode();
+    VEngine::nextMode();
   }
   // restore the selection
   m_modeListBox.setSelection(curSel);
-  Modes::setCurMode(curSel);
+  VEngine::setCurMode(curSel);
   refreshFingerList();
 }
 
@@ -420,12 +386,11 @@ void VortexEditor::refreshFingerList()
   }
   m_fingersListBox.clearItems();
   for (LedPos pos = LED_FIRST; pos < LED_COUNT; ++pos) {
-    const Pattern *curPat = Modes::curMode()->getPattern(pos);
-    if (!curPat) {
-      // ?
+    // if a finger is empty don't add it
+    if (VEngine::getPatternID(pos) == PATTERN_NONE) {
       continue;
     }
-    string fingerName = getLedName(pos) + " (" + getPatternName(curPat->getPatternID()) + ")";
+    string fingerName = VEngine::ledToString(pos) + " (" + VEngine::getPatternName(pos) + ")";
     m_fingersListBox.addItem(fingerName);
   }
   // restore the selection
@@ -443,13 +408,12 @@ void VortexEditor::refreshPatternSelect()
   m_patternSelectComboBox.clearItems();
   bool allow_multi = (sel == 0);
   // get the pattern
-  const Pattern *pat = Modes::curMode()->getPattern((LedPos)sel);
   for (PatternID id = PATTERN_FIRST; id < PATTERN_COUNT; ++id) {
     if (!allow_multi && isMultiLedPatternID(id)) {
       continue;
     }
-    m_patternSelectComboBox.addItem(getPatternName(id));
-    if (id == pat->getPatternID()) {
+    m_patternSelectComboBox.addItem(VEngine::patternToString(id));
+    if (id == VEngine::getPatternID()) {
       m_patternSelectComboBox.setSelection(id);
     }
   }
@@ -457,17 +421,20 @@ void VortexEditor::refreshPatternSelect()
 
 void VortexEditor::refreshColorSelect()
 {
-  int sel = m_fingersListBox.getSelection();
-  if (sel < 0) {
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
     return;
   }
   // get the colorset
-  const Colorset *set = Modes::curMode()->getPattern((LedPos)sel)->getColorset();
-  for (uint32_t i = 0; i < set->numColors(); ++i) {
-    m_colorSelect[i].setColor(set->get(i).raw());
+  Colorset set;
+  VEngine::getColorset((LedPos)pos, set);
+  // iterate all active colors and set them
+  for (uint32_t i = 0; i < set.numColors(); ++i) {
+    m_colorSelect[i].setColor(set.get(i).raw());
     m_colorSelect[i].setActive(true);
   }
-  for (uint32_t i = set->numColors(); i < MAX_COLOR_SLOTS; ++i) {
+  // iterate all extra slots and set to inactive
+  for (uint32_t i = set.numColors(); i < MAX_COLOR_SLOTS; ++i) {
     m_colorSelect[i].clear();
     m_colorSelect[i].setActive(false);
   }
@@ -591,38 +558,4 @@ void VortexEditor::writePort(uint32_t portIndex, string data)
   writePortRaw(portIndex, (uint8_t *)data.c_str(), data.size());
   // just print the buffer
   printf("Wrote to port %u: [%s]\n", m_portList[portIndex].first, data.c_str());
-}
-
-string VortexEditor::getPatternName(PatternID id) const
-{
-  if (id == PATTERN_NONE || id >= PATTERN_COUNT) {
-    return "pattern_none";
-  }
-  static const char *patternNames[PATTERN_COUNT] = {
-    "basic", "strobe", "hyperstrobe", "dops", "dopish", "ultradops", "strobie",
-    "ribbon", "miniribbon", "tracer", "dashdops", "blinkie", "ghostcrush",
-    "advanced", "blend", "complementary blend", "brackets", "solid0", "solid1",
-    "solid2", "rabbit", "hueshift", "theater chase", "chaser", "zigzag",
-    "zipfade", "tiptop", "drip", "dripmorph", "crossdops", "doublestrobe",
-    "meteor", "sparkletrace", "vortexwipe", "warp", "warpworm", "snowball",
-    "lighthouse", "pulsish", "fill", "bounce", "impact", "splitstrobie",
-    "backstrobe", "flowers", "jest", "materia"
-  };
-  return patternNames[id];
-}
-
-string VortexEditor::getLedName(LedPos pos) const
-{
-  if (pos >= LED_COUNT) {
-    return "led_none";
-  }
-  static const char *ledNames[LED_COUNT] = {
-    // tips       tops
-    "pinkie tip", "pinkie top",
-    "ring tip",   "ring top",
-    "middle tip", "middle top",
-    "index tip",  "index top",
-    "thumb tip",  "thumb top",
-  };
-  return ledNames[pos];
 }

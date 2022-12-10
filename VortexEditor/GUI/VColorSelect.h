@@ -28,7 +28,9 @@ public:
 
   void clear();
   void setColor(uint32_t col);
+  void setFlippedColor(uint32_t col);
   uint32_t getColor() const;
+  uint32_t getFlippedColor() const;
 
   bool isActive() const;
   void setActive(bool active);

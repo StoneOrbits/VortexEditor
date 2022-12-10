@@ -87,9 +87,6 @@ private:
   void writePort(uint32_t portIndex, const ByteStream &data);
   void writePort(uint32_t port, std::string data);
 
-  std::string getPatternName(PatternID id) const;
-  std::string getLedName(LedPos pos) const;
-
   // ==================================
   //  Member data
 
