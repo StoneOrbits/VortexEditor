@@ -386,7 +386,7 @@ void VortexEditor::selectPattern()
     Modes::curMode()->setPattern((PatternID)pat);
   } else {
     // only set the pattern on a single position
-    Modes::curMode()->setSinglePat((PatternID)pat, (LedPos)pos);
+    Modes::curMode()->setSinglePat((LedPos)pos, (PatternID)pat);
   }
   Modes::saveStorage();
   refreshModeList();
