@@ -264,6 +264,9 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\MenuList\EditorConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GUI\VColorSelect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -534,6 +537,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\MenuList\EditorConnection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\VColorSelect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -52,8 +52,6 @@ void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   // set 'this' in the user data area of the class so that the static callback
   // routine can access the object
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-
-  ShowWindow(m_hwnd, SW_NORMAL);
 }
 
 void VListBox::cleanup()

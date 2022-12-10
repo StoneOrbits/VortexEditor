@@ -28,6 +28,7 @@
 #define DEL_MODE_ID         50004
 #define SELECT_FINGER_ID    50005
 #define SELECT_PATTERN_ID   50006
+#define SELECT_COLOR_ID     50007
 
 using namespace std;
 
@@ -48,7 +49,8 @@ VortexEditor::VortexEditor() :
   m_addModeButton(),
   m_delModeButton(),
   m_fingersListBox(),
-  m_patternSelectComboBox()
+  m_patternSelectComboBox(),
+  m_colorSelect()
 {
 }
 
@@ -88,6 +90,10 @@ bool VortexEditor::init(HINSTANCE hInstance)
   m_delModeButton.init(hInstance, m_window, "Del", EDITOR_BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
   m_fingersListBox.init(hInstance, m_window, "Fingers", EDITOR_BACK_COL, 180, 300, 290, 210, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInstance, m_window, "Select Pattern", EDITOR_BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPatternCallback);
+
+  for (uint32_t i = 0; i < MAX_COLOR_SLOTS; ++i) {
+    m_colorSelect[i].init(hInstance, m_window, "Color Select", EDITOR_BACK_COL, 36, 30, 490, 240 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
+  }
 
   // scan for any connections
   scanPorts();
@@ -206,6 +212,7 @@ void VortexEditor::refreshFingerList()
   // restore the selection
   m_fingersListBox.setSelection(curSel);
   refreshPatternSelect();
+  refreshColorSelect();
 }
 
 void VortexEditor::refreshPatternSelect()
@@ -226,6 +233,19 @@ void VortexEditor::refreshPatternSelect()
     if (id == pat->getPatternID()) {
       m_patternSelectComboBox.setSelection(id);
     }
+  }
+}
+
+void VortexEditor::refreshColorSelect()
+{
+  int sel = m_fingersListBox.getSelection();
+  if (sel < 0) {
+    return;
+  }
+  // get the colorset
+  const Colorset *set = Modes::curMode()->getPattern((LedPos)sel)->getColorset();
+  for (uint32_t i = 0; i < MAX_COLOR_SLOTS; ++i) {
+    m_colorSelect[i].setColor(set->get(i).raw());
   }
 }
 
@@ -369,6 +389,7 @@ void VortexEditor::delMode()
 void VortexEditor::selectFinger()
 {
   refreshPatternSelect();
+  refreshColorSelect();
 }
 
 void VortexEditor::selectPattern()
@@ -390,6 +411,11 @@ void VortexEditor::selectPattern()
   }
   Modes::saveStorage();
   refreshModeList();
+}
+
+void VortexEditor::selectColor()
+{
+  // asdf
 }
 
 void VortexEditor::waitIdle()
@@ -517,57 +543,14 @@ string VortexEditor::getPatternName(PatternID id) const
     return "pattern_none";
   }
   static const char *patternNames[PATTERN_COUNT] = {
-    "basic",
-    "strobe",
-    "hyperstrobe",
-    "dops",
-    "dopish",
-    "ultradops",
-    "strobie",
-    "ribbon",
-    "miniribbon",
-    "tracer",
-    "dashdops",
-    "blinkie",
-    "ghostcrush",
-    "advanced",
-    "blend",
-    "complementary blend",
-    "brackets",
-
-    "solid0",
-    "solid1",
-    "solid2",
-
-    "rabbit",
-    "hueshift",
-    "theater chase",
-    "chaser",
-    "zigzag",
-    "zipfade",
-    "tiptop",
-    "drip",
-    "dripmorph",
-    "crossdops",
-    "doublestrobe",
-    // TODO: SLoth Strobe doubleStrobe(5, 8, 1000)
-    "meteor",
-    "sparkletrace",
-    "vortexwipe",
-    // TODO: UltraWipe vortexWipe(2, 7, 50)
-    "warp",
-    "warpworm",
-    "snowball",
-    "lighthouse",
-    "pulsish",
-    "fill",
-    "bounce",
-    "impact",
-    "splitstrobie",
-    "backstrobe",
-    "flowers",
-    "jest",
-    "materia"
+    "basic", "strobe", "hyperstrobe", "dops", "dopish", "ultradops", "strobie",
+    "ribbon", "miniribbon", "tracer", "dashdops", "blinkie", "ghostcrush",
+    "advanced", "blend", "complementary blend", "brackets", "solid0", "solid1",
+    "solid2", "rabbit", "hueshift", "theater chase", "chaser", "zigzag",
+    "zipfade", "tiptop", "drip", "dripmorph", "crossdops", "doublestrobe",
+    "meteor", "sparkletrace", "vortexwipe", "warp", "warpworm", "snowball",
+    "lighthouse", "pulsish", "fill", "bounce", "impact", "splitstrobie",
+    "backstrobe", "flowers", "jest", "materia"
   };
   return patternNames[id];
 }

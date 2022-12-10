@@ -12,6 +12,7 @@
 #include "GUI/VButton.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
+#include "GUI/VColorSelect.h"
 
 // editor includes
 #include "ArduinoSerial.h"
@@ -49,6 +50,7 @@ private:
   void delMode();
   void selectFinger();
   void selectPattern();
+  void selectColor();
 
   // special handler that is called after each action
   void waitIdle();
@@ -66,6 +68,7 @@ private:
   static void delModeCallback(void *editor)       { ((VortexEditor *)editor)->delMode(); }
   static void selectFingerCallback(void *editor)  { ((VortexEditor *)editor)->selectFinger(); }
   static void selectPatternCallback(void *editor) { ((VortexEditor *)editor)->selectPattern(); }
+  static void selectColorCallback(void *editor)   { ((VortexEditor *)editor)->selectColor(); }
 
   bool validateHandshake(const ByteStream &handshake);
 
@@ -73,6 +76,7 @@ private:
   void refreshModeList();
   void refreshFingerList();
   void refreshPatternSelect();
+  void refreshColorSelect();
 
   // various other actions
   void scanPorts();
@@ -120,6 +124,8 @@ private:
   VListBox m_fingersListBox;
   // the pattern selection
   VComboBox m_patternSelectComboBox;
+  // color select options
+  VColorSelect m_colorSelect[MAX_COLOR_SLOTS];
 };
 
 extern VortexEditor *g_pEditor;

@@ -49,7 +49,7 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
 
   // create the window
   m_hwnd = CreateWindow(EDITOR_CLASS, title.c_str(),
-    WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+    WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
     (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2),
     840, 680, nullptr, nullptr, hInstance, nullptr);
   if (!m_hwnd) {
@@ -60,8 +60,6 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
   // set 'this' in the user data area of the class so that the static callback
   // routine can access the object
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-
-  ShowWindow(m_hwnd, SW_NORMAL);
 }
 
 void VWindow::cleanup()
