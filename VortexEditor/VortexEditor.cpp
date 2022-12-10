@@ -176,6 +176,7 @@ void VortexEditor::push(VWindow *window)
   }
   // now unserialize the stream of data that was read
   ByteStream modes;
+  Modes::saveStorage();
   Modes::serialize(modes);
   // send the modes
   writePort(port, modes);
@@ -207,6 +208,7 @@ void VortexEditor::pull(VWindow *window)
   if (!Modes::unserialize(stream)) {
     printf("Unserialize failed\n");
   }
+  Modes::saveStorage();
   // now send the pull ack, thx bro
   writePort(port, EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
@@ -271,8 +273,6 @@ void VortexEditor::selectMode(VWindow *window)
   // reselect first finger
   m_fingersListBox.setSelection(0);
   refreshFingerList();
-  // send idle ack
-  //writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
 }
 
 void VortexEditor::addMode(VWindow *window)
@@ -290,6 +290,7 @@ void VortexEditor::addMode(VWindow *window)
     randomPattern = (PatternID)random(PATTERN_FIRST, PATTERN_COUNT);
   } while (randomPattern >= PATTERN_SOLID0 && randomPattern <= PATTERN_SOLID2);
   Modes::addMode(randomPattern, &set);
+  Modes::saveStorage();
   refreshModeList();
 }
 
@@ -297,6 +298,7 @@ void VortexEditor::delMode(VWindow *window)
 {
   printf("Deleting mode %u\n", Modes::curModeIndex());
   Modes::deleteCurMode();
+  Modes::saveStorage();
   refreshModeList();
 }
 
@@ -344,9 +346,10 @@ void VortexEditor::selectColor(VWindow *window)
     newSet.removeColor(colorIndex);
   } else {
     printf("Updating color slot %u\n", colorIndex);
-    newSet.set(colorIndex, colSelect->getColor());
+    newSet.set(colorIndex, colSelect->getRawColor());
   }
   ((Pattern *)Modes::curMode()->getPattern((LedPos)pos))->setColorset(&newSet);
+  Modes::saveStorage();
   refreshColorSelect();
 }
 
@@ -412,6 +415,9 @@ void VortexEditor::refreshModeList()
 void VortexEditor::refreshFingerList()
 {
   int curSel = m_fingersListBox.getSelection();
+  if (curSel < 0) {
+    curSel = 0;
+  }
   m_fingersListBox.clearItems();
   for (LedPos pos = LED_FIRST; pos < LED_COUNT; ++pos) {
     const Pattern *curPat = Modes::curMode()->getPattern(pos);

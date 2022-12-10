@@ -91,19 +91,22 @@ void VColorSelect::paint()
   HDC hdc = BeginPaint(m_hwnd, &paintStruct);
   RECT rect;
   GetClientRect(m_hwnd, &rect);
+  COLORREF frontCol;
   if (m_active) {
-    FillRect(hdc, &rect, getBrushCol(0xFF00));
+    FillRect(hdc, &rect, getBrushCol(0x999999));
+    // the front color will be the actual color
+    frontCol = m_color;
   } else {
     FillRect(hdc, &rect, getBrushCol(0xFF));
-    // don't use setcolor because it triggers redraw
-    m_color = 0;
+    // the front color will be black
+    frontCol = 0;
   }
 #define BORDER_WIDTH 1
   rect.left += BORDER_WIDTH;
   rect.top += BORDER_WIDTH;
   rect.right -= BORDER_WIDTH;
   rect.bottom -= BORDER_WIDTH;
-  FillRect(hdc, &rect, getBrushCol((COLORREF)m_color));
+  FillRect(hdc, &rect, getBrushCol(frontCol));
   EndPaint(m_hwnd, &paintStruct);
 }
 
@@ -120,7 +123,7 @@ void VColorSelect::pressButton()
   col.hwndOwner = m_hwnd;
   static COLORREF acrCustClr[16]; // array of custom colors 
   col.lpCustColors = (LPDWORD)acrCustClr;
-  col.rgbResult = getColor();
+  col.rgbResult = m_color;
   col.Flags = CC_FULLOPEN | CC_RGBINIT;
   ChooseColor(&col);
   setColor(col.rgbResult);
@@ -156,6 +159,11 @@ void VColorSelect::setColor(uint32_t col)
 uint32_t VColorSelect::getColor() const
 {
   return ((m_color >> 16) & 0xFF) | (m_color & 0xFF00) | ((m_color << 16) & 0xFF0000);
+}
+
+uint32_t VColorSelect::getRawColor() const
+{
+  return m_color;
 }
 
 bool VColorSelect::isActive() const
