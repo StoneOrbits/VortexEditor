@@ -85,7 +85,7 @@ void VWindow::paint()
 
 void VWindow::command(WPARAM wParam, LPARAM lParam)
 {
-  uint32_t menuID = LOWORD(wParam);
+  uintptr_t menuID = LOWORD(wParam);
   if (menuID == ID_FILE_QUIT) {
     PostQuitMessage(0);
     return;
@@ -110,7 +110,7 @@ uint32_t VWindow::addChild(HMENU menuID, VWindow *child)
   child->m_pParent = this;
   child->m_callbackArg = m_callbackArg;
   m_children.insert(make_pair(menuID, child));
-  return m_children.size() - 1;
+  return (uint32_t)(m_children.size() - 1);
 }
 
 VWindow *VWindow::getChild(HMENU id)

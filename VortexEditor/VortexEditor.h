@@ -38,39 +38,39 @@ public:
   void printlog(const char *file, const char *func, int line, const char *msg, va_list list);
 
 private:
+  // callbacks wrappers so that the callback handlers of
+  // the gui elements can call a static routine
+  static void selectPortCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectPort(window); }
+  static void connectCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->connect(window); }
+  static void pushCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->push(window); }
+  static void pullCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->pull(window); }
+  static void loadCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->load(window); }
+  static void saveCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->save(window); }
+  static void selectModeCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectMode(window); }
+  static void addModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->addMode(window); }
+  static void delModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->delMode(window); }
+  static void selectFingerCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->selectFinger(window); }
+  static void selectPatternCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->selectPattern(window); }
+  static void selectColorCallback(void *editor, VWindow *window)   { ((VortexEditor *)editor)->selectColor(window); }
+
   // callbacks for actions
-  void connect();
-  void push();
-  void pull();
-  void load();
-  void save();
-  void selectPort();
-  void selectMode();
-  void addMode();
-  void delMode();
-  void selectFinger();
-  void selectPattern();
-  void selectColor();
+  void selectPort(VWindow *window);
+  void connect(VWindow *window);
+  void push(VWindow *window);
+  void pull(VWindow *window);
+  void load(VWindow *window);
+  void save(VWindow *window);
+  void selectMode(VWindow *window);
+  void addMode(VWindow *window);
+  void delMode(VWindow *window);
+  void selectFinger(VWindow *window);
+  void selectPattern(VWindow *window);
+  void selectColor(VWindow *window);
 
   // special handler that is called after each action
   void waitIdle();
 
-  // callbacks wrappers so that the callback handlers of
-  // the gui elements can call a static routine
-  static void connectCallback(void *editor)       { ((VortexEditor *)editor)->connect(); }
-  static void pushCallback(void *editor)          { ((VortexEditor *)editor)->push(); }
-  static void pullCallback(void *editor)          { ((VortexEditor *)editor)->pull(); }
-  static void loadCallback(void *editor)          { ((VortexEditor *)editor)->load(); }
-  static void saveCallback(void *editor)          { ((VortexEditor *)editor)->save(); }
-  static void selectPortCallback(void *editor)    { ((VortexEditor *)editor)->selectPort(); }
-  static void selectModeCallback(void *editor)    { ((VortexEditor *)editor)->selectMode(); }
-  static void addModeCallback(void *editor)       { ((VortexEditor *)editor)->addMode(); }
-  static void delModeCallback(void *editor)       { ((VortexEditor *)editor)->delMode(); }
-  static void selectFingerCallback(void *editor)  { ((VortexEditor *)editor)->selectFinger(); }
-  static void selectPatternCallback(void *editor) { ((VortexEditor *)editor)->selectPattern(); }
-  static void selectColorCallback(void *editor)   { ((VortexEditor *)editor)->selectColor(); }
-
-  bool validateHandshake(const ByteStream &handshake);
+  bool validateHandshake(const ByteStream &handshakewindow);
 
   // refresh the mode list
   void refreshModeList();

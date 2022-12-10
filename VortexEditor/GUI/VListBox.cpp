@@ -20,7 +20,7 @@ VListBox::VListBox() :
 
 VListBox::VListBox(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uint32_t menuID, VWindowCallback callback) :
+  uintptr_t menuID, VWindowCallback callback) :
   VListBox()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
@@ -33,7 +33,7 @@ VListBox::~VListBox()
 
 void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uint32_t menuID, VWindowCallback callback)
+  uintptr_t menuID, VWindowCallback callback)
 {
   // store callback and menu id
   m_callback = callback;
@@ -72,7 +72,7 @@ void VListBox::command(WPARAM wParam, LPARAM lParam)
   if (reason != LBN_SELCHANGE) {
     return;
   }
-  m_callback(m_callbackArg);
+  m_callback(m_callbackArg, this);
 }
 
 void VListBox::pressButton()

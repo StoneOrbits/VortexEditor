@@ -114,22 +114,34 @@ void VortexEditor::run()
   }
 }
 
-void VortexEditor::readInLoop(uint32_t port, ByteStream &outStream)
+void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)
 {
-  outStream.clear();
-  while (1) {
-    if (!readPort(port, outStream)) {
-      // error?
-      continue;
+  string strMsg;
+  if (file) {
+    strMsg = file;
+    if (strMsg.find_last_of('\\') != string::npos) {
+      strMsg = strMsg.substr(strMsg.find_last_of('\\') + 1);
     }
-    if (!outStream.size()) {
-      continue;
-    }
-    break;
+    strMsg += ":";
+    strMsg += to_string(line);
   }
+  if (func) {
+    strMsg += " ";
+    strMsg += func;
+    strMsg += "(): ";
+  }
+  strMsg += msg;
+  strMsg += "\n";
+  vfprintf(g_pEditor->m_consoleHandle, strMsg.c_str(), list);
+  //vfprintf(g_pEditor->m_logHandle, strMsg.c_str(), list);
 }
 
-void VortexEditor::connect()
+void VortexEditor::selectPort(VWindow *window)
+{
+  // connect to port?
+}
+
+void VortexEditor::connect(VWindow *window)
 {
   ByteStream stream;
   uint32_t port = m_portSelection.getSelection();
@@ -149,6 +161,207 @@ void VortexEditor::connect()
   }
   // k
   writePort(port, EDITOR_VERB_IDLE_ACK);
+}
+
+void VortexEditor::push(VWindow *window)
+{
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
+  // now immediately tell it what to do
+  writePort(port, EDITOR_VERB_PUSH_MODES);
+  // read data again
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_READY) != 0) {
+    // ??
+  }
+  // now unserialize the stream of data that was read
+  ByteStream modes;
+  Modes::serialize(modes);
+  // send the modes
+  writePort(port, modes);
+  // wait for the done response
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_PUSH_MODES_DONE) != 0) {
+    // ??
+  }
+  // now wait for idle
+  waitIdle();
+}
+
+void VortexEditor::pull(VWindow *window)
+{
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
+  // now immediately tell it what to do
+  writePort(port, EDITOR_VERB_PULL_MODES);
+  stream.clear();
+  if (!readModes(port, stream) || !stream.size()) {
+    printf("Couldn't read anything\n");
+    return;
+  }
+  if (!stream.checkCRC()) {
+    printf("BAD CRC !\n");
+    return;
+  }
+  // now unserialize the stream of data that was read
+  if (!Modes::unserialize(stream)) {
+    printf("Unserialize failed\n");
+  }
+  // now send the pull ack, thx bro
+  writePort(port, EDITOR_VERB_PULL_MODES_ACK);
+  // unserialized all our modes
+  printf("Unserialized %u modes\n", Modes::numModes());
+  // now wait for idle
+  waitIdle();
+  // refresh the mode list
+  refreshModeList();
+}
+
+void VortexEditor::load(VWindow *window)
+{
+  const char filename[] = "SaveFile.vortex";
+  HANDLE hFile = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!hFile) {
+    // error
+    return;
+  }
+  DWORD bytesRead = 0;
+  ByteStream stream(4096);
+  if (!ReadFile(hFile, (void *)stream.rawData(), stream.capacity(), &bytesRead, NULL)) {
+    // error
+  }
+  CloseHandle(hFile);
+  stream.shrink();
+  if (!stream.checkCRC()) {
+    printf("Bad crc\n");
+    return;
+  }
+  // load the modes
+  Modes::unserialize(stream);
+  printf("Loaded from [%s]\n", filename);
+  refreshModeList();
+}
+
+void VortexEditor::save(VWindow *window)
+{
+  ByteStream stream;
+  Modes::serialize(stream);
+  const char filename[] = "SaveFile.vortex";
+  HANDLE hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!hFile) {
+    // error
+    return;
+  }
+  DWORD written = 0;
+  stream.recalcCRC();
+  if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
+    // error
+  }
+  CloseHandle(hFile);
+  printf("Saved to [%s]\n", filename);
+}
+
+void VortexEditor::selectMode(VWindow *window)
+{
+  int sel = m_modeListBox.getSelection();
+  if (sel < 0) {
+    return;
+  }
+  Modes::setCurMode(sel);
+  // reselect first finger
+  m_fingersListBox.setSelection(0);
+  refreshFingerList();
+  // send idle ack
+  //writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
+}
+
+void VortexEditor::addMode(VWindow *window)
+{
+  if (Modes::numModes() >= MAX_MODES) {
+    return;
+  }
+  printf("Adding mode %u\n", Modes::numModes() + 1);
+  Colorset set;
+  set.randomize();
+    // create a random pattern ID from all patterns
+  PatternID randomPattern;
+  do {
+    // continuously re-randomize the pattern so we don't get solids
+    randomPattern = (PatternID)random(PATTERN_FIRST, PATTERN_COUNT);
+  } while (randomPattern >= PATTERN_SOLID0 && randomPattern <= PATTERN_SOLID2);
+  Modes::addMode(randomPattern, &set);
+  refreshModeList();
+}
+
+void VortexEditor::delMode(VWindow *window)
+{
+  printf("Deleting mode %u\n", Modes::curModeIndex());
+  Modes::deleteCurMode();
+  refreshModeList();
+}
+
+void VortexEditor::selectFinger(VWindow *window)
+{
+  refreshPatternSelect();
+  refreshColorSelect();
+}
+
+void VortexEditor::selectPattern(VWindow *window)
+{
+  int pat = m_patternSelectComboBox.getSelection();
+  if (pat < 0) {
+    return;
+  }
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  if (pos == 0) {
+    // set the pattern on the entire mode
+    Modes::curMode()->setPattern((PatternID)pat);
+  } else {
+    // only set the pattern on a single position
+    Modes::curMode()->setSinglePat((LedPos)pos, (PatternID)pat);
+  }
+  Modes::saveStorage();
+  refreshModeList();
+}
+
+void VortexEditor::selectColor(VWindow *window)
+{
+  VColorSelect *colSelect = (VColorSelect *)window;
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  uintptr_t menuID = (uintptr_t)window->menu();
+  uint32_t colorIndex = menuID - SELECT_COLOR_ID;
+  const Colorset *set = Modes::curMode()->getPattern((LedPos)pos)->getColorset();
+  Colorset newSet(*set);
+  // if the color select was made inactive
+  if (!colSelect->isActive()) {
+    printf("Disabled color slot %u\n", colorIndex);
+    newSet.removeColor(colorIndex);
+  } else {
+    printf("Updating color slot %u\n", colorIndex);
+    newSet.set(colorIndex, colSelect->getColor());
+  }
+  ((Pattern *)Modes::curMode()->getPattern((LedPos)pos))->setColorset(&newSet);
+  refreshColorSelect();
+}
+
+void VortexEditor::waitIdle()
+{
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
+  // now wait for the idle again
+  readInLoop(port, stream);
+  // check for idle
+  if (strcmp((char *)stream.data(), EDITOR_VERB_IDLE) != 0) {
+    // ???
+  }
+  // send idle ack
+  writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
 }
 
 bool VortexEditor::validateHandshake(const ByteStream &handshake)
@@ -244,192 +457,14 @@ void VortexEditor::refreshColorSelect()
   }
   // get the colorset
   const Colorset *set = Modes::curMode()->getPattern((LedPos)sel)->getColorset();
-  for (uint32_t i = 0; i < MAX_COLOR_SLOTS; ++i) {
+  for (uint32_t i = 0; i < set->numColors(); ++i) {
     m_colorSelect[i].setColor(set->get(i).raw());
+    m_colorSelect[i].setActive(true);
   }
-}
-
-void VortexEditor::push()
-{
-  ByteStream stream;
-  uint32_t port = m_portSelection.getSelection();
-  // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_PUSH_MODES);
-  // read data again
-  readInLoop(port, stream);
-  if (strcmp((char *)stream.data(), EDITOR_VERB_PUSH_MODES_RDY) != 0) {
-    // ??
+  for (uint32_t i = set->numColors(); i < MAX_COLOR_SLOTS; ++i) {
+    m_colorSelect[i].clear();
+    m_colorSelect[i].setActive(false);
   }
-  // now unserialize the stream of data that was read
-  ByteStream modes;
-  Modes::serialize(modes);
-  // send the modes
-  writePort(port, modes);
-  // wait for the done response
-  readInLoop(port, stream);
-  if (strcmp((char *)stream.data(), EDITOR_VERB_PUSH_MODES_DONE) != 0) {
-    // ??
-  }
-  // now wait for idle
-  waitIdle();
-}
-
-void VortexEditor::pull()
-{
-  ByteStream stream;
-  uint32_t port = m_portSelection.getSelection();
-  // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_PULL_MODES);
-  stream.clear();
-  if (!readModes(port, stream) || !stream.size()) {
-    printf("Couldn't read anything\n");
-    return;
-  }
-  if (!stream.checkCRC()) {
-    printf("BAD CRC !\n");
-    return;
-  }
-  // now unserialize the stream of data that was read
-  if (!Modes::unserialize(stream)) {
-    printf("Unserialize failed\n");
-  }
-  // now send the pull ack, thx bro
-  writePort(port, EDITOR_VERB_PULL_MODES_ACK);
-  // unserialized all our modes
-  printf("Unserialized %u modes\n", Modes::numModes());
-  // now wait for idle
-  waitIdle();
-  // refresh the mode list
-  refreshModeList();
-}
-
-void VortexEditor::load()
-{
-  const char filename[] = "SaveFile.vortex";
-  HANDLE hFile = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (!hFile) {
-    // error
-    return;
-  }
-  DWORD bytesRead = 0;
-  ByteStream stream(4096);
-  if (!ReadFile(hFile, (void *)stream.rawData(), stream.capacity(), &bytesRead, NULL)) {
-    // error
-  }
-  CloseHandle(hFile);
-  stream.shrink();
-  if (!stream.checkCRC()) {
-    printf("Bad crc\n");
-    return;
-  }
-  // load the modes
-  Modes::unserialize(stream);
-  printf("Loaded from [%s]\n", filename);
-  refreshModeList();
-}
-
-void VortexEditor::save()
-{
-  ByteStream stream;
-  Modes::serialize(stream);
-  const char filename[] = "SaveFile.vortex";
-  HANDLE hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (!hFile) {
-    // error
-    return;
-  }
-  DWORD written = 0;
-  stream.recalcCRC();
-  if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
-    // error
-  }
-  CloseHandle(hFile);
-  printf("Saved to [%s]\n", filename);
-}
-
-void VortexEditor::selectPort()
-{
-}
-
-void VortexEditor::selectMode()
-{
-  int sel = m_modeListBox.getSelection();
-  if (sel < 0) {
-    return;
-  }
-  Modes::setCurMode(sel);
-  refreshFingerList();
-}
-
-void VortexEditor::addMode()
-{
-  if (Modes::numModes() >= MAX_MODES) {
-    return;
-  }
-  printf("Adding mode %u\n", Modes::numModes() + 1);
-  Colorset set;
-  set.randomize();
-    // create a random pattern ID from all patterns
-  PatternID randomPattern;
-  do {
-    // continuously re-randomize the pattern so we don't get solids
-    randomPattern = (PatternID)random(PATTERN_FIRST, PATTERN_COUNT);
-  } while (randomPattern >= PATTERN_SOLID0 && randomPattern <= PATTERN_SOLID2);
-  Modes::addMode(randomPattern, &set);
-  refreshModeList();
-}
-
-void VortexEditor::delMode()
-{
-  printf("Deleting mode %u\n", Modes::curModeIndex());
-  Modes::deleteCurMode();
-  refreshModeList();
-}
-
-void VortexEditor::selectFinger()
-{
-  refreshPatternSelect();
-  refreshColorSelect();
-}
-
-void VortexEditor::selectPattern()
-{
-  int pat = m_patternSelectComboBox.getSelection();
-  if (pat < 0) {
-    return;
-  }
-  int pos = m_fingersListBox.getSelection();
-  if (pos < 0) {
-    return;
-  }
-  if (pos == 0) {
-    // set the pattern on the entire mode
-    Modes::curMode()->setPattern((PatternID)pat);
-  } else {
-    // only set the pattern on a single position
-    Modes::curMode()->setSinglePat((LedPos)pos, (PatternID)pat);
-  }
-  Modes::saveStorage();
-  refreshModeList();
-}
-
-void VortexEditor::selectColor()
-{
-  // asdf
-}
-
-void VortexEditor::waitIdle()
-{
-  ByteStream stream;
-  uint32_t port = m_portSelection.getSelection();
-  // now wait for the idle again
-  readInLoop(port, stream);
-  // check for idle
-  if (strcmp((char *)stream.data(), EDITOR_VERB_IDLE) != 0) {
-    // ???
-  }
-  // send idle ack
-  writePort(m_portSelection.getSelection(), EDITOR_VERB_IDLE_ACK);
 }
 
 void VortexEditor::scanPorts()
@@ -506,6 +541,21 @@ bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
   return true;
 }
 
+void VortexEditor::readInLoop(uint32_t port, ByteStream &outStream)
+{
+  outStream.clear();
+  while (1) {
+    if (!readPort(port, outStream)) {
+      // error?
+      continue;
+    }
+    if (!outStream.size()) {
+      continue;
+    }
+    break;
+  }
+}
+
 void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size)
 {
   if (portIndex >= m_portList.size()) {
@@ -569,26 +619,4 @@ string VortexEditor::getLedName(LedPos pos) const
     "thumb tip",  "thumb top",
   };
   return ledNames[pos];
-}
-
-void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)
-{
-  string strMsg;
-  if (file) {
-    strMsg = file;
-    if (strMsg.find_last_of('\\') != string::npos) {
-      strMsg = strMsg.substr(strMsg.find_last_of('\\') + 1);
-    }
-    strMsg += ":";
-    strMsg += to_string(line);
-  }
-  if (func) {
-    strMsg += " ";
-    strMsg += func;
-    strMsg += "(): ";
-  }
-  strMsg += msg;
-  strMsg += "\n";
-  vfprintf(g_pEditor->m_consoleHandle, strMsg.c_str(), list);
-  //vfprintf(g_pEditor->m_logHandle, strMsg.c_str(), list);
 }

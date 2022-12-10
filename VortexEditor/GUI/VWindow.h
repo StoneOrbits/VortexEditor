@@ -12,7 +12,7 @@ class VWindow
 {
 public:
   // typedef for callback params
-  typedef void (*VWindowCallback)(void *arg);
+  typedef void (*VWindowCallback)(void *arg, VWindow *window);
 
   VWindow();
   VWindow(HINSTANCE hinstance, const std::string &title, 
@@ -39,6 +39,7 @@ public:
   virtual VWindow *getChild(HMENU menuID);
 
   HWND hwnd() const { return m_hwnd; }
+  HMENU menu() const { return GetMenu(m_hwnd); }
 
 protected:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

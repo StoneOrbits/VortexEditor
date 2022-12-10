@@ -26,7 +26,7 @@ VColorSelect::VColorSelect() :
 
 VColorSelect::VColorSelect(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uint32_t menuID, VWindowCallback callback) :
+  uintptr_t menuID, VWindowCallback callback) :
   VColorSelect()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
@@ -39,7 +39,7 @@ VColorSelect::~VColorSelect()
 
 void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uint32_t menuID, VWindowCallback callback)
+  uintptr_t menuID, VWindowCallback callback)
 {
   // store callback and menu id
   m_callback = callback;
@@ -91,60 +91,81 @@ void VColorSelect::paint()
   HDC hdc = BeginPaint(m_hwnd, &paintStruct);
   RECT rect;
   GetClientRect(m_hwnd, &rect);
-  FillRect(hdc, &rect, getBrushCol(0));
-  rect.left += 2;
-  rect.top += 2;
-  rect.right -= 2;
-  rect.bottom -= 2;
+  if (m_active) {
+    FillRect(hdc, &rect, getBrushCol(0xFF00));
+  } else {
+    FillRect(hdc, &rect, getBrushCol(0xFF));
+    // don't use setcolor because it triggers redraw
+    m_color = 0;
+  }
+#define BORDER_WIDTH 1
+  rect.left += BORDER_WIDTH;
+  rect.top += BORDER_WIDTH;
+  rect.right -= BORDER_WIDTH;
+  rect.bottom -= BORDER_WIDTH;
   FillRect(hdc, &rect, getBrushCol((COLORREF)m_color));
   EndPaint(m_hwnd, &paintStruct);
 }
 
 void VColorSelect::command(WPARAM wParam, LPARAM lParam)
 {
-  int reason = HIWORD(wParam);
-  if (reason != CBN_SELCHANGE) {
-    return;
-  }
-  m_callback(m_callbackArg);
 }
 
 void VColorSelect::pressButton()
 {
-  //MessageBox(0, "", "", 0);
+  CHOOSECOLOR col;
+  memset(&col, 0, sizeof(col));
+  ZeroMemory(&col, sizeof(col));
+  col.lStructSize = sizeof(col);
+  col.hwndOwner = m_hwnd;
+  static COLORREF acrCustClr[16]; // array of custom colors 
+  col.lpCustColors = (LPDWORD)acrCustClr;
+  col.rgbResult = getColor();
+  col.Flags = CC_FULLOPEN | CC_RGBINIT;
+  ChooseColor(&col);
+  setColor(col.rgbResult);
+  setActive(true);
+  m_callback(m_callbackArg, this);
 }
 
 void VColorSelect::releaseButton()
 {
 }
 
-void VColorSelect::addItem(std::string item)
+// window message for right button press, only exists here
+void VColorSelect::rightButtonPress()
 {
-  //ColorSelect_AddString(m_hwnd, item.c_str());
-  if (getSelection() == -1) {
-    setSelection(0);
+  if (m_color == 0) {
+    setActive(false);
   }
+  clear();
+  m_callback(m_callbackArg, this);
 }
 
-int VColorSelect::getSelection() const
+void VColorSelect::clear()
 {
-  return 0; //ColorSelect_GetCurSel(m_hwnd);
-}
-
-void VColorSelect::setSelection(int selection)
-{
-  //ColorSelect_SetCurSel(m_hwnd, selection);
-}
-
-void VColorSelect::clearItems()
-{
-  SendMessage(m_hwnd, CB_RESETCONTENT, 0, 0);
+  setColor(0);
 }
 
 void VColorSelect::setColor(uint32_t col)
 {
-  m_color = col;
+  m_color = ((col >> 16) & 0xFF) | (col & 0xFF00) | ((col << 16) & 0xFF0000);
   RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
+}
+
+uint32_t VColorSelect::getColor() const
+{
+  return ((m_color >> 16) & 0xFF) | (m_color & 0xFF00) | ((m_color << 16) & 0xFF0000);
+}
+
+bool VColorSelect::isActive() const
+{
+  return m_active;
+}
+
+void VColorSelect::setActive(bool active)
+{
+  m_active = active;
 }
 
 LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -161,6 +182,9 @@ LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, 
     break;
   case WM_LBUTTONUP:
     pColorSelect->releaseButton();
+    break;
+  case WM_RBUTTONUP:
+    pColorSelect->rightButtonPress();
     break;
   case WM_CTLCOLORSTATIC:
     return (INT_PTR)pColorSelect->m_wc.hbrBackground;
@@ -194,7 +218,7 @@ void VColorSelect::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
     return;
   }
   // class registration
-  m_wc.lpfnWndProc = VWindow::window_proc;
+  m_wc.lpfnWndProc = VColorSelect::window_proc;
   m_wc.hInstance = hInstance;
   m_wc.lpszClassName = EDITOR_CLASS;
   m_wc.hbrBackground = CreateSolidBrush(backcol);
