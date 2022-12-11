@@ -175,15 +175,17 @@ string VEngine::patternToString(PatternID id)
   if (id == PATTERN_NONE || id >= PATTERN_COUNT) {
     return "pattern_none";
   }
+  // This is awful but idk how else to do it for now
   static const char *patternNames[PATTERN_COUNT] = {
     "basic", "strobe", "hyperstrobe", "dops", "dopish", "ultradops", "strobie",
-    "ribbon", "miniribbon", "tracer", "dashdops", "blinkie", "ghostcrush",
-    "advanced", "blend", "complementary blend", "brackets", "solid0", "solid1",
-    "solid2", "rabbit", "hueshift", "theater chase", "chaser", "zigzag",
-    "zipfade", "tiptop", "drip", "dripmorph", "crossdops", "doublestrobe",
-    "meteor", "sparkletrace", "vortexwipe", "warp", "warpworm", "snowball",
-    "lighthouse", "pulsish", "fill", "bounce", "impact", "splitstrobie",
-    "backstrobe", "flowers", "jest", "materia"
+    "ribbon", "miniribbon", "blinkie", "ghostcrush", "tracer", "dashdops",
+    "advanced", "blend", "complementary_blend", "brackets", "solid1", "solid2",
+    "solid3", "solid4", "solid5", "solid6", "solid7", "solid8", "rabbit",
+    "hueshift", "theater_chase", "chaser", "zigzag", "zipfade", "tiptop",
+    "drip", "dripmorph", "crossdops", "doublestrobe", "meteor", "sparkletrace",
+    "vortexwipe", "warp", "warpworm", "snowball", "lighthouse", "pulsish",
+    "fill", "bounce", "impact", "splitstrobie", "backstrobe", "flowers", "jest",
+    "materia",
   };
   return patternNames[id];
 }
