@@ -2,6 +2,8 @@
 
 #include "VWindow.h"
 
+#include "VLabel.h"
+
 class VColorSelect : public VWindow
 {
 public:
@@ -39,6 +41,9 @@ private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
   static WNDCLASS m_wc;
+
+  // internal vgui label for display of color code
+  VLabel m_colorLabel;
 
   VWindowCallback m_callback;
   // the color in this slot

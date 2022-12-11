@@ -1,8 +1,8 @@
-#include "VListBox.h"
+#include "VLabel.h"
 
 // Windows includes
 #include <CommCtrl.h>
-#include <windowsx.h>
+#include <Windowsx.h>
 
 // Vortex Engine includes
 #include "EditorConfig.h"
@@ -12,26 +12,26 @@
 
 using namespace std;
 
-VListBox::VListBox() :
+VLabel::VLabel() :
   VWindow(),
   m_callback(nullptr)
 {
 }
 
-VListBox::VListBox(HINSTANCE hInstance, VWindow &parent, const string &title,
+VLabel::VLabel(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback) :
-  VListBox()
+  VLabel()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
 }
 
-VListBox::~VListBox()
+VLabel::~VLabel()
 {
   cleanup();
 }
 
-void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
+void VLabel::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback)
 {
@@ -41,9 +41,9 @@ void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   parent.addChild((HMENU)menuID, this);
 
   // create the window
-  m_hwnd = CreateWindow(WC_LISTBOX, title.c_str(),
-    WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | LBS_NOTIFY | WS_TABSTOP,
-    x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
+  m_hwnd = CreateWindow(WC_STATIC, title.c_str(),
+    WS_VISIBLE | WS_CHILD,
+    x, y, width, height, parent.hwnd(), 0, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
     throw exception("idk");
@@ -54,51 +54,41 @@ void VListBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 }
 
-void VListBox::cleanup()
+void VLabel::cleanup()
 {
 }
 
-void VListBox::create()
+void VLabel::create()
 {
 }
 
-void VListBox::paint()
+void VLabel::paint()
 {
 }
 
-void VListBox::command(WPARAM wParam, LPARAM lParam)
+void VLabel::command(WPARAM wParam, LPARAM lParam)
 {
   int reason = HIWORD(wParam);
-  if (reason != LBN_SELCHANGE) {
+  if (reason != CBN_SELCHANGE) {
     return;
   }
   m_callback(m_callbackArg, this);
 }
 
-void VListBox::pressButton()
+void VLabel::pressButton()
 {
 }
 
-void VListBox::releaseButton()
+void VLabel::releaseButton()
 {
 }
 
-void VListBox::addItem(string item)
+void VLabel::setText(std::string item)
 {
-  ListBox_AddString(m_hwnd, item.c_str());
+  SendMessage(m_hwnd, WM_SETTEXT, 0, (LPARAM)item.c_str());
 }
 
-int VListBox::getSelection() const
+std::string VLabel::getText() const
 {
-  return ListBox_GetCurSel(m_hwnd);
-}
-
-void VListBox::setSelection(int selection)
-{
-  ListBox_SetCurSel(m_hwnd, selection);
-}
-
-void VListBox::clearItems()
-{
-  SendMessage(m_hwnd, LB_RESETCONTENT, 0, 0);
+  return (const char *)SendMessage(m_hwnd, WM_GETTEXT, 0, 0);
 }

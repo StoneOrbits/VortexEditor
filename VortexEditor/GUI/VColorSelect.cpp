@@ -20,7 +20,8 @@ WNDCLASS VColorSelect::m_wc = {0};
 VColorSelect::VColorSelect() :
   VWindow(),
   m_callback(nullptr),
-  m_color(0)
+  m_color(0),
+  m_active(false)
 {
 }
 
@@ -61,6 +62,8 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
   // set 'this' in the user data area of the class so that the static callback
   // routine can access the object
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
+
+  m_colorLabel.init(hInstance, parent, "", backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
 }
 
 void VColorSelect::cleanup()
@@ -162,6 +165,13 @@ void VColorSelect::clear()
 void VColorSelect::setColor(uint32_t col)
 {
   m_color = col;
+  if (col != 0) {
+    char colText[24] = {0};
+    snprintf(colText, sizeof(colText), "0x00%02X%02X%02x", (col >> 16) & 0xFF, (col >> 8) & 0xFF, col & 0xFF);
+    m_colorLabel.setText(colText);
+  } else {
+    m_colorLabel.setText("blank");
+  }
   RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
 }
 
@@ -188,6 +198,7 @@ bool VColorSelect::isActive() const
 void VColorSelect::setActive(bool active)
 {
   m_active = active;
+  m_colorLabel.setVisible(active);
 }
 
 LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -242,7 +253,6 @@ void VColorSelect::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
   // class registration
   m_wc.lpfnWndProc = VColorSelect::window_proc;
   m_wc.hInstance = hInstance;
-  m_wc.lpszClassName = EDITOR_CLASS;
   m_wc.hbrBackground = CreateSolidBrush(backcol);
   m_wc.style = CS_GLOBALCLASS | CS_HREDRAW | CS_VREDRAW;
   m_wc.hCursor = LoadCursor(NULL, IDC_ARROW);

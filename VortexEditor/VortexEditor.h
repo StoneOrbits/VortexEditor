@@ -8,11 +8,12 @@
 #include "Leds/LedTypes.h"
 
 // gui includes
-#include "GUI/VWindow.h"
-#include "GUI/VButton.h"
+#include "GUI/VColorSelect.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
-#include "GUI/VColorSelect.h"
+#include "GUI/VWindow.h"
+#include "GUI/VButton.h"
+#include "GUI/VLabel.h"
 
 // editor includes
 #include "ArduinoSerial.h"

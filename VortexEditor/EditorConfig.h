@@ -26,11 +26,9 @@
 
 // Title of the editor window
 #define EDITOR_TITLE      "Vortex Editor v" EDITOR_VERSION " (with Vortex Engine v" VORTEX_VERSION ")"
-// The window class
-#define EDITOR_CLASS      "VortexWindowClass"
 // Default width of the editor window
 #define EDITOR_WIDTH      840
 // Default height of the editor window
 #define EDITOR_HEIGHT     680
 // Background color of editor
-#define EDITOR_BACK_COL   RGB(40, 40, 40)
+#define BACK_COL          RGB(40, 40, 40)

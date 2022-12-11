@@ -38,6 +38,8 @@ public:
   virtual uint32_t addChild(HMENU menuID, VWindow *child);
   virtual VWindow *getChild(HMENU menuID);
 
+  void setVisible(bool visible);
+
   HWND hwnd() const { return m_hwnd; }
   HMENU menu() const { return GetMenu(m_hwnd); }
 

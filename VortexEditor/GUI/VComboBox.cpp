@@ -77,7 +77,6 @@ void VComboBox::command(WPARAM wParam, LPARAM lParam)
 
 void VComboBox::pressButton()
 {
-  MessageBox(0, "", "", 0);
 }
 
 void VComboBox::releaseButton()

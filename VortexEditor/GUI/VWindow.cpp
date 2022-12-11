@@ -12,6 +12,9 @@ using namespace std;
 
 WNDCLASS VWindow::m_wc = {0};
 
+// The window class
+#define VWINDOW      "VWINDOW"
+
 VWindow::VWindow() :
   m_hwnd(nullptr),
   m_children(),
@@ -48,7 +51,7 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
   GetClientRect(GetDesktopWindow(), &desktop);
 
   // create the window
-  m_hwnd = CreateWindow(EDITOR_CLASS, title.c_str(),
+  m_hwnd = CreateWindow(VWINDOW, title.c_str(),
     WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
     (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2),
     840, 680, nullptr, nullptr, hInstance, nullptr);
@@ -122,6 +125,11 @@ VWindow *VWindow::getChild(HMENU id)
   return result->second;
 }
 
+void VWindow::setVisible(bool visible)
+{
+  ShowWindow(m_hwnd, visible);
+}
+
 LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   VWindow *pWindow = (VWindow *)GetWindowLongPtr(hWnd, GWLP_USERDATA);
@@ -138,6 +146,8 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     pWindow->releaseButton();
     break;
   case WM_CTLCOLORSTATIC:
+    SetTextColor((HDC)wParam, RGB(0xD0, 0xD0, 0xD0));
+    SetBkColor((HDC)wParam, BACK_COL);
     return (INT_PTR)pWindow->m_wc.hbrBackground;
   case WM_CREATE:
     pWindow->create();
@@ -171,7 +181,7 @@ void VWindow::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
   // class registration
   m_wc.lpfnWndProc = VWindow::window_proc;
   m_wc.hInstance = hInstance;
-  m_wc.lpszClassName = EDITOR_CLASS;
+  m_wc.lpszClassName = VWINDOW;
   m_wc.hbrBackground = CreateSolidBrush(backcol);
   m_wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
   RegisterClass(&m_wc);

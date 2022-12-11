@@ -56,14 +56,14 @@ VortexEditor::~VortexEditor()
 {
 }
 
-bool VortexEditor::init(HINSTANCE hInstance)
+bool VortexEditor::init(HINSTANCE hInst)
 {
   if (g_pEditor) {
     return false;
   }
   g_pEditor = this;
 
-  m_hInstance = hInstance;
+  m_hInstance = hInst;
 
   if (!m_consoleHandle) {
     AllocConsole();
@@ -74,21 +74,21 @@ bool VortexEditor::init(HINSTANCE hInstance)
   VEngine::init();
 
   // initialize the window accordingly
-  m_window.init(hInstance, EDITOR_TITLE, EDITOR_BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
-  m_portSelection.init(hInstance, m_window, "Select Port", EDITOR_BACK_COL, 150, 300, 16, 16, SELECT_PORT_ID, selectPortCallback);
-  m_connectButton.init(hInstance, m_window, "Connect", EDITOR_BACK_COL, 72, 28, 16, 48, ID_FILE_CONNECT, connectCallback);
-  m_pushButton.init(hInstance, m_window, "Push", EDITOR_BACK_COL, 72, 28, 16, 80, ID_FILE_PUSH, pushCallback);
-  m_pullButton.init(hInstance, m_window, "Pull", EDITOR_BACK_COL, 72, 28, 16, 112, ID_FILE_PULL, pullCallback);
-  m_loadButton.init(hInstance, m_window, "Load", EDITOR_BACK_COL, 72, 28, 16, 144, ID_FILE_LOAD, loadCallback);
-  m_saveButton.init(hInstance, m_window, "Save", EDITOR_BACK_COL, 72, 28, 16, 176, ID_FILE_SAVE, saveCallback);
-  m_modeListBox.init(hInstance, m_window, "Mode List", EDITOR_BACK_COL, 250, 300, 16, 210, SELECT_MODE_ID, selectModeCallback);
-  m_addModeButton.init(hInstance, m_window, "Add", EDITOR_BACK_COL, 74, 28, 92, 503, ADD_MODE_ID, addModeCallback);
-  m_delModeButton.init(hInstance, m_window, "Del", EDITOR_BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
-  m_fingersListBox.init(hInstance, m_window, "Fingers", EDITOR_BACK_COL, 180, 300, 290, 210, SELECT_FINGER_ID, selectFingerCallback);
-  m_patternSelectComboBox.init(hInstance, m_window, "Select Pattern", EDITOR_BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPatternCallback);
+  m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
+  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 150, 300, 16, 16, SELECT_PORT_ID, selectPortCallback);
+  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 72, 28, 16, 48, ID_FILE_CONNECT, connectCallback);
+  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 72, 28, 16, 80, ID_FILE_PUSH, pushCallback);
+  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 72, 28, 16, 112, ID_FILE_PULL, pullCallback);
+  m_loadButton.init(hInst, m_window, "Load", BACK_COL, 72, 28, 16, 144, ID_FILE_LOAD, loadCallback);
+  m_saveButton.init(hInst, m_window, "Save", BACK_COL, 72, 28, 16, 176, ID_FILE_SAVE, saveCallback);
+  m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 300, 16, 210, SELECT_MODE_ID, selectModeCallback);
+  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 74, 28, 92, 503, ADD_MODE_ID, addModeCallback);
+  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
+  m_fingersListBox.init(hInst, m_window, "Fingers", BACK_COL, 180, 300, 288, 210, SELECT_FINGER_ID, selectFingerCallback);
+  m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPatternCallback);
 
   for (uint32_t i = 0; i < MAX_COLOR_SLOTS; ++i) {
-    m_colorSelect[i].init(hInstance, m_window, "Color Select", EDITOR_BACK_COL, 36, 30, 490, 240 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
+    m_colorSelect[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 490, 240 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
   }
 
   // scan for any connections
@@ -308,7 +308,7 @@ void VortexEditor::selectColor(VWindow *window)
   if (pos < 0) {
     return;
   }
-  uint32_t colorIndex = (uintptr_t)window->menu() - SELECT_COLOR_ID;
+  uint32_t colorIndex = (uint32_t)((uintptr_t)window->menu() - SELECT_COLOR_ID);
   Colorset newSet;
   VEngine::getColorset((LedPos)pos, newSet);
   // if the color select was made inactive
@@ -536,7 +536,7 @@ void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t 
   }
   ArduinoSerial *serial = &m_portList[portIndex].second;
   // write the data into the serial port
-  serial->WriteData(data, size);
+  serial->WriteData(data, (unsigned int)size);
 }
 
 void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
