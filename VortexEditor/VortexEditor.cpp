@@ -413,7 +413,7 @@ void VortexEditor::refreshPatternSelect()
       continue;
     }
     m_patternSelectComboBox.addItem(VEngine::patternToString(id));
-    if (id == VEngine::getPatternID()) {
+    if (id == VEngine::getPatternID((LedPos)sel)) {
       m_patternSelectComboBox.setSelection(id);
     }
   }

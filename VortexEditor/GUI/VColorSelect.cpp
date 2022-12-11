@@ -93,13 +93,20 @@ void VColorSelect::paint()
   GetClientRect(m_hwnd, &rect);
   COLORREF frontCol;
   if (m_active) {
-    FillRect(hdc, &rect, getBrushCol(0x999999));
     // the front color will be the actual color
     frontCol = getColor();
+    if (frontCol != 0) {
+      // if the frontcol is not 0, use brighter white
+      FillRect(hdc, &rect, getBrushCol(0xAAAAAA));
+    } else {
+      // if the slot is empty use dark border
+      FillRect(hdc, &rect, getBrushCol(0x606060));
+    }
   } else {
-    FillRect(hdc, &rect, getBrushCol(0xFF0000));
     // the front color will be black
     frontCol = 0;
+    // fill the back with red
+    FillRect(hdc, &rect, getBrushCol(0xFF0000));
   }
 #define BORDER_WIDTH 1
   rect.left += BORDER_WIDTH;
@@ -127,6 +134,7 @@ void VColorSelect::pressButton()
   col.rgbResult = getFlippedColor();
   col.Flags = CC_FULLOPEN | CC_RGBINIT;
   ChooseColor(&col);
+  // flip the result back from BGR to RGB
   setFlippedColor(col.rgbResult);
   setActive(true);
   m_callback(m_callbackArg, this);
