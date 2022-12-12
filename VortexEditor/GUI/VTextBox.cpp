@@ -68,6 +68,10 @@ void VTextBox::paint()
 
 void VTextBox::command(WPARAM wParam, LPARAM lParam)
 {
+  int reason = HIWORD(wParam);
+  if (reason != EN_CHANGE) {
+    return;
+  }
   m_callback(m_callbackArg, this);
 }
 
@@ -84,9 +88,23 @@ void VTextBox::setText(std::string item)
   Edit_SetText(m_hwnd, item.c_str());
 }
 
-std::string VTextBox::getText() const
+void VTextBox::clearText()
+{
+  setText("");
+}
+
+string VTextBox::getText() const
 {
   char text[256] = {0};
   Edit_GetText(m_hwnd, text, sizeof(text));
   return text;
+}
+
+uint8_t VTextBox::getValue() const
+{
+  uint32_t val = strtoul(getText().c_str(), NULL, 10);
+  if (val > UINT8_MAX) {
+    // error?
+  }
+  return (uint8_t)val;
 }

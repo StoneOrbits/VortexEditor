@@ -3,6 +3,7 @@
 // VortexEngine includes
 #include "Serial/ByteStream.h"
 #include "Colors/Colorset.h"
+#include "Patterns/Pattern.h"
 
 // Editor includes
 #include "EngineWrapper.h"
@@ -327,15 +328,28 @@ void VortexEditor::selectColor(VWindow *window)
 
 void VortexEditor::paramEdit(VWindow *window)
 {
-  if (!window) {
+  if (!window || !window->isEnabled()) {
     return;
   }
-  VColorSelect *colSelect = (VColorSelect *)window;
+  int sel = m_patternSelectComboBox.getSelection();
+  if (sel < 0) {
+    sel = 0;
+  }
   int pos = m_fingersListBox.getSelection();
   if (pos < 0) {
     return;
   }
-
+  PatternArgs args;
+  VEngine::getPatternArgs((LedPos)pos, args);
+  uint8_t *pArgs = (uint8_t *)&args.arg1;
+  // get the number of params for the current pattern selection
+  uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
+  // iterate all active params and activate
+  for (uint32_t i = 0; i < numParams; ++i) {
+    m_paramTextBoxes[i].setVisible(true);
+    pArgs[i] = m_paramTextBoxes[i].getValue();
+  }
+  VEngine::setPatternArgs((LedPos)pos, args);
 }
 
 void VortexEditor::waitIdle()
@@ -462,15 +476,26 @@ void VortexEditor::refreshParams()
   if (sel < 0) {
     sel = 0;
   }
-  // get the pattern id of the current selection
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  PatternArgs args;
+  VEngine::getPatternArgs((LedPos)pos, args);
+  uint8_t *pArgs = (uint8_t *)&args.arg1;
+  // get the number of params for the current pattern selection
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
     m_paramTextBoxes[i].setVisible(true);
+    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
+    m_paramTextBoxes[i].setEnabled(true);
   }
   // iterate all extra slots and set to inactive
   for (uint32_t i = numParams; i < 8; ++i) {
+    m_paramTextBoxes[i].setEnabled(false);
     m_paramTextBoxes[i].setVisible(false);
+    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
   }
 }
 
@@ -484,7 +509,7 @@ void VortexEditor::scanPorts()
     }
   }
   for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
-    m_portSelection.addItem(to_string(port->first));
+    m_portSelection.addItem("Port " + to_string(port->first));
     printf("Connected port %u\n", port->first);
   }
 }

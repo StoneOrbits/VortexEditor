@@ -8,6 +8,7 @@
 
 #include <string>
 
+class PatternArgs;
 class ByteStream;
 class Colorset;
 
@@ -39,6 +40,8 @@ public:
   static bool setSinglePat(LedPos pos, PatternID id);
   static bool getColorset(LedPos pos, Colorset &set);
   static bool setColorset(LedPos pos, const Colorset &set);
+  static bool getPatternArgs(LedPos pos, PatternArgs &args);
+  static bool setPatternArgs(LedPos pos, PatternArgs &args);
 
   // Helpers for converting pattern id and led id to string
   static std::string patternToString(PatternID id = PATTERN_NONE);

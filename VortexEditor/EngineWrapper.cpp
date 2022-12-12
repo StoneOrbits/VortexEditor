@@ -3,6 +3,7 @@
 // VortexEngine includes
 #include "VortexEngine.h"
 #include "Serial/ByteStream.h"
+#include "Patterns/PatternBuilder.h"
 #include "Patterns/Pattern.h"
 #include "Colors/Colorset.h"
 #include "EditorConfig.h"
@@ -170,6 +171,38 @@ bool VEngine::setColorset(LedPos pos, const Colorset &set)
   return true;
 }
 
+bool VEngine::getPatternArgs(LedPos pos, PatternArgs &args)
+{
+  Mode *pMode = Modes::curMode();
+  if (!pMode) {
+    return false;
+  }
+  Pattern *pat = pMode->getPattern(pos);
+  if (!pat) {
+    return false;
+  }
+  pat->getArgs(args);
+  return true;
+}
+
+bool VEngine::setPatternArgs(LedPos pos, PatternArgs &args)
+{
+  Mode *pMode = Modes::curMode();
+  if (!pMode) {
+    return false;
+  }
+  Pattern *pat = pMode->getPattern(pos);
+  if (!pat) {
+    return false;
+  }
+  pat->setArgs(args);
+  // re-initialize the mode after changing pattern args
+  pMode->init();
+  // save the new params
+  Modes::saveStorage();
+  return true;
+}
+
 string VEngine::patternToString(PatternID id)
 {
   if (id == PATTERN_NONE || id >= PATTERN_COUNT) {
@@ -208,33 +241,6 @@ string VEngine::ledToString(LedPos pos)
 
 uint32_t VEngine::numCustomParams(PatternID id)
 {
-  switch (id) {
-    // =====================
-    //  Single Led Patterns:
-    default:
-    case PATTERN_NONE:
-    case PATTERN_BASIC: break;
-    case PATTERN_RIBBON:
-    case PATTERN_MINIRIBBON: return 1;
-    case PATTERN_STROBE:
-    case PATTERN_HYPERSTROBE:
-    case PATTERN_DOPS:
-    case PATTERN_DOPISH:
-    case PATTERN_ULTRADOPS:
-    case PATTERN_STROBIE:
-    case PATTERN_SOLID1:
-    case PATTERN_SOLID2:
-    case PATTERN_SOLID3:
-    case PATTERN_SOLID4:
-    case PATTERN_SOLID5:
-    case PATTERN_SOLID6:
-    case PATTERN_SOLID7:
-    case PATTERN_SOLID8: return 2;
-    case PATTERN_BLINKIE:
-    case PATTERN_GHOSTCRUSH: return 3;
-    case PATTERN_ZIPFADE: return 4;
-    case PATTERN_ADVANCED: return 6;
-  }
-  // no special pattern args
-  return 0;
+  // fetch the args from the pattern
+  return PatternBuilder::getDefaultArgs(id).numArgs;
 }

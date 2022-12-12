@@ -130,6 +130,21 @@ void VWindow::setVisible(bool visible)
   ShowWindow(m_hwnd, visible);
 }
 
+void VWindow::setEnabled(bool enable)
+{
+  EnableWindow(m_hwnd, enable);
+}
+
+bool VWindow::isVisible() const
+{
+  return IsWindowVisible(m_hwnd);
+}
+
+bool VWindow::isEnabled() const
+{
+  return IsWindowEnabled(m_hwnd);
+}
+
 LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   VWindow *pWindow = (VWindow *)GetWindowLongPtr(hWnd, GWLP_USERDATA);

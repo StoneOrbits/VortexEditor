@@ -39,6 +39,10 @@ public:
   virtual VWindow *getChild(HMENU menuID);
 
   void setVisible(bool visible);
+  void setEnabled(bool enable);
+
+  bool isVisible() const;
+  bool isEnabled() const;
 
   HWND hwnd() const { return m_hwnd; }
   HMENU menu() const { return GetMenu(m_hwnd); }

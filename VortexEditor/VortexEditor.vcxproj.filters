@@ -560,6 +560,9 @@
     <ClInclude Include="GUI\VTextBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VortexEngine\VortexEngine\src\Patterns\PatternArgs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VortexEditor.rc">

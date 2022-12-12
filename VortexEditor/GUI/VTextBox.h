@@ -25,7 +25,9 @@ public:
 
   // item control
   void setText(std::string item);
+  void clearText();
   std::string getText() const;
+  uint8_t getValue() const;
 
 private:
   VWindowCallback m_callback;
