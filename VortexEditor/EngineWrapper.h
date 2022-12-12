@@ -43,6 +43,7 @@ public:
   // Helpers for converting pattern id and led id to string
   static std::string patternToString(PatternID id = PATTERN_NONE);
   static std::string ledToString(LedPos pos);
+  static uint32_t numCustomParams(PatternID id);
 
 private:
 

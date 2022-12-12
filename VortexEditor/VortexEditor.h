@@ -11,6 +11,7 @@
 #include "GUI/VColorSelect.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
+#include "GUI/VTextBox.h"
 #include "GUI/VWindow.h"
 #include "GUI/VButton.h"
 #include "GUI/VLabel.h"
@@ -53,6 +54,7 @@ private:
   static void selectFingerCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->selectFinger(window); }
   static void selectPatternCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->selectPattern(window); }
   static void selectColorCallback(void *editor, VWindow *window)   { ((VortexEditor *)editor)->selectColor(window); }
+  static void paramEditCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->paramEdit(window); }
 
   // callbacks for actions
   void selectPort(VWindow *window);
@@ -67,6 +69,7 @@ private:
   void selectFinger(VWindow *window);
   void selectPattern(VWindow *window);
   void selectColor(VWindow *window);
+  void paramEdit(VWindow *window);
 
   // special handler that is called after each action
   void waitIdle();
@@ -78,6 +81,7 @@ private:
   void refreshFingerList();
   void refreshPatternSelect();
   void refreshColorSelect();
+  void refreshParams();
 
   // various other actions
   void scanPorts();
@@ -123,7 +127,9 @@ private:
   // the pattern selection
   VComboBox m_patternSelectComboBox;
   // color select options
-  VColorSelect m_colorSelect[MAX_COLOR_SLOTS];
+  VColorSelect m_colorSelects[8];
+  // parameters text boxes, there's 8 params
+  VTextBox m_paramTextBoxes[8];
 };
 
 extern VortexEditor *g_pEditor;

@@ -2,12 +2,7 @@
 
 // VortexEngine includes
 #include "Serial/ByteStream.h"
-//#include "Patterns/Pattern.h"
 #include "Colors/Colorset.h"
-//#include "EditorConfig.h"
-//#include "Modes/Modes.h"
-//#include "Modes/Mode.h"
-//#include "Modes/ModeBuilder.h"
 
 // Editor includes
 #include "EngineWrapper.h"
@@ -27,6 +22,7 @@
 #define SELECT_FINGER_ID    50005
 #define SELECT_PATTERN_ID   50006
 #define SELECT_COLOR_ID     50007
+#define PARAM_EDIT_ID       50016
 
 using namespace std;
 
@@ -48,7 +44,7 @@ VortexEditor::VortexEditor() :
   m_delModeButton(),
   m_fingersListBox(),
   m_patternSelectComboBox(),
-  m_colorSelect()
+  m_colorSelects()
 {
 }
 
@@ -87,8 +83,13 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_fingersListBox.init(hInst, m_window, "Fingers", BACK_COL, 180, 300, 288, 210, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPatternCallback);
 
-  for (uint32_t i = 0; i < MAX_COLOR_SLOTS; ++i) {
-    m_colorSelect[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 490, 240 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
+  for (uint32_t i = 0; i < 8; ++i) {
+    m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 490, 240 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
+  }
+
+  for (uint32_t i = 0; i < 8; ++i) {
+    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 670, 210 + (32 * i), PARAM_EDIT_ID, paramEditCallback);
+    m_paramTextBoxes[i].setVisible(false);
   }
 
   // scan for any connections
@@ -276,6 +277,7 @@ void VortexEditor::selectFinger(VWindow *window)
 {
   refreshPatternSelect();
   refreshColorSelect();
+  refreshParams();
 }
 
 void VortexEditor::selectPattern(VWindow *window)
@@ -321,6 +323,19 @@ void VortexEditor::selectColor(VWindow *window)
   }
   VEngine::setColorset((LedPos)pos, newSet);
   refreshColorSelect();
+}
+
+void VortexEditor::paramEdit(VWindow *window)
+{
+  if (!window) {
+    return;
+  }
+  VColorSelect *colSelect = (VColorSelect *)window;
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+
 }
 
 void VortexEditor::waitIdle()
@@ -397,6 +412,7 @@ void VortexEditor::refreshFingerList()
   m_fingersListBox.setSelection(curSel);
   refreshPatternSelect();
   refreshColorSelect();
+  refreshParams();
 }
 
 void VortexEditor::refreshPatternSelect()
@@ -430,13 +446,31 @@ void VortexEditor::refreshColorSelect()
   VEngine::getColorset((LedPos)pos, set);
   // iterate all active colors and set them
   for (uint32_t i = 0; i < set.numColors(); ++i) {
-    m_colorSelect[i].setColor(set.get(i).raw());
-    m_colorSelect[i].setActive(true);
+    m_colorSelects[i].setColor(set.get(i).raw());
+    m_colorSelects[i].setActive(true);
   }
   // iterate all extra slots and set to inactive
-  for (uint32_t i = set.numColors(); i < MAX_COLOR_SLOTS; ++i) {
-    m_colorSelect[i].clear();
-    m_colorSelect[i].setActive(false);
+  for (uint32_t i = set.numColors(); i < 8; ++i) {
+    m_colorSelects[i].clear();
+    m_colorSelects[i].setActive(false);
+  }
+}
+
+void VortexEditor::refreshParams()
+{
+  int sel = m_patternSelectComboBox.getSelection();
+  if (sel < 0) {
+    sel = 0;
+  }
+  // get the pattern id of the current selection
+  uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
+  // iterate all active params and activate
+  for (uint32_t i = 0; i < numParams; ++i) {
+    m_paramTextBoxes[i].setVisible(true);
+  }
+  // iterate all extra slots and set to inactive
+  for (uint32_t i = numParams; i < 8; ++i) {
+    m_paramTextBoxes[i].setVisible(false);
   }
 }
 

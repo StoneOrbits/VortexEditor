@@ -179,9 +179,9 @@ string VEngine::patternToString(PatternID id)
   static const char *patternNames[PATTERN_COUNT] = {
     "basic", "strobe", "hyperstrobe", "dops", "dopish", "ultradops", "strobie",
     "ribbon", "miniribbon", "blinkie", "ghostcrush", "tracer", "dashdops",
-    "advanced", "blend", "complementary_blend", "brackets", "solid1", "solid2",
+    "advanced", "blend", "complementary blend", "brackets", "solid1", "solid2",
     "solid3", "solid4", "solid5", "solid6", "solid7", "solid8", "rabbit",
-    "hueshift", "theater_chase", "chaser", "zigzag", "zipfade", "tiptop",
+    "hueshift", "theater chase", "chaser", "zigzag", "zipfade", "tiptop",
     "drip", "dripmorph", "crossdops", "doublestrobe", "meteor", "sparkletrace",
     "vortexwipe", "warp", "warpworm", "snowball", "lighthouse", "pulsish",
     "fill", "bounce", "impact", "splitstrobie", "backstrobe", "flowers", "jest",
@@ -204,4 +204,37 @@ string VEngine::ledToString(LedPos pos)
     "thumb tip",  "thumb top",
   };
   return ledNames[pos];
+}
+
+uint32_t VEngine::numCustomParams(PatternID id)
+{
+  switch (id) {
+    // =====================
+    //  Single Led Patterns:
+    default:
+    case PATTERN_NONE:
+    case PATTERN_BASIC: break;
+    case PATTERN_RIBBON:
+    case PATTERN_MINIRIBBON: return 1;
+    case PATTERN_STROBE:
+    case PATTERN_HYPERSTROBE:
+    case PATTERN_DOPS:
+    case PATTERN_DOPISH:
+    case PATTERN_ULTRADOPS:
+    case PATTERN_STROBIE:
+    case PATTERN_SOLID1:
+    case PATTERN_SOLID2:
+    case PATTERN_SOLID3:
+    case PATTERN_SOLID4:
+    case PATTERN_SOLID5:
+    case PATTERN_SOLID6:
+    case PATTERN_SOLID7:
+    case PATTERN_SOLID8: return 2;
+    case PATTERN_BLINKIE:
+    case PATTERN_GHOSTCRUSH: return 3;
+    case PATTERN_ZIPFADE: return 4;
+    case PATTERN_ADVANCED: return 6;
+  }
+  // no special pattern args
+  return 0;
 }
