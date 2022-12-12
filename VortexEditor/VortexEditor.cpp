@@ -145,6 +145,7 @@ void VortexEditor::refresh(VWindow *window)
   if (!window) {
     return;
   }
+  m_portList.clear();
   for (uint32_t i = 0; i < 255; ++i) {
     string port = "\\\\.\\COM" + to_string(i);
     ArduinoSerial serialPort(port);
