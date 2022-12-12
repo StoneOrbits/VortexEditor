@@ -73,6 +73,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
   m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 150, 300, 16, 16, SELECT_PORT_ID, selectPortCallback);
+  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 72, 25, 180, 16, ID_FILE_REFRESH, refreshCallback);
   m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 72, 28, 16, 48, ID_FILE_CONNECT, connectCallback);
   m_pushButton.init(hInst, m_window, "Push", BACK_COL, 72, 28, 16, 80, ID_FILE_PUSH, pushCallback);
   m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 72, 28, 16, 112, ID_FILE_PULL, pullCallback);
@@ -90,11 +91,11 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   for (uint32_t i = 0; i < 8; ++i) {
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 670, 210 + (32 * i), PARAM_EDIT_ID, paramEditCallback);
-    m_paramTextBoxes[i].setVisible(false);
+    //m_paramTextBoxes[i].setVisible(false);
   }
 
-  // scan for any connections
-  scanPorts();
+  // trigger a refresh
+  refreshModeList();
 
   return true;
 }
@@ -137,6 +138,26 @@ void VortexEditor::printlog(const char *file, const char *func, int line, const 
 void VortexEditor::selectPort(VWindow *window)
 {
   // connect to port?
+}
+
+// refresh the port list
+void VortexEditor::refresh(VWindow *window)
+{
+  if (!window) {
+    return;
+  }
+  for (uint32_t i = 0; i < 255; ++i) {
+    string port = "\\\\.\\COM" + to_string(i);
+    ArduinoSerial serialPort(port);
+    if (serialPort.IsConnected()) {
+      m_portList.push_back(make_pair(i, move(serialPort)));
+    }
+  }
+  m_portSelection.clearItems();
+  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
+    m_portSelection.addItem("Port " + to_string(port->first));
+    printf("Connected port %u\n", port->first);
+  }
 }
 
 void VortexEditor::connect(VWindow *window)
@@ -339,16 +360,13 @@ void VortexEditor::paramEdit(VWindow *window)
   if (pos < 0) {
     return;
   }
+  uint32_t paramIndex = (uint32_t)((uintptr_t)window->menu() - PARAM_EDIT_ID);
   PatternArgs args;
   VEngine::getPatternArgs((LedPos)pos, args);
-  uint8_t *pArgs = (uint8_t *)&args.arg1;
   // get the number of params for the current pattern selection
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
-  // iterate all active params and activate
-  for (uint32_t i = 0; i < numParams; ++i) {
-    m_paramTextBoxes[i].setVisible(true);
-    pArgs[i] = m_paramTextBoxes[i].getValue();
-  }
+  // store the target param
+  args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
   VEngine::setPatternArgs((LedPos)pos, args);
 }
 
@@ -433,6 +451,7 @@ void VortexEditor::refreshPatternSelect()
 {
   int sel = m_fingersListBox.getSelection();
   if (sel < 0) {
+    m_patternSelectComboBox.setSelection(PATTERN_NONE);
     return;
   }
   m_patternSelectComboBox.clearItems();
@@ -453,6 +472,11 @@ void VortexEditor::refreshColorSelect()
 {
   int pos = m_fingersListBox.getSelection();
   if (pos < 0) {
+    // iterate all extra slots and set to inactive
+    for (uint32_t i = 0; i < 8; ++i) {
+      m_colorSelects[i].clear();
+      m_colorSelects[i].setActive(false);
+    }
     return;
   }
   // get the colorset
@@ -478,6 +502,11 @@ void VortexEditor::refreshParams()
   }
   int pos = m_fingersListBox.getSelection();
   if (pos < 0) {
+    for (uint32_t i = 0; i < 8; ++i) {
+      m_paramTextBoxes[i].clearText();
+      m_paramTextBoxes[i].setEnabled(false);
+      m_paramTextBoxes[i].setVisible(false);
+    }
     return;
   }
   PatternArgs args;
@@ -487,30 +516,15 @@ void VortexEditor::refreshParams()
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
-    m_paramTextBoxes[i].setVisible(true);
     m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
     m_paramTextBoxes[i].setEnabled(true);
+    m_paramTextBoxes[i].setVisible(true);
   }
   // iterate all extra slots and set to inactive
   for (uint32_t i = numParams; i < 8; ++i) {
+    m_paramTextBoxes[i].clearText();
     m_paramTextBoxes[i].setEnabled(false);
     m_paramTextBoxes[i].setVisible(false);
-    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
-  }
-}
-
-void VortexEditor::scanPorts()
-{
-  for (uint32_t i = 0; i < 255; ++i) {
-    string port = "\\\\.\\COM" + to_string(i);
-    ArduinoSerial serialPort(port);
-    if (serialPort.IsConnected()) {
-      m_portList.push_back(make_pair(i, move(serialPort)));
-    }
-  }
-  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
-    m_portSelection.addItem("Port " + to_string(port->first));
-    printf("Connected port %u\n", port->first);
   }
 }
 
@@ -576,6 +590,7 @@ bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
 void VortexEditor::readInLoop(uint32_t port, ByteStream &outStream)
 {
   outStream.clear();
+  // TODO: proper timeout lol
   while (1) {
     if (!readPort(port, outStream)) {
       // error?

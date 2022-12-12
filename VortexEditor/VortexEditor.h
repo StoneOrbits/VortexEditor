@@ -43,6 +43,7 @@ private:
   // callbacks wrappers so that the callback handlers of
   // the gui elements can call a static routine
   static void selectPortCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectPort(window); }
+  static void refreshCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->refresh(window); }
   static void connectCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->connect(window); }
   static void pushCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->push(window); }
   static void pullCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->pull(window); }
@@ -58,6 +59,7 @@ private:
 
   // callbacks for actions
   void selectPort(VWindow *window);
+  void refresh(VWindow *window);
   void connect(VWindow *window);
   void push(VWindow *window);
   void pull(VWindow *window);
@@ -84,7 +86,6 @@ private:
   void refreshParams();
 
   // various other actions
-  void scanPorts();
   bool readPort(uint32_t port, ByteStream &outStream);
   bool readModes(uint32_t portIndex, ByteStream &outModes);
   void readInLoop(uint32_t port, ByteStream &outStream);
@@ -111,7 +112,8 @@ private:
   VWindow m_window;
   // the list of com ports
   VComboBox m_portSelection;
-  // the four buttons
+  // the various buttons
+  VButton m_refreshButton;
   VButton m_connectButton;
   VButton m_pushButton;
   VButton m_pullButton;

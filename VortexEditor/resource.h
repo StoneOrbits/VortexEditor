@@ -14,6 +14,7 @@
 #define ID_HELP_ABOUT                   40009
 #define ID_HELP_HELP                    40010
 #define ID_FILE_CONNECT                 40011
+#define ID_FILE_REFRESH                 40012
 
 // Next default values for new objects
 // 

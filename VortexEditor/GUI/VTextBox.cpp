@@ -104,7 +104,7 @@ uint8_t VTextBox::getValue() const
 {
   uint32_t val = strtoul(getText().c_str(), NULL, 10);
   if (val > UINT8_MAX) {
-    // error?
+    val = UINT8_MAX;
   }
   return (uint8_t)val;
 }

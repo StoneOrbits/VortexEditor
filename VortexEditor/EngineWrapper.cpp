@@ -223,6 +223,7 @@ string VEngine::patternToString(PatternID id)
   return patternNames[id];
 }
 
+// this shouldn't change much so this is fine
 string VEngine::ledToString(LedPos pos)
 {
   if (pos >= LED_COUNT) {
@@ -239,6 +240,7 @@ string VEngine::ledToString(LedPos pos)
   return ledNames[pos];
 }
 
+// the number of custom parameters for any given pattern id
 uint32_t VEngine::numCustomParams(PatternID id)
 {
   // fetch the args from the pattern
