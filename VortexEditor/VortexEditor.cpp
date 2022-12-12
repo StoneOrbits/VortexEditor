@@ -227,6 +227,8 @@ void VortexEditor::pull(VWindow *window)
   waitIdle();
   // refresh the mode list
   refreshModeList();
+  // demo the current mode
+  demoCurMode();
 }
 
 void VortexEditor::load(VWindow *window)
