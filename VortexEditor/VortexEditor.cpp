@@ -276,6 +276,35 @@ void VortexEditor::selectMode(VWindow *window)
   // reselect first finger
   m_fingersListBox.setSelection(0);
   refreshFingerList();
+  demoCurMode();
+}
+
+void VortexEditor::demoCurMode()
+{
+  if (!isConnected()) {
+    return;
+  }
+  ByteStream stream;
+  uint32_t port = m_portSelection.getSelection();
+  // now immediately tell it what to do
+  writePort(port, EDITOR_VERB_DEMO_MODE);
+  // read data again
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_READY) != 0) {
+    // ??
+  }
+  // now unserialize the stream of data that was read
+  ByteStream curMode;
+  VEngine::getCurMode(curMode);
+  // send the mode
+  writePort(port, curMode);
+  // wait for the done response
+  readInLoop(port, stream);
+  if (strcmp((char *)stream.data(), EDITOR_VERB_DEMO_MODE_DONE) != 0) {
+    // ??
+  }
+  // now wait for idle
+  waitIdle();
 }
 
 void VortexEditor::addMode(VWindow *window)
@@ -320,6 +349,8 @@ void VortexEditor::selectPattern(VWindow *window)
     VEngine::setSinglePat((LedPos)pos, (PatternID)pat);
   }
   refreshModeList();
+  // update the demo
+  demoCurMode();
 }
 
 void VortexEditor::selectColor(VWindow *window)
@@ -345,6 +376,8 @@ void VortexEditor::selectColor(VWindow *window)
   }
   VEngine::setColorset((LedPos)pos, newSet);
   refreshColorSelect();
+  // update the demo
+  demoCurMode();
 }
 
 void VortexEditor::paramEdit(VWindow *window)
@@ -368,6 +401,8 @@ void VortexEditor::paramEdit(VWindow *window)
   // store the target param
   args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
   VEngine::setPatternArgs((LedPos)pos, args);
+  // update the demo
+  demoCurMode();
 }
 
 void VortexEditor::waitIdle()
@@ -632,4 +667,16 @@ void VortexEditor::writePort(uint32_t portIndex, string data)
   writePortRaw(portIndex, (uint8_t *)data.c_str(), data.size());
   // just print the buffer
   printf("Wrote to port %u: [%s]\n", m_portList[portIndex].first, data.c_str());
+}
+
+bool VortexEditor::isConnected() const
+{
+  int sel = m_portSelection.getSelection();
+  if (sel < 0) {
+    return false;
+  }
+  if (!m_portList.size()) {
+    return false;
+  }
+  return m_portList[sel].second.IsConnected();
 }

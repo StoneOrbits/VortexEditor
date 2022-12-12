@@ -53,7 +53,18 @@ bool VEngine::setModes(ByteStream &stream)
   }
   Modes::saveStorage();
   return true;
+}
 
+bool VEngine::getCurMode(ByteStream &outStream)
+{
+  Mode *pMode = Modes::curMode();
+  if (!pMode) {
+    return false;
+  }
+  Modes::saveStorage();
+  pMode->serialize(outStream);
+  outStream.recalcCRC();
+  return true;
 }
 
 uint32_t VEngine::curMode()

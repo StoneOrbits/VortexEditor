@@ -24,6 +24,7 @@ public:
 
   static bool getModes(ByteStream &outStream);
   static bool setModes(ByteStream &stream);
+  static bool getCurMode(ByteStream &stream);
 
   // functions to operate on the current mode selection
   static uint32_t curMode();

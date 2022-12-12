@@ -23,7 +23,6 @@
 #include <vector>
 
 class ByteStream;
-class Mode;
 
 class VortexEditor
 {
@@ -66,6 +65,7 @@ private:
   void load(VWindow *window);
   void save(VWindow *window);
   void selectMode(VWindow *window);
+  void demoCurMode();
   void addMode(VWindow *window);
   void delMode(VWindow *window);
   void selectFinger(VWindow *window);
@@ -92,6 +92,9 @@ private:
   void writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size);
   void writePort(uint32_t portIndex, const ByteStream &data);
   void writePort(uint32_t port, std::string data);
+
+  // whether connected to gloveset
+  bool isConnected() const;
 
   // ==================================
   //  Member data
