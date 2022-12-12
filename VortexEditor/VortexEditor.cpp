@@ -90,8 +90,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   }
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 670, 210 + (32 * i), PARAM_EDIT_ID, paramEditCallback);
-    //m_paramTextBoxes[i].setVisible(false);
+    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 670, 210 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
   // trigger a refresh
