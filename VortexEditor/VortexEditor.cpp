@@ -544,7 +544,7 @@ void VortexEditor::refreshModeList(bool recursive)
   VEngine::setCurMode(0);
   for (uint32_t i = 0; i < VEngine::numModes(); ++i) {
     // just use the pattern name from the first pattern
-    string modeName = "Mode " + to_string(i) + " (" + VEngine::getPatternName() + ")";
+    string modeName = "Mode " + to_string(i) + " (" + VEngine::getModeName() + ")";
     m_modeListBox.addItem(modeName);
     // go to next mode
     VEngine::nextMode();
@@ -576,17 +576,18 @@ void VortexEditor::refreshFingerList(bool recursive)
     refreshPatternSelect(recursive);
     refreshColorSelect(recursive);
     refreshParams(recursive);
-  }
-  // also refresh the apply to all button, why not
-  if (m_fingersMultiListBox.numSelections() == 1) {
-    m_applyToAllButton.setEnabled(true);
-  } else {
-    m_applyToAllButton.setEnabled(false);
+    refreshApplyAll(recursive);
   }
 }
 
 void VortexEditor::refreshPatternSelect(bool recursive)
 {
+  if (m_fingersMultiListBox.numItems() == 0) {
+    m_patternSelectComboBox.setEnabled(false);
+    return;
+  } else {
+    m_patternSelectComboBox.setEnabled(true);
+  }
   int sel = m_fingersMultiListBox.getSelection();
   if (sel < 0) {
     m_patternSelectComboBox.setSelection(PATTERN_NONE);
@@ -596,10 +597,15 @@ void VortexEditor::refreshPatternSelect(bool recursive)
   bool allow_multi = (sel == 0);
   // get the pattern
   for (PatternID id = PATTERN_FIRST; id < PATTERN_COUNT; ++id) {
-    if (!allow_multi && isMultiLedPatternID(id)) {
+    bool isMulti = isMultiLedPatternID(id);
+    if (!allow_multi && isMulti) {
       continue;
     }
-    m_patternSelectComboBox.addItem(VEngine::patternToString(id));
+    string patternName = VEngine::patternToString(id);
+    if (isMulti) {
+      patternName += " *";
+    }
+    m_patternSelectComboBox.addItem(patternName);
     if (id == VEngine::getPatternID((LedPos)sel)) {
       m_patternSelectComboBox.setSelection(id);
     }
@@ -693,12 +699,18 @@ void VortexEditor::refreshParams(bool recursive)
     m_paramTextBoxes[i].setVisible(false);
   }
   // also refresh the apply to all button, why not
-  if (m_fingersMultiListBox.numSelections() == 1) {
+  refreshApplyAll();
+}
+
+void VortexEditor::refreshApplyAll(bool recursive)
+{
+  // also refresh the apply to all button, why not
+  if (m_fingersMultiListBox.numSelections() == 1 &&
+    !isMultiLedPatternID(VEngine::getPatternID())) {
     m_applyToAllButton.setEnabled(true);
   } else {
     m_applyToAllButton.setEnabled(false);
   }
-
 }
 
 bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)

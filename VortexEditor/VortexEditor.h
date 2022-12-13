@@ -89,6 +89,7 @@ private:
   void refreshPatternSelect(bool recursive = true);
   void refreshColorSelect(bool recursive = true);
   void refreshParams(bool recursive = true);
+  void refreshApplyAll(bool recursive = true);
 
   // various other actions
   bool readPort(uint32_t port, ByteStream &outStream);

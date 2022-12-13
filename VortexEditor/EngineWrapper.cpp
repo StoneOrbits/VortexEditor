@@ -149,6 +149,19 @@ string VEngine::getPatternName(LedPos pos)
   return patternToString(getPatternID(pos));
 }
 
+string VEngine::getModeName()
+{
+  Mode *pMode = Modes::curMode();
+  if (!pMode) {
+    return patternToString(PATTERN_NONE);
+  }
+  if (pMode->isMultiLed() || pMode->isSameSingleLed()) {
+    return patternToString(getPatternID(LED_FIRST));
+  }
+  // mixed single led pattern
+  return "mixed";
+}
+
 bool VEngine::setSinglePat(LedPos pos, PatternID id,
   const PatternArgs *args, const Colorset *set)
 {
