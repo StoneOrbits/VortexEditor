@@ -322,7 +322,11 @@ void VortexEditor::addMode(VWindow *window)
   printf("Adding mode %u\n", VEngine::numModes() + 1);
   VEngine::addNewMode();
   m_modeListBox.setSelection(VEngine::curMode());
-  refreshModeList(true);
+  refreshModeList();
+  if (VEngine::numModes() == 1) {
+    m_fingersMultiListBox.setSelection(0);
+    refreshFingerList();
+  }
 }
 
 void VortexEditor::delMode(VWindow *window)
@@ -582,12 +586,12 @@ void VortexEditor::refreshFingerList(bool recursive)
 
 void VortexEditor::refreshPatternSelect(bool recursive)
 {
-  if (m_fingersMultiListBox.numItems() == 0) {
+  if (!m_fingersMultiListBox.numItems() || !m_fingersMultiListBox.numSelections()) {
+    m_patternSelectComboBox.setSelection(-1);
     m_patternSelectComboBox.setEnabled(false);
     return;
-  } else {
-    m_patternSelectComboBox.setEnabled(true);
   }
+  m_patternSelectComboBox.setEnabled(true);
   int sel = m_fingersMultiListBox.getSelection();
   if (sel < 0) {
     m_patternSelectComboBox.setSelection(PATTERN_NONE);
@@ -614,6 +618,13 @@ void VortexEditor::refreshPatternSelect(bool recursive)
 
 void VortexEditor::refreshColorSelect(bool recursive)
 {
+  if (!m_fingersMultiListBox.numItems() || !m_fingersMultiListBox.numSelections()) {
+    for (uint32_t i = 0; i < 8; ++i) {
+      m_colorSelects[i].clear();
+      m_colorSelects[i].setActive(false);
+    }
+    return;
+  }
   int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {
     // iterate all extra slots and set to inactive
@@ -677,6 +688,7 @@ void VortexEditor::refreshParams(bool recursive)
         m_paramTextBoxes[i].setEnabled(false);
         m_paramTextBoxes[i].setVisible(false);
       }
+      refreshApplyAll();
       return;
     }
   }
