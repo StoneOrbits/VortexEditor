@@ -24,6 +24,7 @@
 #define SELECT_PATTERN_ID   50006
 #define SELECT_COLOR_ID     50007
 #define PARAM_EDIT_ID       50016
+#define COPY_TO_ALL_ID      50025
 
 using namespace std;
 
@@ -84,13 +85,14 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 72, 28, 16, 503, DEL_MODE_ID, delModeCallback);
   m_fingersListBox.init(hInst, m_window, "Fingers", BACK_COL, 180, 300, 288, 210, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 150, 300, 490, 210, SELECT_PATTERN_ID, selectPatternCallback);
+  m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 96, 24, 660, 210, COPY_TO_ALL_ID, copyToAllCallback);
 
   for (uint32_t i = 0; i < 8; ++i) {
     m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 490, 240 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
   }
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 670, 210 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
+    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 660, 240 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
   // trigger a refresh
@@ -351,6 +353,34 @@ void VortexEditor::selectPattern(VWindow *window)
     VEngine::setSinglePat((LedPos)pos, (PatternID)pat);
   }
   refreshModeList();
+  // update the demo
+  demoCurMode();
+}
+
+void VortexEditor::copyToAll(VWindow *window)
+{
+  int pat = m_patternSelectComboBox.getSelection();
+  if (pat < 0) {
+    return;
+  }
+  int pos = m_fingersListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  if (isMultiLedPatternID((PatternID)pat)) {
+    return;
+  }
+  PatternArgs args;
+  VEngine::getPatternArgs((LedPos)pos, args);
+  Colorset set;
+  VEngine::getColorset((LedPos)pos, set);
+  for (LedPos i = LED_FIRST; i < LED_COUNT; ++i) {
+    if (pos == i) {
+      continue;
+    }
+    VEngine::setSinglePat(i, (PatternID)pat, &args, &set);
+  }
+  refreshFingerList();
   // update the demo
   demoCurMode();
 }

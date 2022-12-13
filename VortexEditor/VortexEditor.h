@@ -53,6 +53,7 @@ private:
   static void delModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->delMode(window); }
   static void selectFingerCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->selectFinger(window); }
   static void selectPatternCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->selectPattern(window); }
+  static void copyToAllCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->copyToAll(window); }
   static void selectColorCallback(void *editor, VWindow *window)   { ((VortexEditor *)editor)->selectColor(window); }
   static void paramEditCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->paramEdit(window); }
 
@@ -70,6 +71,7 @@ private:
   void delMode(VWindow *window);
   void selectFinger(VWindow *window);
   void selectPattern(VWindow *window);
+  void copyToAll(VWindow *window);
   void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
 
@@ -135,6 +137,8 @@ private:
   VColorSelect m_colorSelects[8];
   // parameters text boxes, there's 8 params
   VTextBox m_paramTextBoxes[8];
+  // apply to all button
+  VButton m_applyToAllButton;
 };
 
 extern VortexEditor *g_pEditor;

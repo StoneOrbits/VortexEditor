@@ -86,8 +86,8 @@ bool VEngine::addNewMode()
   do {
     // continuously re-randomize the pattern so we don't get solids
     randomPattern = (PatternID)random(PATTERN_FIRST, PATTERN_COUNT);
-  } while (randomPattern >= PATTERN_SOLID1 && randomPattern <= PATTERN_SOLID8);
-  if (!Modes::addMode(randomPattern, &set)) {
+  } while (randomPattern == PATTERN_SOLID);
+  if (!Modes::addMode(randomPattern, nullptr, &set)) {
     return false;
   }
   Modes::saveStorage();
@@ -140,13 +140,14 @@ string VEngine::getPatternName(LedPos pos)
   return patternToString(getPatternID(pos));
 }
 
-bool VEngine::setSinglePat(LedPos pos, PatternID id)
+bool VEngine::setSinglePat(LedPos pos, PatternID id,
+  const PatternArgs *args, const Colorset *set)
 {
   Mode *pMode = Modes::curMode();
   if (!pMode) {
     return false;
   }
-  if (!pMode->setSinglePat(pos, id)) {
+  if (!pMode->setSinglePat(pos, id, args, set)) {
     return false;
   }
   Modes::saveStorage();
@@ -222,14 +223,13 @@ string VEngine::patternToString(PatternID id)
   // This is awful but idk how else to do it for now
   static const char *patternNames[PATTERN_COUNT] = {
     "basic", "strobe", "hyperstrobe", "dops", "dopish", "ultradops", "strobie",
-    "ribbon", "miniribbon", "blinkie", "ghostcrush", "tracer", "dashdops",
-    "advanced", "blend", "complementary blend", "brackets", "solid1", "solid2",
-    "solid3", "solid4", "solid5", "solid6", "solid7", "solid8", "rabbit",
-    "hueshift", "theater chase", "chaser", "zigzag", "zipfade", "tiptop",
-    "drip", "dripmorph", "crossdops", "doublestrobe", "meteor", "sparkletrace",
-    "vortexwipe", "warp", "warpworm", "snowball", "lighthouse", "pulsish",
-    "fill", "bounce", "impact", "splitstrobie", "backstrobe", "flowers", "jest",
-    "materia",
+    "ribbon", "miniribbon", "blinkie", "ghostcrush", "solid", "tracer",
+    "dashdops", "advanced", "blend", "complementary blend", "brackets",
+    "rabbit", "hueshift", "theater chase", "chaser", "zigzag", "zipfade",
+    "tiptop", "drip", "dripmorph", "crossdops", "doublestrobe", "meteor",
+    "sparkletrace", "vortexwipe", "warp", "warpworm", "snowball", "lighthouse",
+    "pulsish", "fill", "bounce", "impact", "splitstrobie", "backstrobe",
+    "flowers", "jest", "materia",
   };
   return patternNames[id];
 }

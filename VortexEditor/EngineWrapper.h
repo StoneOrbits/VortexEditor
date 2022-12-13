@@ -38,7 +38,8 @@ public:
   static bool setPattern(PatternID id);
   static PatternID getPatternID(LedPos pos = LED_FIRST);
   static std::string getPatternName(LedPos pos = LED_FIRST);
-  static bool setSinglePat(LedPos pos, PatternID id);
+  static bool setSinglePat(LedPos pos, PatternID id,
+    const PatternArgs *args = nullptr, const Colorset *set = nullptr);
   static bool getColorset(LedPos pos, Colorset &set);
   static bool setColorset(LedPos pos, const Colorset &set);
   static bool getPatternArgs(LedPos pos, PatternArgs &args);
