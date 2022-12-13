@@ -254,6 +254,13 @@ string VEngine::ledToString(LedPos pos)
 // the number of custom parameters for any given pattern id
 uint32_t VEngine::numCustomParams(PatternID id)
 {
-  // fetch the args from the pattern
-  return PatternBuilder::getDefaultArgs(id).numArgs;
+  Pattern *pat = PatternBuilder::make(id);
+  if (!pat) {
+    return 0;
+  }
+  PatternArgs args;
+  pat->getArgs(args);
+  uint32_t numArgs = args.numArgs;
+  delete pat;
+  return numArgs;
 }
