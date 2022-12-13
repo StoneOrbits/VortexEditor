@@ -159,7 +159,7 @@ string VEngine::getModeName()
     return patternToString(getPatternID(LED_FIRST));
   }
   // mixed single led pattern
-  return "mixed";
+  return "custom";
 }
 
 bool VEngine::setSinglePat(LedPos pos, PatternID id,
