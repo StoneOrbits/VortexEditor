@@ -94,6 +94,15 @@ bool VEngine::addNewMode()
   return true;
 }
 
+bool VEngine::addNewMode(ByteStream &stream)
+{
+  if (!Modes::addSerializedMode(stream)) {
+    return false;
+  }
+  Modes::saveStorage();
+  return true;
+}
+
 bool VEngine::setCurMode(uint32_t index)
 {
   Modes::setCurMode(index);

@@ -276,6 +276,9 @@
     <ClCompile Include="GUI\VTextBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GUI\VMultiListBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -561,6 +564,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexEngine\VortexEngine\src\Patterns\PatternArgs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\VMultiListBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -30,6 +30,7 @@ public:
   static uint32_t curMode();
   static uint32_t numModes();
   static bool addNewMode();
+  static bool addNewMode(ByteStream &stream);
   static bool setCurMode(uint32_t index);
   static bool nextMode();
   static bool delCurMode();

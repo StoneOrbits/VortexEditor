@@ -153,6 +153,7 @@
     <ClCompile Include="GUI\VComboBox.cpp" />
     <ClCompile Include="GUI\VLabel.cpp" />
     <ClCompile Include="GUI\VListBox.cpp" />
+    <ClCompile Include="GUI\VMultiListBox.cpp" />
     <ClCompile Include="GUI\VTextBox.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Buttons\Button.cpp" />
@@ -244,6 +245,7 @@
     <ClInclude Include="GUI\VComboBox.h" />
     <ClInclude Include="GUI\VLabel.h" />
     <ClInclude Include="GUI\VListBox.h" />
+    <ClInclude Include="GUI\VMultiListBox.h" />
     <ClInclude Include="GUI\VTextBox.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="VortexEditor.h" />

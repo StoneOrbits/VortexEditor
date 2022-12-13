@@ -8,6 +8,7 @@
 #include "Leds/LedTypes.h"
 
 // gui includes
+#include "GUI/VMultiListBox.h"
 #include "GUI/VColorSelect.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
@@ -51,6 +52,7 @@ private:
   static void selectModeCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectMode(window); }
   static void addModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->addMode(window); }
   static void delModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->delMode(window); }
+  static void copyModeCallback(void *editor, VWindow *window)      { ((VortexEditor *)editor)->copyMode(window); }
   static void selectFingerCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->selectFinger(window); }
   static void selectPatternCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->selectPattern(window); }
   static void copyToAllCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->copyToAll(window); }
@@ -69,6 +71,7 @@ private:
   void demoCurMode();
   void addMode(VWindow *window);
   void delMode(VWindow *window);
+  void copyMode(VWindow *window);
   void selectFinger(VWindow *window);
   void selectPattern(VWindow *window);
   void copyToAll(VWindow *window);
@@ -81,11 +84,11 @@ private:
   bool validateHandshake(const ByteStream &handshakewindow);
 
   // refresh the mode list
-  void refreshModeList();
-  void refreshFingerList();
-  void refreshPatternSelect();
-  void refreshColorSelect();
-  void refreshParams();
+  void refreshModeList(bool recursive = true);
+  void refreshFingerList(bool recursive = true);
+  void refreshPatternSelect(bool recursive = true);
+  void refreshColorSelect(bool recursive = true);
+  void refreshParams(bool recursive = true);
 
   // various other actions
   bool readPort(uint32_t port, ByteStream &outStream);
@@ -129,8 +132,9 @@ private:
   // the add/remove mode button
   VButton m_addModeButton;
   VButton m_delModeButton;
-  // the list of fingers
-  VListBox m_fingersListBox;
+  VButton m_copyModeButton;
+  // the list of fingers is a multi select
+  VMultiListBox m_fingersMultiListBox;
   // the pattern selection
   VComboBox m_patternSelectComboBox;
   // color select options

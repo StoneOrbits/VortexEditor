@@ -25,6 +25,7 @@
 #define SELECT_COLOR_ID     50007
 #define PARAM_EDIT_ID       50016
 #define COPY_TO_ALL_ID      50025
+#define COPY_MODE_ID        50026
 
 using namespace std;
 
@@ -44,7 +45,7 @@ VortexEditor::VortexEditor() :
   m_modeListBox(),
   m_addModeButton(),
   m_delModeButton(),
-  m_fingersListBox(),
+  m_fingersMultiListBox(),
   m_patternSelectComboBox(),
   m_colorSelects()
 {
@@ -81,9 +82,10 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_loadButton.init(hInst, m_window, "Load", BACK_COL, 72, 28, 16, 144, ID_FILE_LOAD, loadCallback);
   m_saveButton.init(hInst, m_window, "Save", BACK_COL, 72, 28, 16, 176, ID_FILE_SAVE, saveCallback);
   m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 300, 16, 278, SELECT_MODE_ID, selectModeCallback);
-  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 74, 28, 92, 575, ADD_MODE_ID, addModeCallback);
-  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 72, 28, 16, 575, DEL_MODE_ID, delModeCallback);
-  m_fingersListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 300, 280, 278, SELECT_FINGER_ID, selectFingerCallback);
+  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 80, 28, 101, 575, ADD_MODE_ID, addModeCallback);
+  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 28, 16, 575, DEL_MODE_ID, delModeCallback);
+  m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 28, 185, 575, COPY_MODE_ID, copyModeCallback);
+  m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 300, 280, 278, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 278, SELECT_PATTERN_ID, selectPatternCallback);
   m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 110, 24, 700, 278, COPY_TO_ALL_ID, copyToAllCallback);
 
@@ -273,12 +275,13 @@ void VortexEditor::save(VWindow *window)
 void VortexEditor::selectMode(VWindow *window)
 {
   int sel = m_modeListBox.getSelection();
-  if (sel < 0) {
+  if (sel < 0 || sel == VEngine::curMode()) {
     return;
   }
   VEngine::setCurMode(sel);
   // reselect first finger
-  m_fingersListBox.setSelection(0);
+  m_fingersMultiListBox.clearSelections();
+  m_fingersMultiListBox.setSelection(0);
   refreshFingerList();
   demoCurMode();
 }
@@ -318,13 +321,30 @@ void VortexEditor::addMode(VWindow *window)
   }
   printf("Adding mode %u\n", VEngine::numModes() + 1);
   VEngine::addNewMode();
-  refreshModeList();
+  m_modeListBox.setSelection(VEngine::curMode());
+  refreshModeList(true);
 }
 
 void VortexEditor::delMode(VWindow *window)
 {
   printf("Deleting mode %u\n", VEngine::curMode());
   VEngine::delCurMode();
+  refreshModeList();
+}
+
+void VortexEditor::copyMode(VWindow *window)
+{
+  if (!VEngine::numModes()) {
+    return;
+  }
+  int sel = m_modeListBox.getSelection();
+  if (sel < 0) {
+    return;
+  }
+  printf("Copying mode %u\n", VEngine::curMode());
+  ByteStream stream;
+  VEngine::getCurMode(stream);
+  VEngine::addNewMode(stream);
   refreshModeList();
 }
 
@@ -341,16 +361,28 @@ void VortexEditor::selectPattern(VWindow *window)
   if (pat < 0) {
     return;
   }
-  int pos = m_fingersListBox.getSelection();
-  if (pos < 0) {
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
     return;
   }
-  if (pos == 0) {
-    // set the pattern on the entire mode
-    VEngine::setPattern((PatternID)pat);
+  // if we ONLY selected the first led
+  if (sels.size() == 1 && sels[0] == 0) {
+    // and if we are switching from a multi-led or to a multi-led
+    if (isMultiLedPatternID(VEngine::getPatternID()) ||
+        isMultiLedPatternID((PatternID)pat)) {
+      // then set the pattern on the entire mode
+      VEngine::setPattern((PatternID)pat);
+    } else {
+      // otherwise we are switching from single to single to just
+      // apply the pattern change to this slot
+      VEngine::setSinglePat(LED_FIRST, (PatternID)pat);
+    }
   } else {
-    // only set the pattern on a single position
-    VEngine::setSinglePat((LedPos)pos, (PatternID)pat);
+    for (uint32_t i = 0; i < sels.size(); ++i) {
+      // only set the pattern on a single position
+      VEngine::setSinglePat((LedPos)sels[i], (PatternID)pat);
+    }
   }
   refreshModeList();
   // update the demo
@@ -363,7 +395,12 @@ void VortexEditor::copyToAll(VWindow *window)
   if (pat < 0) {
     return;
   }
-  int pos = m_fingersListBox.getSelection();
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (sels.size() > 1) {
+    return;
+  }
+  int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
@@ -391,7 +428,7 @@ void VortexEditor::selectColor(VWindow *window)
     return;
   }
   VColorSelect *colSelect = (VColorSelect *)window;
-  int pos = m_fingersListBox.getSelection();
+  int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
@@ -406,7 +443,17 @@ void VortexEditor::selectColor(VWindow *window)
     printf("Updating color slot %u\n", colorIndex);
     newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
   }
-  VEngine::setColorset((LedPos)pos, newSet);
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // this should never happen
+    return;
+  }
+  // set the colorset on all selected patterns
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    // only set the pattern on a single position
+    VEngine::setColorset((LedPos)sels[i], newSet);
+  }
   refreshColorSelect();
   // update the demo
   demoCurMode();
@@ -421,7 +468,7 @@ void VortexEditor::paramEdit(VWindow *window)
   if (sel < 0) {
     sel = 0;
   }
-  int pos = m_fingersListBox.getSelection();
+  int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
@@ -432,7 +479,23 @@ void VortexEditor::paramEdit(VWindow *window)
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
   // store the target param
   args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
-  VEngine::setPatternArgs((LedPos)pos, args);
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // this should never happen
+    return;
+  }
+  if (sels.size() == 1) {
+    VEngine::setPatternArgs((LedPos)sels[0], args);
+  } else {
+    // set the param on all patterns, which may require changing the pattern id
+    for (uint32_t i = 0; i < sels.size(); ++i) {
+      // only set the pattern on a single position
+      VEngine::setSinglePat((LedPos)sels[i], VEngine::getPatternID((LedPos)pos));
+      VEngine::setPatternArgs((LedPos)sels[i], args);
+    }
+    refreshFingerList(false);
+  }
   // update the demo
   demoCurMode();
 }
@@ -474,7 +537,7 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
   return true;
 }
 
-void VortexEditor::refreshModeList()
+void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
   int curSel = VEngine::curMode();
@@ -489,34 +552,42 @@ void VortexEditor::refreshModeList()
   // restore the selection
   m_modeListBox.setSelection(curSel);
   VEngine::setCurMode(curSel);
-  refreshFingerList();
+  if (recursive) {
+    refreshFingerList(recursive);
+  }
 }
 
-void VortexEditor::refreshFingerList()
+void VortexEditor::refreshFingerList(bool recursive)
 {
-  int curSel = m_fingersListBox.getSelection();
-  if (curSel < 0) {
-    curSel = 0;
-  }
-  m_fingersListBox.clearItems();
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  m_fingersMultiListBox.clearItems();
   for (LedPos pos = LED_FIRST; pos < LED_COUNT; ++pos) {
     // if a finger is empty don't add it
     if (VEngine::getPatternID(pos) == PATTERN_NONE) {
       continue;
     }
     string fingerName = VEngine::ledToString(pos) + " (" + VEngine::getPatternName(pos) + ")";
-    m_fingersListBox.addItem(fingerName);
+    m_fingersMultiListBox.addItem(fingerName);
   }
   // restore the selection
-  m_fingersListBox.setSelection(curSel);
-  refreshPatternSelect();
-  refreshColorSelect();
-  refreshParams();
+  m_fingersMultiListBox.setSelections(sels);
+  if (recursive) {
+    refreshPatternSelect(recursive);
+    refreshColorSelect(recursive);
+    refreshParams(recursive);
+  }
+  // also refresh the apply to all button, why not
+  if (m_fingersMultiListBox.numSelections() == 1) {
+    m_applyToAllButton.setEnabled(true);
+  } else {
+    m_applyToAllButton.setEnabled(false);
+  }
 }
 
-void VortexEditor::refreshPatternSelect()
+void VortexEditor::refreshPatternSelect(bool recursive)
 {
-  int sel = m_fingersListBox.getSelection();
+  int sel = m_fingersMultiListBox.getSelection();
   if (sel < 0) {
     m_patternSelectComboBox.setSelection(PATTERN_NONE);
     return;
@@ -535,9 +606,9 @@ void VortexEditor::refreshPatternSelect()
   }
 }
 
-void VortexEditor::refreshColorSelect()
+void VortexEditor::refreshColorSelect(bool recursive)
 {
-  int pos = m_fingersListBox.getSelection();
+  int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {
     // iterate all extra slots and set to inactive
     for (uint32_t i = 0; i < 8; ++i) {
@@ -561,13 +632,13 @@ void VortexEditor::refreshColorSelect()
   }
 }
 
-void VortexEditor::refreshParams()
+void VortexEditor::refreshParams(bool recursive)
 {
   int sel = m_patternSelectComboBox.getSelection();
   if (sel < 0) {
     sel = 0;
   }
-  int pos = m_fingersListBox.getSelection();
+  int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {
     for (uint32_t i = 0; i < 8; ++i) {
       m_paramTextBoxes[i].clearText();
@@ -576,6 +647,33 @@ void VortexEditor::refreshParams()
     }
     return;
   }
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // disable all edit boxes but don't change their text, sorry.
+    for (uint32_t i = 0; i < 8; ++i) {
+      m_paramTextBoxes[i].setEnabled(false);
+      m_paramTextBoxes[i].setVisible(false);
+    }
+    return;
+  }
+  if (sels.size() > 1) {
+    bool all_same = true;
+    PatternID base = VEngine::getPatternID((LedPos)sels[0]);
+    for (uint32_t i = 1; i < sels.size(); ++i) {
+      if (VEngine::getPatternID((LedPos)sels[i]) != base) {
+        all_same = false;
+      }
+    }
+    if (!all_same) {
+      // disable all edit boxes but don't change their text, sorry.
+      for (uint32_t i = 0; i < 8; ++i) {
+        m_paramTextBoxes[i].setEnabled(false);
+        m_paramTextBoxes[i].setVisible(false);
+      }
+      return;
+    }
+  }
   PatternArgs args;
   VEngine::getPatternArgs((LedPos)pos, args);
   uint8_t *pArgs = (uint8_t *)&args.arg1;
@@ -583,6 +681,7 @@ void VortexEditor::refreshParams()
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
+    m_paramTextBoxes[i].setEnabled(false);
     m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
     m_paramTextBoxes[i].setEnabled(true);
     m_paramTextBoxes[i].setVisible(true);
@@ -593,6 +692,13 @@ void VortexEditor::refreshParams()
     m_paramTextBoxes[i].setEnabled(false);
     m_paramTextBoxes[i].setVisible(false);
   }
+  // also refresh the apply to all button, why not
+  if (m_fingersMultiListBox.numSelections() == 1) {
+    m_applyToAllButton.setEnabled(true);
+  } else {
+    m_applyToAllButton.setEnabled(false);
+  }
+
 }
 
 bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
