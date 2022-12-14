@@ -86,7 +86,6 @@ BEGIN
     POPUP "Help"
     BEGIN
         MENUITEM "About",                       ID_HELP_ABOUT
-        MENUITEM "Help",                        ID_HELP_HELP
     END
 END
 

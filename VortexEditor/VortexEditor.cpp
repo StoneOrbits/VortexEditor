@@ -74,27 +74,27 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
-  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 110, 300, 16, 16, SELECT_PORT_ID, selectPortCallback);
-  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 72, 25, 140, 16, ID_FILE_REFRESH, refreshCallback);
-  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 72, 28, 16, 48, ID_FILE_CONNECT, connectCallback);
-  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 72, 28, 16, 80, ID_FILE_PUSH, pushCallback);
-  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 72, 28, 16, 112, ID_FILE_PULL, pullCallback);
-  m_loadButton.init(hInst, m_window, "Load", BACK_COL, 72, 28, 16, 144, ID_FILE_LOAD, loadCallback);
-  m_saveButton.init(hInst, m_window, "Save", BACK_COL, 72, 28, 16, 176, ID_FILE_SAVE, saveCallback);
-  m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 300, 16, 278, SELECT_MODE_ID, selectModeCallback);
-  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 80, 28, 101, 575, ADD_MODE_ID, addModeCallback);
-  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 28, 16, 575, DEL_MODE_ID, delModeCallback);
-  m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 28, 185, 575, COPY_MODE_ID, copyModeCallback);
-  m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 300, 280, 278, SELECT_FINGER_ID, selectFingerCallback);
-  m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 278, SELECT_PATTERN_ID, selectPatternCallback);
-  m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 110, 24, 700, 278, COPY_TO_ALL_ID, copyToAllCallback);
+  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 110, 300, 16, 15, SELECT_PORT_ID, selectPortCallback);
+  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 72, 24, 140, 15, ID_FILE_REFRESH, refreshCallback);
+  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 72, 24, 220, 15, ID_FILE_CONNECT, connectCallback);
+  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 72, 24, 300, 15, ID_FILE_PUSH, pushCallback);
+  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 72, 24, 380, 15, ID_FILE_PULL, pullCallback);
+  m_loadButton.init(hInst, m_window, "Load", BACK_COL, 72, 24, 460, 15, ID_FILE_LOAD, loadCallback);
+  m_saveButton.init(hInst, m_window, "Save", BACK_COL, 72, 24, 540, 15, ID_FILE_SAVE, saveCallback);
+  m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 270, 16, 54, SELECT_MODE_ID, selectModeCallback);
+  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 80, 24, 101, 320, ADD_MODE_ID, addModeCallback);
+  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 24, 16, 320, DEL_MODE_ID, delModeCallback);
+  m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 24, 185, 320, COPY_MODE_ID, copyModeCallback);
+  m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 280, 54, SELECT_FINGER_ID, selectFingerCallback);
+  m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
+  m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 110, 24, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 520, 306 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
+    m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 520, 83 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
   }
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 700, 310 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
+    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 700, 86 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
   // callbacks for menus

@@ -29,6 +29,6 @@
 // Default width of the editor window
 #define EDITOR_WIDTH      840
 // Default height of the editor window
-#define EDITOR_HEIGHT     680
+#define EDITOR_HEIGHT     420
 // Background color of editor
 #define BACK_COL          RGB(40, 40, 40)

@@ -54,7 +54,7 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
   m_hwnd = CreateWindow(VWINDOW, title.c_str(),
     WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
     (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2),
-    840, 680, nullptr, nullptr, hInstance, nullptr);
+    width, height, nullptr, nullptr, hInstance, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
     throw exception("idk");
