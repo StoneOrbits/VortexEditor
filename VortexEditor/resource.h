@@ -3,6 +3,7 @@
 // Used by VortexEditor.rc
 //
 #define IDR_MENU1                       101
+#define IDI_ICON1                       104
 #define ID_FILE_PUSH                    40001
 #define ID_FILE_PULL                    40002
 #define ID_FILE_LOAD                    40003
@@ -45,7 +46,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        104
+#define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40041
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101

@@ -86,8 +86,19 @@ BEGIN
     POPUP "Help"
     BEGIN
         MENUITEM "About",                       ID_HELP_ABOUT
+        MENUITEM "Help",                        ID_HELP_HELP
     END
 END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "icon.ico"
 
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////

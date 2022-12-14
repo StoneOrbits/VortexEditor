@@ -64,10 +64,12 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   m_hInstance = hInst;
 
+#ifndef _DEBUG
   if (!m_consoleHandle) {
     AllocConsole();
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
   }
+#endif
 
   // initialize the system that wraps the vortex engine
   VEngine::init();
@@ -113,6 +115,10 @@ bool VortexEditor::init(HINSTANCE hInst)
   // trigger a refresh
   refreshModeList();
 
+  // apply the icon
+  HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+  SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
   return true;
 }
 
@@ -132,6 +138,9 @@ void VortexEditor::run()
 void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)
 {
   string strMsg;
+  if (!g_pEditor || !g_pEditor->m_consoleHandle) {
+    return;
+  }
   if (file) {
     strMsg = file;
     if (strMsg.find_last_of('\\') != string::npos) {
