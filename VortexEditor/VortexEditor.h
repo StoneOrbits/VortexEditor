@@ -40,6 +40,8 @@ public:
   // print to the log
   void printlog(const char *file, const char *func, int line, const char *msg, va_list list);
 
+  HINSTANCE hInst() const { return m_hInstance; }
+
 private:
   // callbacks wrappers so that the callback handlers of
   // the gui elements can call a static routine

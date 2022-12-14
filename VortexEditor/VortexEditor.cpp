@@ -117,6 +117,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_CLEAR_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_COLOR_SET_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_PATTERN_TO_ALL, handleMenusCallback);
+  m_window.addCallback(ID_HELP_ABOUT, handleMenusCallback);
+  m_window.addCallback(ID_HELP_HELP, handleMenusCallback);
 
   // trigger a refresh
   refreshModeList();
@@ -168,6 +170,19 @@ void VortexEditor::printlog(const char *file, const char *func, int line, const 
 
 void VortexEditor::handleMenus(uintptr_t hMenu)
 {
+  switch (hMenu) {
+  case ID_HELP_ABOUT:
+    break;
+  case ID_HELP_HELP:
+    if (MessageBox(m_window.hwnd(), "It seems you need help", "Help", 4) == IDYES) {
+      if (MessageBox(m_window.hwnd(), "Goodluck", "Help", 0)) {
+      }
+    }
+
+    return;
+  default:
+    break;
+  }
   uintptr_t menu = (uintptr_t)hMenu;
   int pos = m_fingersMultiListBox.getSelection();
   if (pos < 0) {

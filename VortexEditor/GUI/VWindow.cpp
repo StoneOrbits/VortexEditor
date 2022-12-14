@@ -6,6 +6,7 @@
 // Editor includes
 #include "VortexEditor.h"
 
+#include <CommCtrl.h>
 #include "resource.h"
 
 using namespace std;
