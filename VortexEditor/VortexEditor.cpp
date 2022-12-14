@@ -64,7 +64,7 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   m_hInstance = hInst;
 
-#ifndef _DEBUG
+#ifdef _DEBUG
   if (!m_consoleHandle) {
     AllocConsole();
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
