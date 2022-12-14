@@ -54,6 +54,7 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "File"
     BEGIN
+        MENUITEM "Refresh Connections",         ID_FILE_REFRESH_CONNECTIONS
         MENUITEM "Connect to Device",           ID_FILE_CONNECT
         MENUITEM SEPARATOR
         MENUITEM "Push to Device",              ID_FILE_PUSH

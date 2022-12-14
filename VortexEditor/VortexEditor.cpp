@@ -77,8 +77,8 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
-  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 80, 300, 16, 15, SELECT_PORT_ID, selectPortCallback);
-  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 80, 24, 108, 15, ID_FILE_REFRESH, refreshCallback);
+  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 80, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
+  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 80, 24, 108, 15, ID_FILE_REFRESH_CONNECTIONS, refreshCallback);
   m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 80, 24, 196, 15, ID_FILE_CONNECT, connectCallback);
   m_pushButton.init(hInst, m_window, "Push", BACK_COL, 80, 24, 284, 15, ID_FILE_PUSH, pushCallback);
   m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 80, 24, 372, 15, ID_FILE_PULL, pullCallback);
@@ -93,9 +93,9 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 24, 16, 320, DEL_MODE_ID, delModeCallback);
   m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 24, 185, 320, COPY_MODE_ID, copyModeCallback);
 
-  m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 280, 54, SELECT_FINGER_ID, selectFingerCallback);
+  m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 278, 54, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
-  m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 110, 24, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
+  m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 108, 24, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
 
   for (uint32_t i = 0; i < 8; ++i) {
     m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 520, 83 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
