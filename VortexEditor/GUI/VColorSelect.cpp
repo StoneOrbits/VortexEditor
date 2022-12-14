@@ -48,7 +48,7 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
   // register window class if it hasn't been registered yet
   registerWindowClass(hInstance, backcol);
 
-  parent.addChild((HMENU)menuID, this);
+  parent.addChild(menuID, this);
 
   // create the window
   m_hwnd = CreateWindow(WC_COLOR_SELECT, title.c_str(),

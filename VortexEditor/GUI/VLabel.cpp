@@ -38,7 +38,7 @@ void VLabel::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   // store callback and menu id
   m_callback = callback;
 
-  parent.addChild((HMENU)menuID, this);
+  parent.addChild(menuID, this);
 
   // create the window
   m_hwnd = CreateWindow(WC_STATIC, title.c_str(),

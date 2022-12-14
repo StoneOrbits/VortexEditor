@@ -13,6 +13,7 @@ class VWindow
 public:
   // typedef for callback params
   typedef void (*VWindowCallback)(void *arg, VWindow *window);
+  typedef void (*VMenuCallback)(void *arg, uintptr_t hMenu);
 
   VWindow();
   VWindow(HINSTANCE hinstance, const std::string &title, 
@@ -35,8 +36,12 @@ public:
   virtual void releaseButton();
 
   // add/get a child
-  virtual uint32_t addChild(HMENU menuID, VWindow *child);
-  virtual VWindow *getChild(HMENU menuID);
+  virtual uint32_t addChild(uintptr_t menuID, VWindow *child);
+  virtual VWindow *getChild(uintptr_t menuID);
+
+  // add a menu callback
+  virtual uint32_t addCallback(uintptr_t menuID, VMenuCallback callback);
+  virtual VMenuCallback getCallback(uintptr_t menuID);
 
   void setVisible(bool visible);
   void setEnabled(bool enable);
@@ -56,7 +61,10 @@ protected:
   HWND m_hwnd;
 
   // list of children
-  std::map<HMENU, VWindow *> m_children;
+  std::map<uintptr_t, VWindow *> m_children;
+
+  // list of callbacks for menu presses
+  std::map<uintptr_t, VMenuCallback> m_menuCallbacks;
 
   // pointer to parent
   VWindow *m_pParent;

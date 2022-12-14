@@ -23,7 +23,7 @@ VWindow::VWindow() :
 {
 }
 
-VWindow::VWindow(HINSTANCE hinstance, const string &title, 
+VWindow::VWindow(HINSTANCE hinstance, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height,
   void *callbackArg) :
   VWindow()
@@ -36,7 +36,7 @@ VWindow::~VWindow()
   cleanup();
 }
 
-void VWindow::init(HINSTANCE hInstance, const string &title, 
+void VWindow::init(HINSTANCE hInstance, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height,
   void *callbackArg)
 {
@@ -93,11 +93,16 @@ void VWindow::command(WPARAM wParam, LPARAM lParam)
     PostQuitMessage(0);
     return;
   }
-  VWindow *child = getChild((HMENU)menuID);
-  if (!child){ 
+  VWindow *child = getChild(menuID);
+  if (child){
+    child->command(wParam, lParam);
     return;
   }
-  child->command(wParam, lParam);
+  VMenuCallback menuCallback = getCallback(menuID);
+  if (menuCallback) {
+    menuCallback(m_callbackArg, menuID);
+    return;
+  }
 }
 
 void VWindow::pressButton()
@@ -108,7 +113,7 @@ void VWindow::releaseButton()
 {
 }
 
-uint32_t VWindow::addChild(HMENU menuID, VWindow *child)
+uint32_t VWindow::addChild(uintptr_t menuID, VWindow *child)
 {
   child->m_pParent = this;
   child->m_callbackArg = m_callbackArg;
@@ -116,13 +121,28 @@ uint32_t VWindow::addChild(HMENU menuID, VWindow *child)
   return (uint32_t)(m_children.size() - 1);
 }
 
-VWindow *VWindow::getChild(HMENU id)
+VWindow *VWindow::getChild(uintptr_t id)
 {
   auto result = m_children.find(id);
   if (result == m_children.end()) {
     return nullptr;
   }
   return result->second;
+}
+
+uint32_t VWindow::addCallback(uintptr_t menuID, VMenuCallback callback)
+{
+  m_menuCallbacks.insert(make_pair(menuID, callback));
+  return m_menuCallbacks.size();
+}
+
+VWindow::VMenuCallback VWindow::getCallback(uintptr_t menuID)
+{
+  auto entry = m_menuCallbacks.find(menuID);
+  if (entry == m_menuCallbacks.end()) {
+    return nullptr;
+  }
+  return entry->second;
 }
 
 void VWindow::setVisible(bool visible)

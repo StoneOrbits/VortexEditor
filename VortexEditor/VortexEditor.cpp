@@ -97,6 +97,19 @@ bool VortexEditor::init(HINSTANCE hInst)
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 700, 310 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
+  // callbacks for menus
+  m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
+  m_window.addCallback(ID_COLORSET_RANDOM_MONOCHROMATIC, handleMenusCallback);
+  m_window.addCallback(ID_COLORSET_RANDOM_TRIADIC, handleMenusCallback);
+  m_window.addCallback(ID_COLORSET_RANDOM_SQUARE, handleMenusCallback);
+  m_window.addCallback(ID_COLORSET_RANDOM_PENTADIC, handleMenusCallback);
+  m_window.addCallback(ID_COLORSET_RANDOM_RAINBOW, handleMenusCallback);
+  m_window.addCallback(ID_PATTERN_RANDOM_SINGLE_LED_PATTERN, handleMenusCallback);
+  m_window.addCallback(ID_PATTERN_RANDOM_MULTI_LED_PATTERN, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_CLEAR_COLORSET, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_COPY_COLOR_SET_TO_ALL, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_COPY_PATTERN_TO_ALL, handleMenusCallback);
+
   // trigger a refresh
   refreshModeList();
 
@@ -136,6 +149,122 @@ void VortexEditor::printlog(const char *file, const char *func, int line, const 
   strMsg += "\n";
   vfprintf(g_pEditor->m_consoleHandle, strMsg.c_str(), list);
   //vfprintf(g_pEditor->m_logHandle, strMsg.c_str(), list);
+}
+
+void VortexEditor::handleMenus(uintptr_t hMenu)
+{
+  uintptr_t menu = (uintptr_t)hMenu;
+  int pos = m_fingersMultiListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // this should never happen
+    return;
+  }
+  Colorset newSet;
+  switch (menu) {
+  case ID_COLORSET_RANDOM_COMPLIMENTARY:
+    newSet.randomizeComplimentary();
+    applyColorset(newSet, sels);
+    break;
+  case ID_COLORSET_RANDOM_MONOCHROMATIC:
+    newSet.randomizeMonochromatic();
+    applyColorset(newSet, sels);
+    break;
+  case ID_COLORSET_RANDOM_TRIADIC:
+    newSet.randomizeTriadic();
+    applyColorset(newSet, sels);
+    break;
+  case ID_COLORSET_RANDOM_SQUARE:
+    newSet.randomizeSquare();
+    applyColorset(newSet, sels);
+    break;
+  case ID_COLORSET_RANDOM_PENTADIC:
+    newSet.randomizePentadic();
+    applyColorset(newSet, sels);
+    break;
+  case ID_COLORSET_RANDOM_RAINBOW:
+    newSet.randomizeRainbow();
+    applyColorset(newSet, sels);
+    break;
+  case ID_PATTERN_RANDOM_SINGLE_LED_PATTERN:
+    // when applying a single led pattern we must use the 'setPattern' api
+    // to properly convert the mode to all-same-single if it's a multi to
+    // begin with, otherwise we can just apply the single to whichever we select
+    if (isMultiLedPatternID(VEngine::getPatternID())) {
+      VEngine::setPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT));
+    } else {
+      applyPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT), sels);
+    }
+    refreshModeList();
+    demoCurMode();
+    break;
+  case ID_PATTERN_RANDOM_MULTI_LED_PATTERN:
+    VEngine::setPattern((PatternID)((rand() % PATTERN_MULTI_COUNT) + PATTERN_MULTI_FIRST));
+    refreshModeList();
+    demoCurMode();
+    break;
+  case ID_EDIT_CLEAR_COLORSET:
+    newSet.clear();
+    applyColorset(newSet, sels);
+    break;
+  case ID_EDIT_COPY_COLOR_SET_TO_ALL:
+    if (sels.size() != 1) {
+      break;
+    }
+    VEngine::getColorset((LedPos)sels[0], newSet);
+    applyColorsetToAll(newSet);
+    break;
+  case ID_EDIT_COPY_PATTERN_TO_ALL:
+    if (sels.size() != 1) {
+      break;
+    }
+    applyPatternToAll(VEngine::getPatternID((LedPos)sels[0]));
+    break;
+  }
+}
+
+void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
+{
+  for (uint32_t i = 0; i < selections.size(); ++i) {
+    VEngine::setColorset((LedPos)selections[i], set);
+  }
+  refreshColorSelect();
+  // update the demo
+  demoCurMode();
+}
+
+void VortexEditor::applyPattern(PatternID id, const std::vector<int> &selections)
+{
+  for (uint32_t i = 0; i < selections.size(); ++i) {
+    VEngine::setSinglePat((LedPos)selections[i], id);
+  }
+  refreshModeList();
+  // update the demo
+  demoCurMode();
+}
+
+void VortexEditor::applyColorsetToAll(const Colorset &set)
+{
+  for (LedPos i = LED_FIRST; i < LED_COUNT; ++i) {
+    VEngine::setColorset(i, set);
+  }
+  refreshColorSelect();
+  // update the demo
+  demoCurMode();
+}
+
+void VortexEditor::applyPatternToAll(PatternID id)
+{
+  for (LedPos i = LED_FIRST; i < LED_COUNT; ++i) {
+    VEngine::setSinglePat(i, id);
+  }
+  refreshFingerList();
+  // update the demo
+  demoCurMode();
 }
 
 void VortexEditor::selectPort(VWindow *window)

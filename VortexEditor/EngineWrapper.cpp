@@ -36,13 +36,15 @@ bool VEngine::getModes(ByteStream &outStream)
 {
   Modes::saveStorage();
   Modes::serialize(outStream);
-  outStream.recalcCRC();
+  if (!outStream.compress()) {
+    return false;
+  }
   return true;
 }
 
 bool VEngine::setModes(ByteStream &stream)
 {
-  if (!stream.checkCRC()) {
+  if (!stream.decompress()) {
     //printf("BAD CRC !\n");
     return false;
   }

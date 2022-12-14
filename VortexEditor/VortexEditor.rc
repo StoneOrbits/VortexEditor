@@ -54,23 +54,34 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "File"
     BEGIN
-        MENUITEM "connect",                     ID_FILE_CONNECT
+        MENUITEM "Connect",                     ID_FILE_CONNECT
         MENUITEM SEPARATOR
-        MENUITEM "push",                        ID_FILE_PUSH
-        MENUITEM "pull",                        ID_FILE_PULL
+        MENUITEM "Push",                        ID_FILE_PUSH
+        MENUITEM "Pull",                        ID_FILE_PULL
         MENUITEM SEPARATOR
-        MENUITEM "load",                        ID_FILE_LOAD
-        MENUITEM "save",                        ID_FILE_SAVE
+        MENUITEM "Load",                        ID_FILE_LOAD
+        MENUITEM "Save",                        ID_FILE_SAVE
         MENUITEM SEPARATOR
-        MENUITEM "quit",                        ID_FILE_QUIT
+        MENUITEM "Quit",                        ID_FILE_QUIT
     END
     POPUP "Edit"
     BEGIN
-        MENUITEM "idk",                         ID_EDIT_IDK
-    END
-    POPUP "Tools"
-    BEGIN
-        MENUITEM "various tools",               ID_TOOLS_VARIOUSTOOLS
+        MENUITEM "Clear Colorset",              ID_EDIT_CLEAR_COLORSET
+        MENUITEM "Copy Colorset To All",        ID_EDIT_COPY_COLOR_SET_TO_ALL
+        POPUP "Random Colorset"
+        BEGIN
+            MENUITEM "Monochromatic",               ID_COLORSET_RANDOM_MONOCHROMATIC
+            MENUITEM "Complimentary",               ID_COLORSET_RANDOM_COMPLIMENTARY
+            MENUITEM "Triadic",                     ID_COLORSET_RANDOM_TRIADIC
+            MENUITEM "Square",                      ID_COLORSET_RANDOM_SQUARE
+            MENUITEM "Pentadic",                    ID_COLORSET_RANDOM_PENTADIC
+            MENUITEM "Rainbow",                     ID_COLORSET_RANDOM_RAINBOW
+        END
+        POPUP "Random Pattern"
+        BEGIN
+            MENUITEM "Single Led Pattern",          ID_PATTERN_RANDOM_SINGLE_LED_PATTERN
+            MENUITEM "Multi Led Pattern",           ID_PATTERN_RANDOM_MULTI_LED_PATTERN
+        END
     END
     POPUP "Help"
     BEGIN

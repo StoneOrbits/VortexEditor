@@ -24,6 +24,7 @@
 #include <vector>
 
 class ByteStream;
+class Colorset;
 
 class VortexEditor
 {
@@ -59,6 +60,9 @@ private:
   static void selectColorCallback(void *editor, VWindow *window)   { ((VortexEditor *)editor)->selectColor(window); }
   static void paramEditCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->paramEdit(window); }
 
+  // menu handler
+  static void handleMenusCallback(void *editor, uintptr_t hMenu)       { ((VortexEditor *)editor)->handleMenus(hMenu); }
+
   // callbacks for actions
   void selectPort(VWindow *window);
   void refresh(VWindow *window);
@@ -77,6 +81,14 @@ private:
   void copyToAll(VWindow *window);
   void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
+
+  // callback to handle menus
+  void handleMenus(uintptr_t hMenu);
+  // helper for color changer menus
+  void applyColorset(const Colorset &set, const std::vector<int> &selections);
+  void applyPattern(PatternID id, const std::vector<int> &selections);
+  void applyColorsetToAll(const Colorset &set);
+  void applyPatternToAll(PatternID id);
 
   // special handler that is called after each action
   void waitIdle();
