@@ -13,6 +13,7 @@
 #include "resource.h"
 
 // stl includes
+#include <algorithm>
 #include <string>
 
 // for registering ui elements for events
@@ -76,17 +77,22 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
-  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 110, 300, 16, 15, SELECT_PORT_ID, selectPortCallback);
-  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 72, 24, 140, 15, ID_FILE_REFRESH, refreshCallback);
-  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 72, 24, 220, 15, ID_FILE_CONNECT, connectCallback);
-  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 72, 24, 300, 15, ID_FILE_PUSH, pushCallback);
-  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 72, 24, 380, 15, ID_FILE_PULL, pullCallback);
-  m_loadButton.init(hInst, m_window, "Load", BACK_COL, 72, 24, 460, 15, ID_FILE_LOAD, loadCallback);
-  m_saveButton.init(hInst, m_window, "Save", BACK_COL, 72, 24, 540, 15, ID_FILE_SAVE, saveCallback);
+  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 80, 300, 16, 15, SELECT_PORT_ID, selectPortCallback);
+  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 80, 24, 108, 15, ID_FILE_REFRESH, refreshCallback);
+  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 80, 24, 196, 15, ID_FILE_CONNECT, connectCallback);
+  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 80, 24, 284, 15, ID_FILE_PUSH, pushCallback);
+  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 80, 24, 372, 15, ID_FILE_PULL, pullCallback);
+  m_loadButton.init(hInst, m_window, "Load", BACK_COL, 80, 24, 460, 15, ID_FILE_LOAD, loadCallback);
+  m_saveButton.init(hInst, m_window, "Save", BACK_COL, 80, 24, 548, 15, ID_FILE_SAVE, saveCallback);
+  m_importButton.init(hInst, m_window, "Import", BACK_COL, 80, 24, 638, 15, ID_FILE_IMPORT, importCallback);
+  m_exportButton.init(hInst, m_window, "Export", BACK_COL, 80, 24, 728, 15, ID_FILE_EXPORT, exportCallback);
+
   m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 270, 16, 54, SELECT_MODE_ID, selectModeCallback);
+
   m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 80, 24, 101, 320, ADD_MODE_ID, addModeCallback);
   m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 24, 16, 320, DEL_MODE_ID, delModeCallback);
   m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 24, 185, 320, COPY_MODE_ID, copyModeCallback);
+
   m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 280, 54, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
   m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 110, 24, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
@@ -241,7 +247,7 @@ void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selecti
   for (uint32_t i = 0; i < selections.size(); ++i) {
     VEngine::setColorset((LedPos)selections[i], set);
   }
-  refreshColorSelect();
+  refreshModeList();
   // update the demo
   demoCurMode();
 }
@@ -375,8 +381,23 @@ void VortexEditor::pull(VWindow *window)
 
 void VortexEditor::load(VWindow *window)
 {
-  const char filename[] = "SaveFile.vortex";
-  HANDLE hFile = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  OPENFILENAME ofn;
+  memset(&ofn, 0, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner = g_pEditor->m_window.hwnd();
+  char szFile[MAX_PATH] = {0};
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile);
+  ofn.lpstrFilter = "Vortex Save\0*.vortex\0";
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFileTitle = NULL;
+  ofn.nMaxFileTitle = 0;
+  ofn.lpstrInitialDir = NULL;
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+  if (!GetOpenFileName(&ofn)) {
+    return;
+  }
+  HANDLE hFile = CreateFile(szFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -387,15 +408,33 @@ void VortexEditor::load(VWindow *window)
     // error
   }
   CloseHandle(hFile);
+  if (!stream.decompress()) {
+    // error
+  }
   VEngine::setModes(stream);
-  printf("Loaded from [%s]\n", filename);
+  printf("Loaded from [%s]\n", szFile);
   refreshModeList();
 }
 
 void VortexEditor::save(VWindow *window)
 {
-  const char filename[] = "SaveFile.vortex";
-  HANDLE hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  OPENFILENAME ofn;
+  memset(&ofn, 0, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner = NULL;
+  char szFile[MAX_PATH] = "ModesBackup.vortex";
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile);
+  ofn.lpstrFilter = "Vortex Save\0*.vortex\0";
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFileTitle = NULL;
+  ofn.nMaxFileTitle = 0;
+  ofn.lpstrInitialDir = NULL;
+  ofn.Flags = OFN_PATHMUSTEXIST;
+  if (!GetSaveFileName(&ofn)) {
+    return;
+  }
+  HANDLE hFile = CreateFile(szFile, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -403,11 +442,100 @@ void VortexEditor::save(VWindow *window)
   DWORD written = 0;
   ByteStream stream;
   VEngine::getModes(stream);
+  if (!stream.compress()) {
+    // error
+  }
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
   CloseHandle(hFile);
-  printf("Saved to [%s]\n", filename);
+  printf("Saved to [%s]\n", szFile);
+  refreshModeList();
+}
+
+void VortexEditor::importMode(VWindow *window)
+{
+  OPENFILENAME ofn;
+  memset(&ofn, 0, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner = g_pEditor->m_window.hwnd();
+  char szFile[MAX_PATH] = {0};
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile);
+  ofn.lpstrFilter = "Vortex Mode\0*.vtxmode\0";
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFileTitle = NULL;
+  ofn.nMaxFileTitle = 0;
+  ofn.lpstrInitialDir = NULL;
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+  if (!GetOpenFileName(&ofn)) {
+    return;
+  }
+  HANDLE hFile = CreateFile(szFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!hFile) {
+    // error
+    return;
+  }
+  DWORD bytesRead = 0;
+  ByteStream stream(4096);
+  if (!ReadFile(hFile, (void *)stream.rawData(), stream.capacity(), &bytesRead, NULL)) {
+    // error
+  }
+  CloseHandle(hFile);
+  if (!stream.decompress()) {
+    // error
+    return;
+  }
+  if (!VEngine::addNewMode(stream)) {
+    // error
+  }
+  printf("Loaded from [%s]\n", szFile);
+  refreshModeList();
+}
+
+void VortexEditor::exportMode(VWindow *window)
+{
+  if (!VEngine::numModes()) {
+    return;
+  }
+  OPENFILENAME ofn;
+  memset(&ofn, 0, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner = NULL;
+  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  replace(modeName.begin(), modeName.end(), ' ', '_');
+  modeName += ".vtxmode";
+  char szFile[MAX_PATH] = {0};
+  memcpy(szFile, modeName.c_str(), modeName.length());
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile);
+  ofn.lpstrFilter = "Vortex Mode\0*.vtxmode\0";
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFileTitle = NULL;
+  ofn.nMaxFileTitle = 0;
+  ofn.lpstrInitialDir = NULL;
+  ofn.Flags = OFN_PATHMUSTEXIST;
+  if (!GetSaveFileName(&ofn)) {
+    return;
+  }
+  HANDLE hFile = CreateFile(szFile, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!hFile) {
+    // error
+    return;
+  }
+  DWORD written = 0;
+  ByteStream stream;
+  VEngine::getCurMode(stream);
+  if (!stream.compress()) {
+    CloseHandle(hFile);
+    // error
+    return;
+  }
+  if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
+    // error
+  }
+  CloseHandle(hFile);
+  printf("Saved to [%s]\n", szFile);
 }
 
 void VortexEditor::selectMode(VWindow *window)
@@ -559,7 +687,7 @@ void VortexEditor::copyToAll(VWindow *window)
     }
     VEngine::setSinglePat(i, (PatternID)pat, &args, &set);
   }
-  refreshFingerList();
+  refreshModeList();
   // update the demo
   demoCurMode();
 }
@@ -596,7 +724,7 @@ void VortexEditor::selectColor(VWindow *window)
     // only set the pattern on a single position
     VEngine::setColorset((LedPos)sels[i], newSet);
   }
-  refreshColorSelect();
+  refreshModeList();
   // update the demo
   demoCurMode();
 }

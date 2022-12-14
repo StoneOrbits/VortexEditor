@@ -157,10 +157,26 @@ string VEngine::getModeName()
   if (!pMode) {
     return patternToString(PATTERN_NONE);
   }
-  if (pMode->isMultiLed() || pMode->isSameSingleLed()) {
+  if (pMode->isMultiLed()) {
     return patternToString(getPatternID(LED_FIRST));
   }
-  // mixed single led pattern
+  // can't use isSampleSingleLed because that will compare the entire
+  // pattern for differences in any single led pattern, we only care
+  // about the pattern id being different
+  bool all_same_id = true;
+  PatternID first = pMode->getPatternID(LED_FIRST);
+  for (uint32_t i = LED_FIRST + 1; i < LED_COUNT; ++i) {
+    // if any don't match 0 then no good
+    if (pMode->getPatternID((LedPos)i) != first) {
+      all_same_id = false;
+      break;
+    }
+  }
+  // if they're all the same we can return just the first led pattern name
+  if (all_same_id) {
+    return patternToString(getPatternID(LED_FIRST));
+  }
+  // mixed single led pattern with different pattern names
   return "custom";
 }
 

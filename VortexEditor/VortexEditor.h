@@ -50,6 +50,8 @@ private:
   static void pullCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->pull(window); }
   static void loadCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->load(window); }
   static void saveCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->save(window); }
+  static void importCallback(void *editor, VWindow *window)        { ((VortexEditor *)editor)->importMode(window); }
+  static void exportCallback(void *editor, VWindow *window)        { ((VortexEditor *)editor)->exportMode(window); }
   static void selectModeCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectMode(window); }
   static void addModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->addMode(window); }
   static void delModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->delMode(window); }
@@ -71,6 +73,8 @@ private:
   void pull(VWindow *window);
   void load(VWindow *window);
   void save(VWindow *window);
+  void importMode(VWindow *window);
+  void exportMode(VWindow *window);
   void selectMode(VWindow *window);
   void demoCurMode();
   void addMode(VWindow *window);
@@ -140,6 +144,8 @@ private:
   VButton m_pullButton;
   VButton m_loadButton;
   VButton m_saveButton;
+  VButton m_exportButton;
+  VButton m_importButton;
   // the list of modes
   VListBox m_modeListBox;
   // the add/remove mode button
