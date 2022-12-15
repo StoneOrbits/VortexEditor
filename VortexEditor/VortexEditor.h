@@ -131,8 +131,12 @@ private:
   // Console handle for debugging
   FILE *m_consoleHandle;
 
-  // map of ports
+  // list of ports
   std::vector<std::pair<uint32_t, ArduinoSerial>> m_portList;
+
+  // map of whether a port is active, ie the connection is established
+  // and the other side is ready
+  std::map<uint32_t, bool> m_portActive;
 
   // ==================================
   //  GUI Members

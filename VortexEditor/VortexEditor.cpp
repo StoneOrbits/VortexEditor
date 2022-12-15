@@ -346,11 +346,17 @@ void VortexEditor::connect(VWindow *window)
   }
   writePort(port, EDITOR_VERB_HELLO);
   // now wait for the idle again
-  expectData(port, EDITOR_VERB_HELLO_ACK);
+  if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
+    return;
+  }
+  m_portActive[port] = true;
 }
 
 void VortexEditor::push(VWindow *window)
 {
+  if (!isConnected()) {
+    return;
+  }
   uint32_t port = m_portSelection.getSelection();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_PUSH_MODES);
@@ -367,6 +373,9 @@ void VortexEditor::push(VWindow *window)
 
 void VortexEditor::pull(VWindow *window)
 {
+  if (!isConnected()) {
+    return;
+  }
   ByteStream stream;
   uint32_t port = m_portSelection.getSelection();
   // now immediately tell it what to do
@@ -1139,5 +1148,12 @@ bool VortexEditor::isConnected() const
   if (!m_portList.size()) {
     return false;
   }
-  return m_portList[sel].second.IsConnected();
+  if (!m_portList[sel].second.IsConnected()) {
+    return false;
+  }
+  auto port = m_portActive.find(sel);
+  if (port == m_portActive.end()) {
+    return false;
+  }
+  return port->second;
 }
