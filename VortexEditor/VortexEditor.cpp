@@ -731,10 +731,13 @@ void VortexEditor::addMode(VWindow *window)
 void VortexEditor::delMode(VWindow *window)
 {
   printf("Deleting mode %u\n", VEngine::curMode());
+  uint32_t cur = VEngine::curMode();
   VEngine::delCurMode();
   refreshModeList();
   if (!VEngine::numModes()) {
     clearDemo();
+  } else {
+    demoCurMode();
   }
 }
 
