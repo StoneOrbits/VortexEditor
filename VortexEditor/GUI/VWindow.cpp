@@ -134,7 +134,7 @@ VWindow *VWindow::getChild(uintptr_t id)
 uint32_t VWindow::addCallback(uintptr_t menuID, VMenuCallback callback)
 {
   m_menuCallbacks.insert(make_pair(menuID, callback));
-  return m_menuCallbacks.size();
+  return (uint32_t)m_menuCallbacks.size();
 }
 
 VWindow::VMenuCallback VWindow::getCallback(uintptr_t menuID)
