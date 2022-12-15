@@ -72,6 +72,11 @@ BEGIN
     BEGIN
         MENUITEM "Clear Colorset",              ID_EDIT_CLEAR_COLORSET
         MENUITEM "Copy Colorset To All",        ID_EDIT_COPY_COLOR_SET_TO_ALL
+        POPUP "Random Pattern"
+        BEGIN
+            MENUITEM "Single Led Pattern",          ID_PATTERN_RANDOM_SINGLE_LED_PATTERN
+            MENUITEM "Multi Led Pattern",           ID_PATTERN_RANDOM_MULTI_LED_PATTERN
+        END
         POPUP "Random Colorset"
         BEGIN
             MENUITEM "Monochromatic",               ID_COLORSET_RANDOM_MONOCHROMATIC
@@ -80,11 +85,6 @@ BEGIN
             MENUITEM "Square",                      ID_COLORSET_RANDOM_SQUARE
             MENUITEM "Pentadic",                    ID_COLORSET_RANDOM_PENTADIC
             MENUITEM "Rainbow",                     ID_COLORSET_RANDOM_RAINBOW
-        END
-        POPUP "Random Pattern"
-        BEGIN
-            MENUITEM "Single Led Pattern",          ID_PATTERN_RANDOM_SINGLE_LED_PATTERN
-            MENUITEM "Multi Led Pattern",           ID_PATTERN_RANDOM_MULTI_LED_PATTERN
         END
         MENUITEM "Copy Colorset",               ID_EDIT_COPY_COLORSET
         MENUITEM "Paste Colorset",              ID_EDIT_PASTE_COLORSET
