@@ -676,6 +676,9 @@ void VortexEditor::selectMode(VWindow *window)
 
 void VortexEditor::demoCurMode()
 {
+  if (!isConnected()) {
+    return;
+  }
   int sel = m_modeListBox.getSelection();
   if (sel < 0 || !isConnected()) {
     return;
@@ -699,6 +702,9 @@ void VortexEditor::demoCurMode()
 
 void VortexEditor::clearDemo()
 {
+  if (!isConnected()) {
+    return;
+  }
   uint32_t port = m_portSelection.getSelection();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_CLEAR_DEMO);
