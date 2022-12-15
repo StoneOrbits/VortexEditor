@@ -265,7 +265,7 @@ string VEngine::patternToString(PatternID id)
     "basic", "strobe", "hyperstrobe", "dops", "dopish", "ultradops", "strobie",
     "ribbon", "miniribbon", "blinkie", "ghostcrush", "solid", "tracer",
     "dashdops", "advanced", "blend", "complementary blend", "brackets",
-    "rabbit", "hueshift", "theater chase", "chaser", "zigzag", "zipfade",
+    "rabbit", "hueshift", "theater chase", /*"chaser",*/ "zigzag", "zipfade",
     "tiptop", "drip", "dripmorph", "crossdops", "doublestrobe", "meteor",
     "sparkletrace", "vortexwipe", "warp", "warpworm", "snowball", "lighthouse",
     "pulsish", "fill", "bounce", "impact", "splitstrobie", "backstrobe",
