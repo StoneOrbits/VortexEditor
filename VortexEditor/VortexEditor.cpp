@@ -355,6 +355,7 @@ void VortexEditor::pasteColorset()
     VEngine::setColorset((LedPos)sels[i], newSet);
   }
   refreshColorSelect();
+  demoCurMode();
 }
 
 void VortexEditor::getClipboard(std::string &clipData)
