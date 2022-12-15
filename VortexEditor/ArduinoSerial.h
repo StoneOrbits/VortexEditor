@@ -32,6 +32,8 @@ private:
   std::string m_port;
   HANDLE m_hSerial;
   bool m_connected;
+  // whether serial or pipe
+  bool m_isSerial;
   COMSTAT m_status;
   DWORD m_errors;
 };

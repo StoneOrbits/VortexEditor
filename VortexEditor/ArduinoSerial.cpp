@@ -8,6 +8,7 @@ ArduinoSerial::ArduinoSerial() :
   m_port(),
   m_hSerial(nullptr),
   m_connected(false),
+  m_isSerial(false),
   m_status(),
   m_errors(0)
 {
@@ -27,10 +28,12 @@ ArduinoSerial::ArduinoSerial(ArduinoSerial &&other) :
   m_connected = other.m_connected;
   m_status = other.m_status;
   m_errors = other.m_errors;
+  m_isSerial = other.m_isSerial;
 
   other.m_port.clear();
   other.m_hSerial = nullptr;
   other.m_connected = false;
+  other.m_isSerial = false;
   memset(&other.m_status, 0, sizeof(other.m_status));
   other.m_errors = 0;
 }
@@ -40,6 +43,11 @@ bool ArduinoSerial::connect(const string &portName)
   m_port = portName;
   // We're not yet connected
   m_connected = false;
+  m_isSerial = true;
+
+  if (portName.find("\\\\.\\pipe") != std::string::npos) {
+    m_isSerial = false;
+  }
 
   // Try to connect to the given port throuh CreateFile
   m_hSerial = CreateFile(m_port.c_str(),
@@ -47,7 +55,7 @@ bool ArduinoSerial::connect(const string &portName)
     0,
     NULL,
     OPEN_EXISTING,
-    FILE_ATTRIBUTE_NORMAL,
+    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
     NULL);
 
   // Check if the connection was successfull
@@ -62,10 +70,9 @@ bool ArduinoSerial::connect(const string &portName)
   // If connected we try to set the comm parameters
   DCB dcbSerialParams = { 0 };
 
-  // Try to get the current
-  if (!GetCommState(m_hSerial, &dcbSerialParams)) {
-    // If impossible, show an error
-    printf("failed to get current serial parameters!");
+  // if it's actually an arduino we must do this
+  if (m_isSerial && !GetCommState(m_hSerial, &dcbSerialParams)) {
+    printf("ALERT: Could not get Serial Port parameters");
     return false;
   }
   // Define serial connection parameters for the arduino board
@@ -76,18 +83,19 @@ bool ArduinoSerial::connect(const string &portName)
   // Setting the DTR to Control_Enable ensures that the Arduino is properly
   // reset upon establishing a connection
   dcbSerialParams.fDtrControl = DTR_CONTROL_ENABLE;
-
   // Set the parameters and check for their proper application
-  if (!SetCommState(m_hSerial, &dcbSerialParams)) {
+  if (m_isSerial && !SetCommState(m_hSerial, &dcbSerialParams)) {
     printf("ALERT: Could not set Serial Port parameters");
     return false;
   }
   // If everything went fine we're connected
   m_connected = true;
-  // Flush any remaining characters in the buffers 
-  PurgeComm(m_hSerial, PURGE_RXCLEAR | PURGE_TXCLEAR);
-  // We wait 2s as the arduino board will be reseting
-  Sleep(ARDUINO_WAIT_TIME);
+  if (m_isSerial) {
+    // Flush any remaining characters in the buffers
+    PurgeComm(m_hSerial, PURGE_RXCLEAR | PURGE_TXCLEAR);
+    // We wait 2s as the arduino board will be reseting
+    //Sleep(ARDUINO_WAIT_TIME);
+  }
   return true;
 }
 
@@ -114,7 +122,7 @@ int ArduinoSerial::ReadData(void *buffer, unsigned int nbChar)
   ClearCommError(m_hSerial, &m_errors, &m_status);
 
   // Check if there is something to read
-  if (m_status.cbInQue > 0) {
+  if (!m_isSerial || m_status.cbInQue > 0) {
     // If there is we check if there is enough data to read the required number
     // of characters, if not we'll read only the available characters to prevent
     // locking of the application.
@@ -124,8 +132,12 @@ int ArduinoSerial::ReadData(void *buffer, unsigned int nbChar)
       toRead = m_status.cbInQue;
     }
 
+    if (!m_isSerial && !PeekNamedPipe(m_hSerial, 0, 0, 0, (LPDWORD)&toRead, 0)) {
+      // Handle failure.
+    }
+
     if (!buffer || !nbChar) {
-      return m_status.cbInQue;
+      return m_isSerial ? m_status.cbInQue : toRead;
     }
 
     // Try to read the require number of chars, and return the number of read bytes on success
@@ -144,10 +156,17 @@ bool ArduinoSerial::WriteData(const void *buffer, unsigned int nbChar)
 
   // Try to write the buffer on the Serial port
   if (!WriteFile(m_hSerial, buffer, nbChar, &bytesSend, 0)) {
-    // In case it don't work get comm error and return false
-    ClearCommError(m_hSerial, &m_errors, &m_status);
+    if (m_isSerial) {
+      // In case it don't work get comm error and return false
+      ClearCommError(m_hSerial, &m_errors, &m_status);
+    }
     return false;
   }
-  FlushFileBuffers(m_hSerial);
+  if (bytesSend < nbChar) {
+    MessageBox(NULL, "Failed to full send", "", 0);
+    return false;
+  }
+  // FILE_FLAG_NO_BUFFERING is enabled
+  //FlushFileBuffers(m_hSerial);
   return true;
 }

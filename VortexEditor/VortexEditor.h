@@ -79,6 +79,7 @@ private:
   void exportMode(VWindow *window);
   void selectMode(VWindow *window);
   void demoCurMode();
+  void clearDemo();
   void addMode(VWindow *window);
   void delMode(VWindow *window);
   void copyMode(VWindow *window);
@@ -112,6 +113,7 @@ private:
   // various other actions
   bool readPort(uint32_t port, ByteStream &outStream);
   bool readModes(uint32_t portIndex, ByteStream &outModes);
+  bool expectData(uint32_t port, const char *data);
   void readInLoop(uint32_t port, ByteStream &outStream);
   void writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size);
   void writePort(uint32_t portIndex, const ByteStream &data);
