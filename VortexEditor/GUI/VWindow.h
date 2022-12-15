@@ -43,6 +43,8 @@ public:
   virtual uint32_t addCallback(uintptr_t menuID, VMenuCallback callback);
   virtual VMenuCallback getCallback(uintptr_t menuID);
 
+  void setTooltip(std::string text);
+
   void setVisible(bool visible);
   void setEnabled(bool enable);
 
@@ -59,6 +61,8 @@ protected:
 
   // window handle
   HWND m_hwnd;
+  // tooltip handle
+  HWND m_tooltipHwnd;
 
   // list of children
   std::map<uintptr_t, VWindow *> m_children;

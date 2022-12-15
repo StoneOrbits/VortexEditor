@@ -6,6 +6,7 @@
 
 #include <inttypes.h>
 
+#include <vector>
 #include <string>
 
 class PatternArgs;
@@ -51,6 +52,7 @@ public:
   static std::string patternToString(PatternID id = PATTERN_NONE);
   static std::string ledToString(LedPos pos);
   static uint32_t numCustomParams(PatternID id);
+  static std::vector<std::string> getCustomParams(PatternID id);
 
 private:
 

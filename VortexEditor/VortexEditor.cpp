@@ -108,6 +108,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   for (uint32_t i = 0; i < 8; ++i) {
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 700, 86 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
+  m_modeListBox.setTooltip("Test");
 
   // callbacks for menus
   m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
@@ -1065,6 +1066,7 @@ void VortexEditor::refreshParams(bool recursive)
     }
     return;
   }
+  vector<string> tips = VEngine::getCustomParams((PatternID)sel);
   if (sels.size() > 1) {
     bool all_same = true;
     PatternID base = VEngine::getPatternID((LedPos)sels[0]);
@@ -1094,6 +1096,7 @@ void VortexEditor::refreshParams(bool recursive)
     m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
     m_paramTextBoxes[i].setEnabled(true);
     m_paramTextBoxes[i].setVisible(true);
+    m_paramTextBoxes[i].setTooltip(tips[i]);
   }
   // iterate all extra slots and set to inactive
   for (uint32_t i = numParams; i < 8; ++i) {

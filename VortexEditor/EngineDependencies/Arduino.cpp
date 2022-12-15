@@ -110,7 +110,6 @@ unsigned long random(uint32_t low, uint32_t high)
   return low + (rand() % (high - low));
 }
 
-
 void randomSeed(uint32_t seed)
 {
   srand((uint32_t)GetTickCount() ^ (uint32_t)GetCurrentProcessId());

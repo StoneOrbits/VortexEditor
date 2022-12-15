@@ -304,3 +304,73 @@ uint32_t VEngine::numCustomParams(PatternID id)
   delete pat;
   return numArgs;
 }
+
+vector<string> VEngine::getCustomParams(PatternID id)
+{
+  switch (id) {
+  case PATTERN_BASIC:
+  case PATTERN_STROBE:
+    case PATTERN_HYPERSTROBE:
+    case PATTERN_DOPS:
+    case PATTERN_DOPISH:
+    case PATTERN_ULTRADOPS:
+    case PATTERN_STROBIE:
+    case PATTERN_RIBBON:
+    case PATTERN_MINIRIBBON:
+    case PATTERN_BLINKIE:
+    case PATTERN_GHOSTCRUSH:
+      return { "On Duration", "Off Duration", "Gap Duration" };
+    case PATTERN_SOLID:
+      return { "On Duration", "Off Duration", "Gap Duration", "Color Index" };
+    case PATTERN_TRACER:
+      return { "Tracer Duration", "Dot Duration" };
+    case PATTERN_DASHDOPS:
+      return { "Dash Duration", "Dot Duration", "Off Duration" };
+    case PATTERN_ADVANCED:
+      return { "On Duration", "Off Duration", "Gap Duration", "Group Size", "Skip Colors", "Repeat Group"};
+    case PATTERN_BLEND:
+    case PATTERN_COMPLEMENTARY_BLEND:
+      return { "On Duration", "Off Duration", "Gap Duration", "Blend Speed" };
+    case PATTERN_BRACKETS:
+      return { "Bracket Duration", "Mid Duration", "Off Duration" };
+    case PATTERN_RABBIT:
+    case PATTERN_TIPTOP:
+    case PATTERN_IMPACT:
+    case PATTERN_FLOWERS:
+    case PATTERN_JEST:
+      break;
+    case PATTERN_HUESHIFT:
+      return { "Speed", "Scale" };
+    case PATTERN_THEATER_CHASE:
+    case PATTERN_ZIGZAG:
+    case PATTERN_ZIPFADE:
+    case PATTERN_DRIP:
+    case PATTERN_CROSSDOPS:
+    case PATTERN_DOUBLESTROBE:
+    case PATTERN_SPARKLETRACE:
+    case PATTERN_VORTEXWIPE:
+    case PATTERN_WARP:
+    case PATTERN_WARPWORM:
+    case PATTERN_SNOWBALL:
+    case PATTERN_FILL:
+    case PATTERN_BOUNCE:
+      return { "On Duration", "Off Duration", "Step Duration" };
+    //case PATTERN_CHASER:
+    case PATTERN_DRIPMORPH:
+      return { "On Duration", "Off Duration", "Speed" };
+    case PATTERN_METEOR:
+      return { "On Duration", "Off Duration", "Step Duration", "Fade Amount" };
+    case PATTERN_LIGHTHOUSE:
+      return { "On Duration", "Off Duration", "Step Duration", "Fade Amount", "Fade Rate" };
+    case PATTERN_PULSISH:
+    case PATTERN_MATERIA:
+      return { "On Duration 1", "Off Duration 1", "On Duration 2", "Off Duration 2", "Step Duration" };
+    case PATTERN_SPLITSTROBIE:
+    case PATTERN_BACKSTROBE:
+      return { "Step Duration x 100ms" };
+    case PATTERN_NONE:
+    default:
+      break;
+  }
+  return vector<string>();
+}

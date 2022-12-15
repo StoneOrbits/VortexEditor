@@ -139,7 +139,10 @@ void VMultiListBox::clearSelection(int selection)
 void VMultiListBox::clearSelections()
 {
   int numSel = numItems();
-  for (uint32_t i = 0; i < numSel; ++i) {
+  if (numSel < 0) {
+    return;
+  }
+  for (uint32_t i = 0; i < (uint32_t)numSel; ++i) {
     clearSelection(i);
   }
 }

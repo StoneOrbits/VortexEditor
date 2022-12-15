@@ -146,6 +146,31 @@ VWindow::VMenuCallback VWindow::getCallback(uintptr_t menuID)
   return entry->second;
 }
 
+void VWindow::setTooltip(string text)
+{
+  if (m_tooltipHwnd) {
+    DestroyWindow(m_tooltipHwnd);
+    m_tooltipHwnd = nullptr;
+  }
+  // Create the tooltip. g_hInst is the global instance handle.
+  m_tooltipHwnd = CreateWindow(TOOLTIPS_CLASS, NULL,
+    WS_POPUP | TTS_ALWAYSTIP,
+    CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+    m_hwnd, NULL, g_pEditor->hInst(), NULL);
+  if (!m_tooltipHwnd) {
+    return;
+  }
+
+  // Associate the tooltip with the tool.
+  TOOLINFO toolInfo = { 0 };
+  toolInfo.cbSize = sizeof(toolInfo);
+  toolInfo.hwnd = m_hwnd;
+  toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+  toolInfo.uId = (UINT_PTR)m_hwnd;
+  toolInfo.lpszText = (LPSTR)text.c_str();
+  SendMessage(m_tooltipHwnd, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+}
+
 void VWindow::setVisible(bool visible)
 {
   ShowWindow(m_hwnd, visible);
