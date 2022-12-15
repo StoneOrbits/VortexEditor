@@ -165,14 +165,32 @@ void VColorSelect::clear()
 void VColorSelect::setColor(uint32_t col)
 {
   m_color = col;
-  if (col != 0) {
-    char colText[24] = {0};
-    snprintf(colText, sizeof(colText), "#%02X%02X%02X", (col >> 16) & 0xFF, (col >> 8) & 0xFF, col & 0xFF);
-    m_colorLabel.setText(colText);
-  } else {
-    m_colorLabel.setText("blank");
-  }
+  m_colorLabel.setText(getColorName());
   RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
+}
+
+string VColorSelect::getColorName() const
+{
+  if (m_color == 0) {
+    return "blank";
+  }
+  char colText[64] = { 0 };
+  snprintf(colText, sizeof(colText), "#%02X%02X%02X",
+    (m_color >> 16) & 0xFF, (m_color >> 8) & 0xFF, m_color & 0xFF);
+  return colText;
+}
+
+void VColorSelect::setColor(std::string name)
+{
+  if (name == "blank") {
+    setColor(0);
+    return;
+  }
+  if (name[0] != '#') {
+    // ??
+    return;
+  }
+  setColor(strtoul(name.c_str() + 1, NULL, 16));
 }
 
 void VColorSelect::setFlippedColor(uint32_t col)

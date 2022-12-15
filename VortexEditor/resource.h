@@ -44,13 +44,15 @@
 #define ID_FILE_EXPORT                  40042
 #define ID_FILE_IMPORT                  40043
 #define ID_FILE_REFRESH_CONNECTIONS     40044
+#define ID_EDIT_COPY_COLORSET           40045
+#define ID_EDIT_PASTE_COLORSET          40046
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
-#define _APS_NEXT_COMMAND_VALUE         40045
+#define _APS_NEXT_COMMAND_VALUE         40047
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

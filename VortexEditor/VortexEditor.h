@@ -65,7 +65,7 @@ private:
   static void paramEditCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->paramEdit(window); }
 
   // menu handler
-  static void handleMenusCallback(void *editor, uintptr_t hMenu)       { ((VortexEditor *)editor)->handleMenus(hMenu); }
+  static void handleMenusCallback(void *editor, uintptr_t hMenu)   { ((VortexEditor *)editor)->handleMenus(hMenu); }
 
   // callbacks for actions
   void selectPort(VWindow *window);
@@ -88,17 +88,22 @@ private:
   void copyToAll(VWindow *window);
   void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
+  void pasteColorset(VWindow *window);
 
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
+
   // helper for color changer menus
   void applyColorset(const Colorset &set, const std::vector<int> &selections);
   void applyPattern(PatternID id, const std::vector<int> &selections);
   void applyColorsetToAll(const Colorset &set);
   void applyPatternToAll(PatternID id);
+  void copyColorset();
+  void pasteColorset();
 
-  // special handler that is called after each action
-  void waitIdle();
+  // helper for clipboard
+  void getClipboard(std::string &clipData);
+  void setClipboard(const std::string &clipData);
 
   bool validateHandshake(const ByteStream &handshakewindow);
 

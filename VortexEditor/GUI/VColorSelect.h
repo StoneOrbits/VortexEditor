@@ -32,6 +32,8 @@ public:
   void setColor(uint32_t col);
   void setFlippedColor(uint32_t col);
   uint32_t getColor() const;
+  std::string getColorName() const;
+  void setColor(std::string name);
   uint32_t getFlippedColor() const;
 
   bool isActive() const;

@@ -14,6 +14,7 @@
 
 // stl includes
 #include <algorithm>
+#include <sstream>
 #include <string>
 
 // for registering ui elements for events
@@ -27,6 +28,9 @@
 #define PARAM_EDIT_ID       50016
 #define COPY_TO_ALL_ID      50025
 #define COPY_MODE_ID        50026
+
+// the prefix of colorsets copied to clipboard
+#define COLORSET_CLIPBOARD_MARKER "COLORSET:"
 
 using namespace std;
 
@@ -119,6 +123,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_COPY_PATTERN_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_HELP_ABOUT, handleMenusCallback);
   m_window.addCallback(ID_HELP_HELP, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
 
   // trigger a refresh
   refreshModeList();
@@ -178,7 +184,12 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
       if (MessageBox(m_window.hwnd(), "Goodluck", "Help", 0)) {
       }
     }
-
+    return;
+  case ID_EDIT_COPY_COLORSET:
+    copyColorset();
+    return;
+  case ID_EDIT_PASTE_COLORSET:
+    pasteColorset();
     return;
   default:
     break;
@@ -295,6 +306,97 @@ void VortexEditor::applyPatternToAll(PatternID id)
   refreshFingerList();
   // update the demo
   demoCurMode();
+}
+
+void VortexEditor::copyColorset()
+{
+  string colorset = COLORSET_CLIPBOARD_MARKER;
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (!m_colorSelects[i].isActive()) {
+      break;
+    }
+    string name = m_colorSelects[i].getColorName();
+    if (i > 0) {
+      colorset += ",";
+    }
+    colorset += name;
+  }
+  setClipboard(colorset);
+}
+
+void VortexEditor::pasteColorset()
+{
+  string colorset;
+  getClipboard(colorset);
+  // check for the colorset marker
+  if (strncmp(colorset.c_str(), COLORSET_CLIPBOARD_MARKER, sizeof(COLORSET_CLIPBOARD_MARKER) - 1) != 0) {
+    return;
+  }
+  vector<std::string> splits;
+  string split;
+  istringstream ss(colorset.c_str() + sizeof(COLORSET_CLIPBOARD_MARKER) - 1);
+  while (getline(ss, split, ',')) {
+    splits.push_back(split);
+  }
+  Colorset newSet;
+  for (auto field : splits) {
+    if (field == "blank" || field[0] != '#') {
+      newSet.addColor(0);
+    } else {
+      newSet.addColor(strtoul(field.c_str() + 1, NULL, 16));
+    }
+  }
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    return;
+  }
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    VEngine::setColorset((LedPos)sels[i], newSet);
+  }
+  refreshColorSelect();
+}
+
+void VortexEditor::getClipboard(std::string &clipData)
+{
+  // Try opening the clipboard
+  if (!OpenClipboard(nullptr)) {
+    return;
+  }
+  // Get handle of clipboard object for ANSI text
+  HANDLE hData = GetClipboardData(CF_TEXT);
+  if (!hData) {
+    return;
+  }
+  // Lock the handle to get the actual text pointer
+  char *pszText = static_cast<char *>(GlobalLock(hData));
+  if (!pszText) {
+    GlobalUnlock(hData);
+    CloseClipboard();
+    return;
+  }
+  clipData = pszText;
+  GlobalUnlock(hData);
+  CloseClipboard();
+}
+
+void VortexEditor::setClipboard(const std::string &clipData)
+{
+  HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, clipData.length() + 1);
+  if (!hMem) {
+    // ??
+    return;
+  }
+  void *data = GlobalLock(hMem);
+  if (!data) {
+    return;
+  }
+  memcpy(data, clipData.c_str(), clipData.length() + 1);
+  GlobalUnlock(hMem);
+  OpenClipboard(0);
+  EmptyClipboard();
+  SetClipboardData(CF_TEXT, hMem);
+  CloseClipboard();
 }
 
 void VortexEditor::selectPort(VWindow *window)

@@ -86,6 +86,8 @@ BEGIN
             MENUITEM "Single Led Pattern",          ID_PATTERN_RANDOM_SINGLE_LED_PATTERN
             MENUITEM "Multi Led Pattern",           ID_PATTERN_RANDOM_MULTI_LED_PATTERN
         END
+        MENUITEM "Copy Colorset",               ID_EDIT_COPY_COLORSET
+        MENUITEM "Paste Colorset",              ID_EDIT_PASTE_COLORSET
     END
     POPUP "Help"
     BEGIN
