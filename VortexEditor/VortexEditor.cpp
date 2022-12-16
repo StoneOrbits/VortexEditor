@@ -179,6 +179,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
 {
   switch (hMenu) {
   case ID_HELP_ABOUT:
+    MessageBox(m_window.hwnd(), "Vortex Editor 1.0\nMade by Daniel Fraser and Shane Aronson", "About", 0);
     break;
   case ID_HELP_HELP:
     if (MessageBox(m_window.hwnd(), "It seems you need help", "Help", 4) == IDYES) {
