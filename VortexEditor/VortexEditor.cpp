@@ -32,6 +32,10 @@
 // the prefix of colorsets copied to clipboard
 #define COLORSET_CLIPBOARD_MARKER "COLORSET:"
 
+// savefile extensions
+#define VORTEX_SAVE_EXTENSION ".vortex"
+#define VORTEX_MODE_EXTENSION ".vtxmode"
+
 using namespace std;
 
 VortexEditor *g_pEditor = nullptr;
@@ -512,7 +516,7 @@ void VortexEditor::load(VWindow *window)
   char szFile[MAX_PATH] = {0};
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile);
-  ofn.lpstrFilter = "Vortex Save\0*.vortex\0";
+  ofn.lpstrFilter = "Vortex Save\0*" VORTEX_SAVE_EXTENSION "\0";
   ofn.nFilterIndex = 1;
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;
@@ -538,6 +542,7 @@ void VortexEditor::load(VWindow *window)
   VEngine::setModes(stream);
   printf("Loaded from [%s]\n", szFile);
   refreshModeList();
+  demoCurMode();
 }
 
 void VortexEditor::save(VWindow *window)
@@ -546,10 +551,10 @@ void VortexEditor::save(VWindow *window)
   memset(&ofn, 0, sizeof(ofn));
   ofn.lStructSize = sizeof(ofn);
   ofn.hwndOwner = NULL;
-  char szFile[MAX_PATH] = "ModesBackup.vortex";
+  char szFile[MAX_PATH] = "ModesBackup" VORTEX_SAVE_EXTENSION;
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile);
-  ofn.lpstrFilter = "Vortex Save\0*.vortex\0";
+  ofn.lpstrFilter = "Vortex Save\0*" VORTEX_SAVE_EXTENSION "\0";
   ofn.nFilterIndex = 1;
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;
@@ -558,7 +563,14 @@ void VortexEditor::save(VWindow *window)
   if (!GetSaveFileName(&ofn)) {
     return;
   }
-  HANDLE hFile = CreateFile(szFile, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  string filename = szFile;
+  if (filename.length() <= strlen(VORTEX_SAVE_EXTENSION)) {
+    return;
+  }
+  if (filename.substr(filename.length() - strlen(VORTEX_SAVE_EXTENSION)) != VORTEX_SAVE_EXTENSION) {
+    filename.append(VORTEX_SAVE_EXTENSION);
+  }
+  HANDLE hFile = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -573,7 +585,7 @@ void VortexEditor::save(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  printf("Saved to [%s]\n", szFile);
+  printf("Saved to [%s]\n", filename.c_str());
   refreshModeList();
 }
 
@@ -586,7 +598,7 @@ void VortexEditor::importMode(VWindow *window)
   char szFile[MAX_PATH] = {0};
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile);
-  ofn.lpstrFilter = "Vortex Mode\0*.vtxmode\0";
+  ofn.lpstrFilter = "Vortex Mode\0*"  VORTEX_MODE_EXTENSION "\0";
   ofn.nFilterIndex = 1;
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;
@@ -615,6 +627,7 @@ void VortexEditor::importMode(VWindow *window)
   }
   printf("Loaded from [%s]\n", szFile);
   refreshModeList();
+  demoCurMode();
 }
 
 void VortexEditor::exportMode(VWindow *window)
@@ -628,12 +641,12 @@ void VortexEditor::exportMode(VWindow *window)
   ofn.hwndOwner = NULL;
   string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
   replace(modeName.begin(), modeName.end(), ' ', '_');
-  modeName += ".vtxmode";
+  modeName += VORTEX_MODE_EXTENSION;
   char szFile[MAX_PATH] = {0};
   memcpy(szFile, modeName.c_str(), modeName.length());
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile);
-  ofn.lpstrFilter = "Vortex Mode\0*.vtxmode\0";
+  ofn.lpstrFilter = "Vortex Mode\0*" VORTEX_MODE_EXTENSION "\0";
   ofn.nFilterIndex = 1;
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;
@@ -642,7 +655,14 @@ void VortexEditor::exportMode(VWindow *window)
   if (!GetSaveFileName(&ofn)) {
     return;
   }
-  HANDLE hFile = CreateFile(szFile, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  string filename = szFile;
+  if (filename.length() <= strlen(VORTEX_MODE_EXTENSION)) {
+    return;
+  }
+  if (filename.substr(filename.length() - strlen(VORTEX_MODE_EXTENSION)) != VORTEX_MODE_EXTENSION) {
+    filename.append(VORTEX_MODE_EXTENSION);
+  }
+  HANDLE hFile = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -659,7 +679,7 @@ void VortexEditor::exportMode(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  printf("Saved to [%s]\n", szFile);
+  printf("Saved to [%s]\n", filename.c_str());
 }
 
 void VortexEditor::selectMode(VWindow *window)
