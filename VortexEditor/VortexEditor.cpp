@@ -131,12 +131,18 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
 
-  // trigger a refresh
-  refreshModeList();
-
   // apply the icon
   HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
   SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
+  // install the device callback
+  m_window.installDeviceCallback(deviceChangeCallback);
+
+  // check for devices
+  refresh(&m_window);
+
+  // trigger a ui refresh
+  refreshModeList();
 
   return true;
 }
@@ -274,6 +280,11 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   }
 }
 
+void VortexEditor::deviceChange(bool added)
+{
+  refresh(&g_pEditor->m_window);
+}
+
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
 {
   for (uint32_t i = 0; i < selections.size(); ++i) {
@@ -409,14 +420,14 @@ void VortexEditor::setClipboard(const std::string &clipData)
 void VortexEditor::selectPort(VWindow *window)
 {
   // connect to port?
+  if (!isConnected()) {
+    connect(window);
+  }
 }
 
 // refresh the port list
 void VortexEditor::refresh(VWindow *window)
 {
-  if (!window) {
-    return;
-  }
   m_portList.clear();
   for (uint32_t i = 0; i < 255; ++i) {
     string port = "\\\\.\\COM" + to_string(i);
@@ -439,26 +450,10 @@ void VortexEditor::refresh(VWindow *window)
 
 void VortexEditor::connect(VWindow *window)
 {
-  ByteStream stream;
-  int port = m_portSelection.getSelection();
-  if (port < 0) {
+  if (isConnected()) {
     return;
   }
-  // try to read the handshake
-  if (!readPort(port, stream)) {
-    // failure
-    return;
-  }
-  if (!validateHandshake(stream)) {
-    // failure
-    return;
-  }
-  writePort(port, EDITOR_VERB_HELLO);
-  // now wait for the idle again
-  if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
-    return;
-  }
-  m_portActive[port] = true;
+  connectInternal();
 }
 
 void VortexEditor::push(VWindow *window)
@@ -929,6 +924,47 @@ void VortexEditor::paramEdit(VWindow *window)
   }
   // update the demo
   demoCurMode();
+}
+
+// internal connection handler, optional force waiting for a connect
+void VortexEditor::connectInternal(bool force)
+{
+  if (isConnected()) {
+    return;
+  }
+  do {
+    // try to connect
+    if (tryConnect()) {
+      // success
+      break;
+    }
+    // keep trying if we're forcing
+  } while (force);
+}
+
+bool VortexEditor::tryConnect()
+{
+  ByteStream stream;
+  int port = m_portSelection.getSelection();
+  if (port < 0) {
+    return false;
+  }
+  // try to read the handshake
+  if (!readPort(port, stream)) {
+    // failure
+    return false;
+  }
+  if (!validateHandshake(stream)) {
+    // failure
+    return false;
+  }
+  writePort(port, EDITOR_VERB_HELLO);
+  // now wait for the idle again
+  if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
+    return false;
+  }
+  m_portActive[port] = true;
+  return true;
 }
 
 bool VortexEditor::validateHandshake(const ByteStream &handshake)

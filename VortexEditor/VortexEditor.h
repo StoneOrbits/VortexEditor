@@ -67,6 +67,9 @@ private:
   // menu handler
   static void handleMenusCallback(void *editor, uintptr_t hMenu)   { ((VortexEditor *)editor)->handleMenus(hMenu); }
 
+  // device change handler
+  static void deviceChangeCallback(void *editor, bool added)       { ((VortexEditor *)editor)->deviceChange(added); }
+
   // callbacks for actions
   void selectPort(VWindow *window);
   void refresh(VWindow *window);
@@ -88,10 +91,16 @@ private:
   void copyToAll(VWindow *window);
   void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
-  void pasteColorset(VWindow *window);
+
+  // internal connection handler, optional force waiting for a connect
+  void connectInternal(bool force = false);
+  bool tryConnect();
 
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
+
+  // callback to handle menus
+  void deviceChange(bool added);
 
   // helper for color changer menus
   void applyColorset(const Colorset &set, const std::vector<int> &selections);

@@ -14,6 +14,7 @@ public:
   // typedef for callback params
   typedef void (*VWindowCallback)(void *arg, VWindow *window);
   typedef void (*VMenuCallback)(void *arg, uintptr_t hMenu);
+  typedef void (*VDeviceCallback)(void *arg, bool added);
 
   VWindow();
   VWindow(HINSTANCE hinstance, const std::string &title, 
@@ -42,6 +43,9 @@ public:
   // add a menu callback
   virtual uint32_t addCallback(uintptr_t menuID, VMenuCallback callback);
   virtual VMenuCallback getCallback(uintptr_t menuID);
+
+  // install a device change callback
+  virtual void installDeviceCallback(VDeviceCallback callback);
 
   void setTooltip(std::string text);
 
@@ -75,5 +79,9 @@ protected:
 
   // arg to pass to callback
   void *m_callbackArg;
+
+  // device callback
+  HDEVNOTIFY m_hDeviceNotify;
+  VDeviceCallback m_deviceCallback;
 };
 

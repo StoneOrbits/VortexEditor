@@ -7,11 +7,17 @@
 #include "VortexEditor.h"
 
 #include <CommCtrl.h>
+#include <Dbt.h>
+
 #include "resource.h"
 
 using namespace std;
 
 WNDCLASS VWindow::m_wc = {0};
+
+// This GUID is for all USB serial host PnP drivers
+GUID WceusbshGUID = { 0x25dbce51, 0x6c8f, 0x4a72,
+                    0x8a,0x6d,0xb5,0x4c,0x2b,0x4f,0xc8,0x35 };
 
 // The window class
 #define VWINDOW      "VWINDOW"
@@ -20,7 +26,9 @@ VWindow::VWindow() :
   m_hwnd(nullptr),
   m_children(),
   m_pParent(nullptr),
-  m_callbackArg(nullptr)
+  m_callbackArg(nullptr),
+  m_hDeviceNotify(nullptr),
+  m_deviceCallback(nullptr)
 {
 }
 
@@ -146,6 +154,23 @@ VWindow::VMenuCallback VWindow::getCallback(uintptr_t menuID)
   return entry->second;
 }
 
+void VWindow::installDeviceCallback(VDeviceCallback callback)
+{
+  // only one is allowed
+  if (m_deviceCallback || m_hDeviceNotify) {
+    return;
+  }
+  m_deviceCallback = callback;
+  DEV_BROADCAST_DEVICEINTERFACE NotificationFilter;
+  ZeroMemory(&NotificationFilter, sizeof(NotificationFilter));
+  NotificationFilter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+  NotificationFilter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+  NotificationFilter.dbcc_classguid = WceusbshGUID;
+
+  m_hDeviceNotify = RegisterDeviceNotification(m_hwnd,
+    &NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE);
+}
+
 void VWindow::setTooltip(string text)
 {
   if (m_tooltipHwnd) {
@@ -221,6 +246,15 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     //break;
   case WM_COMMAND:
     pWindow->command(wParam, lParam);
+    break;
+  case WM_DEVICECHANGE:
+    // Output some messages to the window.
+    if (wParam == DBT_DEVICEARRIVAL) {
+      pWindow->m_deviceCallback(pWindow->m_callbackArg, true);
+    } else if (wParam == DBT_DEVICEREMOVECOMPLETE) {
+      pWindow->m_deviceCallback(pWindow->m_callbackArg, false);
+    }
+    // should we handle DBT_DEVNODES_CHANGED ?
     break;
   case WM_DESTROY:
     pWindow->cleanup();
