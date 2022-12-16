@@ -963,7 +963,7 @@ bool VortexEditor::tryConnect()
   if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
     return false;
   }
-  m_portActive[port] = true;
+  m_portList[port].second.portActive = true;
   return true;
 }
 
@@ -1181,7 +1181,7 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   if (portIndex >= m_portList.size()) {
     return false;
   }
-  ArduinoSerial *serial = &m_portList[portIndex].second;
+  ArduinoSerial *serial = &m_portList[portIndex].second.serialPort;
   // read with NULL args to get expected amount
   int32_t amt = serial->ReadData(NULL, 0);
   if (amt == -1 || amt == 0) {
@@ -1209,7 +1209,7 @@ bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
   if (portIndex >= m_portList.size()) {
     return false;
   }
-  ArduinoSerial *serial = &m_portList[portIndex].second;
+  ArduinoSerial *serial = &m_portList[portIndex].second.serialPort;
   uint32_t size = 0;
 
   // first check how much is in the serial port
@@ -1273,7 +1273,7 @@ void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t 
   if (portIndex >= m_portList.size()) {
     return;
   }
-  ArduinoSerial *serial = &m_portList[portIndex].second;
+  ArduinoSerial *serial = &m_portList[portIndex].second.serialPort;
   // write the data into the serial port
   serial->WriteData(data, (unsigned int)size);
 }
@@ -1320,12 +1320,9 @@ bool VortexEditor::isConnected() const
   if (!m_portList.size()) {
     return false;
   }
-  if (!m_portList[sel].second.IsConnected()) {
+  const VortexPort *port = &m_portList[sel].second;
+  if (!port->serialPort.IsConnected()) {
     return false;
   }
-  auto port = m_portActive.find(sel);
-  if (port == m_portActive.end()) {
-    return false;
-  }
-  return port->second;
+  return port->portActive;
 }

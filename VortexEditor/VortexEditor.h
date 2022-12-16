@@ -145,12 +145,18 @@ private:
   // Console handle for debugging
   FILE *m_consoleHandle;
 
-  // list of ports
-  std::vector<std::pair<uint32_t, ArduinoSerial>> m_portList;
+  struct VortexPort {
+    VortexPort(ArduinoSerial &&serial) :
+      serialPort(std::move(serial)),
+      portActive(false)
+    {
+    }
+    ArduinoSerial serialPort;
+    bool portActive;
+  };
 
-  // map of whether a port is active, ie the connection is established
-  // and the other side is ready
-  std::map<uint32_t, bool> m_portActive;
+  // list of ports
+  std::vector<std::pair<uint32_t, VortexPort>> m_portList;
 
   // ==================================
   //  GUI Members
