@@ -189,7 +189,7 @@ private:
   VButton m_delModeButton;
   VButton m_copyModeButton;
   // the list of fingers is a multi select
-  VMultiListBox m_fingersMultiListBox;
+  VMultiListBox m_ledsMultiListBox;
   // the pattern selection
   VComboBox m_patternSelectComboBox;
   // color select options

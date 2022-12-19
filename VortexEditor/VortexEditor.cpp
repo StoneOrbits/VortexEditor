@@ -56,7 +56,7 @@ VortexEditor::VortexEditor() :
   m_modeListBox(),
   m_addModeButton(),
   m_delModeButton(),
-  m_fingersMultiListBox(),
+  m_ledsMultiListBox(),
   m_patternSelectComboBox(),
   m_colorSelects()
 {
@@ -103,7 +103,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 24, 16, 320, DEL_MODE_ID, delModeCallback);
   m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 24, 185, 320, COPY_MODE_ID, copyModeCallback);
 
-  m_fingersMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 278, 54, SELECT_FINGER_ID, selectFingerCallback);
+  m_ledsMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 278, 54, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
   m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 108, 24, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
 
@@ -238,12 +238,12 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     break;
   }
   uintptr_t menu = (uintptr_t)hMenu;
-  int pos = m_fingersMultiListBox.getSelection();
+  int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     // this should never happen
     return;
@@ -378,7 +378,7 @@ void VortexEditor::copyColorset()
 void VortexEditor::pasteColorset()
 {
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     return;
   }
@@ -407,10 +407,14 @@ void VortexEditor::pasteColorset()
 
 void VortexEditor::copyLED()
 {
+  int pos = m_ledsMultiListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
   // TODO: led/colorset to/from json
   string led = LED_CLIPBOARD_MARKER;
-  int pos = m_patternSelectComboBox.getSelection();
-  led += to_string(pos) + ";";
+  int pat = m_patternSelectComboBox.getSelection();
+  led += to_string(pat) + ";";
   PatternArgs args;
   VEngine::getPatternArgs((LedPos)pos, args);
   led += to_string(args.arg1) + ",";
@@ -445,7 +449,7 @@ void VortexEditor::splitString(const string &str, vector<string> &splits, char l
 void VortexEditor::pasteLED()
 {
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     return;
   }
@@ -813,8 +817,8 @@ void VortexEditor::selectMode(VWindow *window)
   }
   VEngine::setCurMode(sel);
   // reselect first finger
-  m_fingersMultiListBox.clearSelections();
-  m_fingersMultiListBox.setSelection(0);
+  m_ledsMultiListBox.clearSelections();
+  m_ledsMultiListBox.setSelection(0);
   refreshFingerList();
   demoCurMode();
 }
@@ -867,7 +871,7 @@ void VortexEditor::addMode(VWindow *window)
   m_modeListBox.setSelection(VEngine::curMode());
   refreshModeList();
   if (VEngine::numModes() == 1) {
-    m_fingersMultiListBox.setSelection(0);
+    m_ledsMultiListBox.setSelection(0);
     refreshModeList();
     demoCurMode();
   }
@@ -916,7 +920,7 @@ void VortexEditor::selectPattern(VWindow *window)
     return;
   }
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     return;
   }
@@ -950,11 +954,11 @@ void VortexEditor::copyToAll(VWindow *window)
     return;
   }
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (sels.size() > 1) {
     return;
   }
-  int pos = m_fingersMultiListBox.getSelection();
+  int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
@@ -982,7 +986,7 @@ void VortexEditor::selectColor(VWindow *window)
     return;
   }
   VColorSelect *colSelect = (VColorSelect *)window;
-  int pos = m_fingersMultiListBox.getSelection();
+  int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
@@ -998,7 +1002,7 @@ void VortexEditor::selectColor(VWindow *window)
     newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
   }
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     // this should never happen
     return;
@@ -1022,7 +1026,7 @@ void VortexEditor::paramEdit(VWindow *window)
   if (sel < 0) {
     sel = 0;
   }
-  int pos = m_fingersMultiListBox.getSelection();
+  int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     return;
   }
@@ -1034,7 +1038,7 @@ void VortexEditor::paramEdit(VWindow *window)
   // store the target param
   args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     // this should never happen
     return;
@@ -1141,18 +1145,18 @@ void VortexEditor::refreshModeList(bool recursive)
 void VortexEditor::refreshFingerList(bool recursive)
 {
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
-  m_fingersMultiListBox.clearItems();
+  m_ledsMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.clearItems();
   for (LedPos pos = LED_FIRST; pos < LED_COUNT; ++pos) {
     // if a finger is empty don't add it
     if (VEngine::getPatternID(pos) == PATTERN_NONE) {
       continue;
     }
     string fingerName = VEngine::ledToString(pos) + " (" + VEngine::getPatternName(pos) + ")";
-    m_fingersMultiListBox.addItem(fingerName);
+    m_ledsMultiListBox.addItem(fingerName);
   }
   // restore the selection
-  m_fingersMultiListBox.setSelections(sels);
+  m_ledsMultiListBox.setSelections(sels);
   if (recursive) {
     refreshPatternSelect(recursive);
     refreshColorSelect(recursive);
@@ -1163,13 +1167,13 @@ void VortexEditor::refreshFingerList(bool recursive)
 
 void VortexEditor::refreshPatternSelect(bool recursive)
 {
-  if (!m_fingersMultiListBox.numItems() || !m_fingersMultiListBox.numSelections()) {
+  if (!m_ledsMultiListBox.numItems() || !m_ledsMultiListBox.numSelections()) {
     m_patternSelectComboBox.setSelection(-1);
     m_patternSelectComboBox.setEnabled(false);
     return;
   }
   m_patternSelectComboBox.setEnabled(true);
-  int sel = m_fingersMultiListBox.getSelection();
+  int sel = m_ledsMultiListBox.getSelection();
   if (sel < 0) {
     m_patternSelectComboBox.setSelection(PATTERN_NONE);
     return;
@@ -1195,14 +1199,14 @@ void VortexEditor::refreshPatternSelect(bool recursive)
 
 void VortexEditor::refreshColorSelect(bool recursive)
 {
-  if (!m_fingersMultiListBox.numItems() || !m_fingersMultiListBox.numSelections()) {
+  if (!m_ledsMultiListBox.numItems() || !m_ledsMultiListBox.numSelections()) {
     for (uint32_t i = 0; i < 8; ++i) {
       m_colorSelects[i].clear();
       m_colorSelects[i].setActive(false);
     }
     return;
   }
-  int pos = m_fingersMultiListBox.getSelection();
+  int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     // iterate all extra slots and set to inactive
     for (uint32_t i = 0; i < 8; ++i) {
@@ -1232,7 +1236,7 @@ void VortexEditor::refreshParams(bool recursive)
   if (sel < 0) {
     sel = 0;
   }
-  int pos = m_fingersMultiListBox.getSelection();
+  int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     for (uint32_t i = 0; i < 8; ++i) {
       m_paramTextBoxes[i].clearText();
@@ -1242,7 +1246,7 @@ void VortexEditor::refreshParams(bool recursive)
     return;
   }
   vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
+  m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
     // disable all edit boxes but don't change their text, sorry.
     for (uint32_t i = 0; i < 8; ++i) {
@@ -1296,7 +1300,7 @@ void VortexEditor::refreshParams(bool recursive)
 void VortexEditor::refreshApplyAll(bool recursive)
 {
   // also refresh the apply to all button, why not
-  if (m_fingersMultiListBox.numSelections() == 1 &&
+  if (m_ledsMultiListBox.numSelections() == 1 &&
     !isMultiLedPatternID(VEngine::getPatternID())) {
     m_applyToAllButton.setEnabled(true);
   } else {
