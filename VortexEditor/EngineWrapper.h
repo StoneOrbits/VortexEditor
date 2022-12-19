@@ -37,7 +37,8 @@ public:
   static bool delCurMode();
 
   // functions to operate on the current Mode
-  static bool setPattern(PatternID id);
+  static bool setPattern(PatternID id, const PatternArgs *args = nullptr,
+    const Colorset *set = nullptr);
   static PatternID getPatternID(LedPos pos = LED_FIRST);
   static std::string getPatternName(LedPos pos = LED_FIRST);
   static std::string getModeName();

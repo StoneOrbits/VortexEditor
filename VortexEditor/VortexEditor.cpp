@@ -31,6 +31,8 @@
 
 // the prefix of colorsets copied to clipboard
 #define COLORSET_CLIPBOARD_MARKER "COLORSET:"
+// the prefix of leds copied to clipboard
+#define LED_CLIPBOARD_MARKER "LED:"
 
 // savefile extensions
 #define VORTEX_SAVE_EXTENSION ".vortex"
@@ -123,6 +125,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_COLORSET_RANDOM_RAINBOW, handleMenusCallback);
   m_window.addCallback(ID_PATTERN_RANDOM_SINGLE_LED_PATTERN, handleMenusCallback);
   m_window.addCallback(ID_PATTERN_RANDOM_MULTI_LED_PATTERN, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_COPY_LED, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_PASTE_LED, handleMenusCallback);
   m_window.addCallback(ID_EDIT_CLEAR_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_COLOR_SET_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_PATTERN_TO_ALL, handleMenusCallback);
@@ -134,6 +138,24 @@ bool VortexEditor::init(HINSTANCE hInst)
   // apply the icon
   HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
   SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
+  // create an accelerator table for dispatching hotkeys as WM_COMMANDS
+  ACCEL accelerators[] = {
+    // ctrl + c   copy led
+    { FCONTROL | FVIRTKEY, 'C', ID_EDIT_COPY_LED },
+    // ctrl + v   paste led
+    { FCONTROL | FVIRTKEY, 'V', ID_EDIT_PASTE_LED },
+    // ctrl + shift + c   clear colorset
+    { FCONTROL | FSHIFT | FVIRTKEY, 'D', ID_EDIT_CLEAR_COLORSET },
+    // ctrl + shift + c   copy colorset
+    { FCONTROL | FSHIFT | FVIRTKEY, 'C', ID_EDIT_COPY_COLORSET },
+    // ctrl + shift + v   paste colorset
+    { FCONTROL | FSHIFT | FVIRTKEY, 'V', ID_EDIT_PASTE_COLORSET },
+  };
+  m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
+  if (!m_accelTable) {
+    // error!
+  }
 
   // install the device callback
   m_window.installDeviceCallback(deviceChangeCallback);
@@ -152,6 +174,9 @@ void VortexEditor::run()
   // main message loop
   MSG msg;
   while (GetMessage(&msg, NULL, 0, 0)) {
+    if (TranslateAccelerator(m_window.hwnd(), m_accelTable, &msg)) {
+      continue;
+    }
     // pass message to main window otherwise process it
     if (!m_window.process(msg)) {
       TranslateMessage(&msg);
@@ -202,6 +227,12 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_EDIT_PASTE_COLORSET:
     pasteColorset();
+    return;
+  case ID_EDIT_COPY_LED:
+    copyLED();
+    return;
+  case ID_EDIT_PASTE_LED:
+    pasteLED();
     return;
   default:
     break;
@@ -264,6 +295,8 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     newSet.clear();
     applyColorset(newSet, sels);
     break;
+#if 0
+  // this is kinda pointless if we have ctrl+c/ctrl+v
   case ID_EDIT_COPY_COLOR_SET_TO_ALL:
     if (sels.size() != 1) {
       break;
@@ -277,6 +310,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     }
     applyPatternToAll(VEngine::getPatternID((LedPos)sels[0]));
     break;
+#endif
   }
 }
 
@@ -295,7 +329,7 @@ void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selecti
   demoCurMode();
 }
 
-void VortexEditor::applyPattern(PatternID id, const std::vector<int> &selections)
+void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 {
   for (uint32_t i = 0; i < selections.size(); ++i) {
     VEngine::setSinglePat((LedPos)selections[i], id);
@@ -343,18 +377,19 @@ void VortexEditor::copyColorset()
 
 void VortexEditor::pasteColorset()
 {
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    return;
+  }
   string colorset;
   getClipboard(colorset);
   // check for the colorset marker
   if (strncmp(colorset.c_str(), COLORSET_CLIPBOARD_MARKER, sizeof(COLORSET_CLIPBOARD_MARKER) - 1) != 0) {
     return;
   }
-  vector<std::string> splits;
-  string split;
-  istringstream ss(colorset.c_str() + sizeof(COLORSET_CLIPBOARD_MARKER) - 1);
-  while (getline(ss, split, ',')) {
-    splits.push_back(split);
-  }
+  vector<string> splits;
+  splitString(colorset.c_str() + sizeof(COLORSET_CLIPBOARD_MARKER) - 1, splits, ',');
   Colorset newSet;
   for (auto field : splits) {
     if (field == "blank" || field[0] != '#') {
@@ -363,11 +398,6 @@ void VortexEditor::pasteColorset()
       newSet.addColor(strtoul(field.c_str() + 1, NULL, 16));
     }
   }
-  vector<int> sels;
-  m_fingersMultiListBox.getSelections(sels);
-  if (!sels.size()) {
-    return;
-  }
   for (uint32_t i = 0; i < sels.size(); ++i) {
     VEngine::setColorset((LedPos)sels[i], newSet);
   }
@@ -375,7 +405,105 @@ void VortexEditor::pasteColorset()
   demoCurMode();
 }
 
-void VortexEditor::getClipboard(std::string &clipData)
+void VortexEditor::copyLED()
+{
+  // TODO: led/colorset to/from json
+  string led = LED_CLIPBOARD_MARKER;
+  int pos = m_patternSelectComboBox.getSelection();
+  led += to_string(pos) + ";";
+  PatternArgs args;
+  VEngine::getPatternArgs((LedPos)pos, args);
+  led += to_string(args.arg1) + ",";
+  led += to_string(args.arg2) + ",";
+  led += to_string(args.arg3) + ",";
+  led += to_string(args.arg4) + ",";
+  led += to_string(args.arg5) + ",";
+  led += to_string(args.arg6);
+  led += ";";
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (!m_colorSelects[i].isActive()) {
+      break;
+    }
+    string name = m_colorSelects[i].getColorName();
+    if (i > 0) {
+      led += ",";
+    }
+    led += name;
+  }
+  setClipboard(led);
+}
+
+void VortexEditor::splitString(const string &str, vector<string> &splits, char letter)
+{
+  string split;
+  istringstream ss(str);
+  while (getline(ss, split, letter)) {
+    splits.push_back(split);
+  }
+}
+
+void VortexEditor::pasteLED()
+{
+  vector<int> sels;
+  m_fingersMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    return;
+  }
+  // TODO: this is so ugly
+  string led;
+  getClipboard(led);
+  // check for the colorset marker
+  if (strncmp(led.c_str(), LED_CLIPBOARD_MARKER, sizeof(LED_CLIPBOARD_MARKER) - 1) != 0) {
+    return;
+  }
+  // split the string by semicolon
+  vector<string> splits;
+  splitString(led.c_str() + sizeof(LED_CLIPBOARD_MARKER) - 1, splits, ';');
+  if (splits.size() < 3) {
+    return;
+  }
+  // pattern id is first
+  PatternID id = (PatternID)strtoul(splits[0].c_str(), NULL, 10);
+  // pattern args are second
+  PatternArgs args;
+  vector<string> argSplit;
+  splitString(splits[1].c_str(), argSplit, ',');
+  if (argSplit.size() < 6) {
+    return;
+  }
+  // convert args
+  args.arg1 = (uint8_t)strtoul(argSplit[0].c_str(), NULL, 10);
+  args.arg2 = (uint8_t)strtoul(argSplit[1].c_str(), NULL, 10);
+  args.arg3 = (uint8_t)strtoul(argSplit[2].c_str(), NULL, 10);
+  args.arg4 = (uint8_t)strtoul(argSplit[3].c_str(), NULL, 10);
+  args.arg5 = (uint8_t)strtoul(argSplit[4].c_str(), NULL, 10);
+  args.arg6 = (uint8_t)strtoul(argSplit[5].c_str(), NULL, 10);
+  // convert colorset
+  Colorset newSet;
+  vector<string> colorSplit;
+  splitString(splits[2].c_str(), colorSplit, ',');
+  for (auto field : colorSplit) {
+    if (field == "blank" || field[0] != '#') {
+      newSet.addColor(0);
+    } else {
+      newSet.addColor(strtoul(field.c_str() + 1, NULL, 16));
+    }
+  }
+  // if applying multi-led, or changing multi-to single
+  if (isMultiLedPatternID(id) || isMultiLedPatternID(VEngine::getPatternID())) {
+    // then just set-all
+    VEngine::setPattern(id, &args, &newSet);
+  } else {
+    // otherwise set single
+    for (uint32_t i = 0; i < sels.size(); ++i) {
+      VEngine::setSinglePat((LedPos)sels[i], id, &args, &newSet);
+    }
+  }
+  refreshModeList();
+  demoCurMode();
+}
+
+void VortexEditor::getClipboard(string &clipData)
 {
   // Try opening the clipboard
   if (!OpenClipboard(nullptr)) {
@@ -398,7 +526,7 @@ void VortexEditor::getClipboard(std::string &clipData)
   CloseClipboard();
 }
 
-void VortexEditor::setClipboard(const std::string &clipData)
+void VortexEditor::setClipboard(const string &clipData)
 {
   HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, clipData.length() + 1);
   if (!hMem) {

@@ -109,6 +109,8 @@ private:
   void applyPatternToAll(PatternID id);
   void copyColorset();
   void pasteColorset();
+  void copyLED();
+  void pasteLED();
 
   // helper for clipboard
   void getClipboard(std::string &clipData);
@@ -136,6 +138,9 @@ private:
   // whether connected to gloveset
   bool isConnected() const;
 
+  // helper to split strings
+  void splitString(const std::string &str, std::vector<std::string> &splits, char letter);
+
   // ==================================
   //  Member data
 
@@ -157,6 +162,9 @@ private:
 
   // list of ports
   std::vector<std::pair<uint32_t, VortexPort>> m_portList;
+
+  // accelerator table for hotkeys
+  HACCEL m_accelTable;
 
   // ==================================
   //  GUI Members

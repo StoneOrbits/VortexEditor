@@ -124,13 +124,13 @@ bool VEngine::delCurMode()
   return true;
 }
 
-bool VEngine::setPattern(PatternID id)
+bool VEngine::setPattern(PatternID id, const PatternArgs *args, const Colorset *set)
 {
   Mode *pMode = Modes::curMode();
   if (!pMode) {
     return false;
   }
-  if (!pMode->setPattern(id)) {
+  if (!pMode->setPattern(id, args, set)) {
     return false;
   }
   Modes::saveStorage();
