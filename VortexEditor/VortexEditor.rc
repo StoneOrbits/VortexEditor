@@ -71,7 +71,7 @@ BEGIN
     POPUP "Edit"
     BEGIN
         MENUITEM "Undo\tctrl+z",                ID_EDIT_UNDO
-        MENUITEM "Redo\tctrl+y",                ID_EDIT_REDO
+        MENUITEM "Redo\tctrl+r / ctrl+y",       ID_EDIT_REDO
         MENUITEM SEPARATOR
         MENUITEM "Copy LED\tctrl+c",            ID_EDIT_COPY_LED
         MENUITEM "Paste LED\tctrl+v",           ID_EDIT_PASTE_LED

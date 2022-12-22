@@ -146,8 +146,10 @@ bool VortexEditor::init(HINSTANCE hInst)
   ACCEL accelerators[] = {
     // ctrl + z   undo
     { FCONTROL | FVIRTKEY, 'Z', ID_EDIT_UNDO },
-    // ctrl + r   redo
+    // ctrl + y   redo
     { FCONTROL | FVIRTKEY, 'Y', ID_EDIT_REDO },
+    // shh...
+    { FCONTROL | FVIRTKEY, 'R', ID_EDIT_REDO },
     // ctrl + c   copy led
     { FCONTROL | FVIRTKEY, 'C', ID_EDIT_COPY_LED },
     // ctrl + v   paste led
