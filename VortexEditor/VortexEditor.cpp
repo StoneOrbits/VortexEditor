@@ -146,7 +146,7 @@ bool VortexEditor::init(HINSTANCE hInst)
     // ctrl + z   undo
     { FCONTROL | FVIRTKEY, 'Z', ID_EDIT_UNDO },
     // ctrl + r   redo
-    { FCONTROL | FVIRTKEY, 'R', ID_EDIT_REDO },
+    { FCONTROL | FVIRTKEY, 'Y', ID_EDIT_REDO },
     // ctrl + c   copy led
     { FCONTROL | FVIRTKEY, 'C', ID_EDIT_COPY_LED },
     // ctrl + v   paste led

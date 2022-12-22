@@ -18,7 +18,7 @@ using namespace std;
 
 // the undo buffer and data
 deque<ByteStream> VEngine::m_undoBuffer;
-uint32_t VEngine::m_undoLimit = 10;
+uint32_t VEngine::m_undoLimit = 0;
 uint32_t VEngine::m_undoIndex = 0;
 bool VEngine::m_undoEnabled = true;
 
