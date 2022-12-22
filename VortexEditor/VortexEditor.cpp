@@ -46,6 +46,7 @@ VortexEditor::VortexEditor() :
   m_hInstance(NULL),
   m_consoleHandle(nullptr),
   m_portList(),
+  m_accelTable(),
   m_window(),
   m_portSelection(),
   m_connectButton(),
@@ -191,7 +192,7 @@ void VortexEditor::run()
   }
 }
 
-void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, va_list list)
+void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, ...)
 {
   string strMsg;
   if (!g_pEditor || !g_pEditor->m_consoleHandle) {
@@ -212,7 +213,10 @@ void VortexEditor::printlog(const char *file, const char *func, int line, const 
   }
   strMsg += msg;
   strMsg += "\n";
+  va_list list;
+  va_start(list, msg);
   vfprintf(g_pEditor->m_consoleHandle, strMsg.c_str(), list);
+  va_end(list);
   //vfprintf(g_pEditor->m_logHandle, strMsg.c_str(), list);
 }
 
@@ -590,7 +594,7 @@ void VortexEditor::refresh(VWindow *window)
   m_portSelection.clearItems();
   for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
     m_portSelection.addItem("Port " + to_string(port->first));
-    printf("Connected port %u\n", port->first);
+    debug("Connected port %u", port->first);
   }
 }
 
@@ -632,7 +636,7 @@ void VortexEditor::pull(VWindow *window)
   writePort(port, EDITOR_VERB_PULL_MODES);
   stream.clear();
   if (!readModes(port, stream) || !stream.size()) {
-    printf("Couldn't read anything\n");
+    debug("Couldn't read anything");
     return;
   }
   VEngine::setModes(stream);
@@ -641,7 +645,7 @@ void VortexEditor::pull(VWindow *window)
   // wait for the ack from the gloves
   expectData(port, EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
-  printf("Unserialized %u modes\n", VEngine::numModes());
+  debug("Unserialized %u modes", VEngine::numModes());
   // refresh the mode list
   refreshModeList();
   // demo the current mode
@@ -681,7 +685,7 @@ void VortexEditor::load(VWindow *window)
     // error
   }
   VEngine::setModes(stream);
-  printf("Loaded from [%s]\n", szFile);
+  debug("Loaded from [%s]", szFile);
   refreshModeList();
   demoCurMode();
 }
@@ -726,7 +730,7 @@ void VortexEditor::save(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  printf("Saved to [%s]\n", filename.c_str());
+  debug("Saved to [%s]", filename.c_str());
   refreshModeList();
 }
 
@@ -766,7 +770,7 @@ void VortexEditor::importMode(VWindow *window)
   if (!VEngine::addNewMode(stream)) {
     // error
   }
-  printf("Loaded from [%s]\n", szFile);
+  debug("Loaded from [%s]", szFile);
   refreshModeList();
   demoCurMode();
 }
@@ -820,7 +824,7 @@ void VortexEditor::exportMode(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  printf("Saved to [%s]\n", filename.c_str());
+  debug("Saved to [%s]", filename.c_str());
 }
 
 void VortexEditor::selectMode(VWindow *window)
@@ -880,7 +884,7 @@ void VortexEditor::addMode(VWindow *window)
   if (VEngine::numModes() >= MAX_MODES) {
     return;
   }
-  printf("Adding mode %u\n", VEngine::numModes() + 1);
+  debug("Adding mode %u", VEngine::numModes() + 1);
   VEngine::addNewMode();
   m_modeListBox.setSelection(VEngine::curMode());
   refreshModeList();
@@ -893,7 +897,7 @@ void VortexEditor::addMode(VWindow *window)
 
 void VortexEditor::delMode(VWindow *window)
 {
-  printf("Deleting mode %u\n", VEngine::curMode());
+  debug("Deleting mode %u", VEngine::curMode());
   uint32_t cur = VEngine::curMode();
   VEngine::delCurMode();
   refreshModeList();
@@ -913,7 +917,7 @@ void VortexEditor::copyMode(VWindow *window)
   if (sel < 0) {
     return;
   }
-  printf("Copying mode %u\n", VEngine::curMode());
+  debug("Copying mode %u", VEngine::curMode());
   ByteStream stream;
   VEngine::getCurMode(stream);
   VEngine::addNewMode(stream);
@@ -1009,10 +1013,10 @@ void VortexEditor::selectColor(VWindow *window)
   VEngine::getColorset((LedPos)pos, newSet);
   // if the color select was made inactive
   if (!colSelect->isActive()) {
-    printf("Disabled color slot %u\n", colorIndex);
+    debug("Disabled color slot %u", colorIndex);
     newSet.removeColor(colorIndex);
   } else {
-    printf("Updating color slot %u\n", colorIndex);
+    debug("Updating color slot %u", colorIndex);
     newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
   }
   vector<int> sels;
@@ -1117,18 +1121,18 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
 {
   // check the handshake for valid data
   if (handshake.size() < 10) {
-    printf("Handshake size bad: %u\n", handshake.size());
+    debug("Handshake size bad: %u", handshake.size());
     // bad handshake
     return false;
   }
   if (handshake.data()[0] != '=' || handshake.data()[1] != '=') {
-    printf("Handshake start bad: [%c%c]\n",
+    debug("Handshake start bad: [%c%c]",
       handshake.data()[0], handshake.data()[1]);
     // bad handshake
     return false;
   }
   if (memcmp(handshake.data(), "== Vortex Framework v", sizeof("== Vortex Framework v") - 1) != 0) {
-    printf("Handshake data bad: [%s]\n", handshake.data());
+    debug("Handshake data bad: [%s]", handshake.data());
     // bad handshake
     return false;
   }
@@ -1340,7 +1344,6 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   // read the data into the buffer
   int32_t actual = serial->ReadData((void *)outStream.data(), amt);
   if (actual != amt) {
-    printf("FUUUCUASDKLFJHASDF\n");
     return false;
   }
   // size is the first param of the data, just override it
@@ -1348,7 +1351,7 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   // the editor, maybe the Serial class should accomodate the Bytestream
   *(uint32_t *)outStream.rawData() = amt;
   // just print the buffer
-  printf("Data on port %u: [%s] (%u bytes)\n", m_portList[portIndex].first, outStream.data(), amt);
+  debug("Data on port %u: [%s] (%u bytes)", m_portList[portIndex].first, outStream.data(), amt);
   return true;
 }
 
@@ -1446,7 +1449,7 @@ void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
   // Even when I flushed the file buffers it didn't fix it.
   writePortRaw(portIndex, buf, size + sizeof(size));
   delete[] buf;
-  printf("Wrote %u bytes of raw data\n", size);
+  debug("Wrote %u bytes of raw data", size);
 }
 
 void VortexEditor::writePort(uint32_t portIndex, string data)
@@ -1456,7 +1459,7 @@ void VortexEditor::writePort(uint32_t portIndex, string data)
   }
   writePortRaw(portIndex, (uint8_t *)data.c_str(), data.size());
   // just print the buffer
-  printf("Wrote to port %u: [%s]\n", m_portList[portIndex].first, data.c_str());
+  debug("Wrote to port %u: [%s]", m_portList[portIndex].first, data.c_str());
 }
 
 bool VortexEditor::isConnected() const

@@ -396,7 +396,7 @@ bool VEngine::addUndoBuffer()
   }
   // only save an undo if the buffer is different
   if (m_undoBuffer.size() > 0 && modes.CRC() == m_undoBuffer.back().CRC()) {
-    printf("Not saving duplicate undo buffer\n");
+    //printf("Not saving duplicate undo buffer\n");
     return false;
   }
   // must rewind to that step before pushing next step
@@ -405,12 +405,13 @@ bool VEngine::addUndoBuffer()
     m_undoIndex--;
   }
   m_undoBuffer.push_back(modes);
-  printf("Pushing undo buffer (pos: %u)\n", m_undoIndex);
+  //printf("Pushing undo buffer (pos: %u)\n", m_undoIndex);
   // make sure list doesn't grow too big
   if (m_undoLimit && m_undoBuffer.size() > m_undoLimit) {
-    printf("Popping front of undo buffer\n");
+    //printf("Popping front of undo buffer\n");
     m_undoBuffer.pop_front();
   }
+#if 0
   printf("Buffer:\n");
   for (uint32_t i = 0; i < m_undoBuffer.size(); ++i) {
     printf("\t%u: %x", i, m_undoBuffer[i].CRC());
@@ -420,6 +421,7 @@ bool VEngine::addUndoBuffer()
       printf("\n");
     }
   }
+#endif
   return true;
 }
 
@@ -432,8 +434,9 @@ bool VEngine::applyUndo()
   if (m_undoIndex > highestIndex) {
     m_undoIndex = highestIndex;
   }
-  printf("Undo position: %u / %u\n", m_undoIndex, highestIndex);
-  printf("Buffer:\n");
+  //printf("Undo position: %u / %u\n", m_undoIndex, highestIndex);
+  //printf("Buffer:\n");
+#if 0
   for (uint32_t i = 0; i < m_undoBuffer.size(); ++i) {
     printf("\t%u: %x", i, m_undoBuffer[i].CRC());
     if ((m_undoBuffer.size() - 1) - m_undoIndex == i) {
@@ -442,6 +445,7 @@ bool VEngine::applyUndo()
       printf("\n");
     }
   }
+#endif
   // index from the back instead of the front
   uint32_t backIndex = highestIndex - m_undoIndex;
   m_undoBuffer[backIndex].resetUnserializer();

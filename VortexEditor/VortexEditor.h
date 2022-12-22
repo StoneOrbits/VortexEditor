@@ -26,6 +26,13 @@
 class ByteStream;
 class Colorset;
 
+// debug log
+#ifdef _DEBUG
+#define debug(msg, ...) printlog(__FILE__, __FUNCTION__, __LINE__, msg, __VA_ARGS__)
+#else
+#define debug(msg, ...)
+#endif
+
 class VortexEditor
 {
 public:
@@ -37,12 +44,12 @@ public:
   // run the test framework
   void run();
 
-  // print to the log
-  void printlog(const char *file, const char *func, int line, const char *msg, va_list list);
-
   HINSTANCE hInst() const { return m_hInstance; }
 
 private:
+  // print to the log
+  static void printlog(const char *file, const char *func, int line, const char *msg, ...);
+
   // callbacks wrappers so that the callback handlers of
   // the gui elements can call a static routine
   static void selectPortCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectPort(window); }
