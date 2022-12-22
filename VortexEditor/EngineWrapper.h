@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <deque>
 
 class PatternArgs;
 class ByteStream;
@@ -24,30 +25,31 @@ public:
   static void cleanup();
 
   static bool getModes(ByteStream &outStream);
-  static bool setModes(ByteStream &stream);
+  static bool setModes(ByteStream &stream, bool save = true);
   static bool getCurMode(ByteStream &stream);
 
   // functions to operate on the current mode selection
   static uint32_t curMode();
   static uint32_t numModes();
-  static bool addNewMode();
-  static bool addNewMode(ByteStream &stream);
-  static bool setCurMode(uint32_t index);
-  static bool nextMode();
-  static bool delCurMode();
+  static bool addNewMode(bool save = true);
+  static bool addNewMode(ByteStream &stream, bool save = true);
+  static bool setCurMode(uint32_t index, bool save = true);
+  static bool nextMode(bool save = true);
+  static bool delCurMode(bool save = true);
 
   // functions to operate on the current Mode
   static bool setPattern(PatternID id, const PatternArgs *args = nullptr,
-    const Colorset *set = nullptr);
+    const Colorset *set = nullptr, bool save = true);
   static PatternID getPatternID(LedPos pos = LED_FIRST);
   static std::string getPatternName(LedPos pos = LED_FIRST);
   static std::string getModeName();
   static bool setSinglePat(LedPos pos, PatternID id,
-    const PatternArgs *args = nullptr, const Colorset *set = nullptr);
+    const PatternArgs *args = nullptr, const Colorset *set = nullptr, 
+    bool save = true);
   static bool getColorset(LedPos pos, Colorset &set);
-  static bool setColorset(LedPos pos, const Colorset &set);
+  static bool setColorset(LedPos pos, const Colorset &set, bool save = true);
   static bool getPatternArgs(LedPos pos, PatternArgs &args);
-  static bool setPatternArgs(LedPos pos, PatternArgs &args);
+  static bool setPatternArgs(LedPos pos, PatternArgs &args, bool save = true);
 
   // Helpers for converting pattern id and led id to string
   static std::string patternToString(PatternID id = PATTERN_NONE);
@@ -55,6 +57,26 @@ public:
   static uint32_t numCustomParams(PatternID id);
   static std::vector<std::string> getCustomParams(PatternID id);
 
-private:
+  // undo redo
+  static void setUndoBufferLimit(uint32_t limit);
+  static bool addUndoBuffer();
+  static bool undo();
+  static bool redo();
 
+  // enable/disable undo
+  static void enableUndo(bool enabled) { m_undoEnabled = enabled; }
+
+private:
+  // save and add undo buffer
+  static bool doSave();
+  static bool applyUndo();
+
+  // undo buffer
+  static std::deque<ByteStream> m_undoBuffer;
+  // the undo limit
+  static uint32_t m_undoLimit;
+  // undo position in buffer
+  static uint32_t m_undoIndex;
+  // whether undo buffer is disabled recording
+  static bool m_undoEnabled;
 };

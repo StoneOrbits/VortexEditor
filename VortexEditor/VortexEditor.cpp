@@ -134,6 +134,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_HELP_HELP, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_UNDO, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_REDO, handleMenusCallback);
 
   // apply the icon
   HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -141,6 +143,10 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // create an accelerator table for dispatching hotkeys as WM_COMMANDS
   ACCEL accelerators[] = {
+    // ctrl + z   undo
+    { FCONTROL | FVIRTKEY, 'Z', ID_EDIT_UNDO },
+    // ctrl + r   redo
+    { FCONTROL | FVIRTKEY, 'R', ID_EDIT_REDO },
     // ctrl + c   copy led
     { FCONTROL | FVIRTKEY, 'C', ID_EDIT_COPY_LED },
     // ctrl + v   paste led
@@ -233,6 +239,14 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_EDIT_PASTE_LED:
     pasteLED();
+    return;
+  case ID_EDIT_UNDO:
+    VEngine::undo();
+    refreshModeList();
+    return;
+  case ID_EDIT_REDO:
+    VEngine::redo();
+    refreshModeList();
     return;
   default:
     break;
@@ -1126,17 +1140,19 @@ void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
   int curSel = VEngine::curMode();
-  VEngine::setCurMode(0);
+  // We have to actually iterate the modes with nextmode because VEngine can't just 
+  // instantiate one and return it which is kinda dumb but just how it works for now
+  VEngine::setCurMode(0, false);
   for (uint32_t i = 0; i < VEngine::numModes(); ++i) {
     // just use the pattern name from the first pattern
     string modeName = "Mode " + to_string(i) + " (" + VEngine::getModeName() + ")";
     m_modeListBox.addItem(modeName);
     // go to next mode
-    VEngine::nextMode();
+    VEngine::nextMode(false);
   }
   // restore the selection
   m_modeListBox.setSelection(curSel);
-  VEngine::setCurMode(curSel);
+  VEngine::setCurMode(curSel, false);
   if (recursive) {
     refreshFingerList(recursive);
   }

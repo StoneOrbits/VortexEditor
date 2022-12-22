@@ -16,6 +16,12 @@
 
 using namespace std;
 
+// the undo buffer and data
+deque<ByteStream> VEngine::m_undoBuffer;
+uint32_t VEngine::m_undoLimit = 10;
+uint32_t VEngine::m_undoIndex = 0;
+bool VEngine::m_undoEnabled = true;
+
 VEngine::VEngine()
 {
 }
@@ -26,6 +32,8 @@ void VEngine::init()
   VortexEngine::init();
   // clear the modes
   Modes::clearModes();
+  // save and set undo buffer
+  doSave();
 }
 
 void VEngine::cleanup()
@@ -34,6 +42,8 @@ void VEngine::cleanup()
 
 bool VEngine::getModes(ByteStream &outStream)
 {
+  // save to ensure we get the correct mode, not using doSave() because it causes
+  // an undo buffer entry to be added
   Modes::saveStorage();
   Modes::serialize(outStream);
   if (!outStream.compress()) {
@@ -42,7 +52,7 @@ bool VEngine::getModes(ByteStream &outStream)
   return true;
 }
 
-bool VEngine::setModes(ByteStream &stream)
+bool VEngine::setModes(ByteStream &stream, bool save)
 {
   if (!stream.decompress()) {
     //printf("BAD CRC !\n");
@@ -53,8 +63,7 @@ bool VEngine::setModes(ByteStream &stream)
     //printf("Unserialize failed\n");
     return false;
   }
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
 bool VEngine::getCurMode(ByteStream &outStream)
@@ -63,6 +72,8 @@ bool VEngine::getCurMode(ByteStream &outStream)
   if (!pMode) {
     return false;
   }
+  // save to ensure we get the correct mode, not using doSave() because it causes
+  // an undo buffer entry to be added
   Modes::saveStorage();
   pMode->serialize(outStream);
   outStream.recalcCRC();
@@ -79,7 +90,7 @@ uint32_t VEngine::numModes()
   return Modes::numModes();
 }
 
-bool VEngine::addNewMode()
+bool VEngine::addNewMode(bool save)
 {
   Colorset set;
   set.randomize();
@@ -92,39 +103,36 @@ bool VEngine::addNewMode()
   if (!Modes::addMode(randomPattern, nullptr, &set)) {
     return false;
   }
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
-bool VEngine::addNewMode(ByteStream &stream)
+bool VEngine::addNewMode(ByteStream &stream, bool save)
 {
   if (!Modes::addSerializedMode(stream)) {
     return false;
   }
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
-bool VEngine::setCurMode(uint32_t index)
+bool VEngine::setCurMode(uint32_t index, bool save)
 {
   Modes::setCurMode(index);
-  return true;
+  return !save || doSave();
 }
 
-bool VEngine::nextMode()
+bool VEngine::nextMode(bool save)
 {
   Modes::nextMode();
-  return true;
+  return !save || doSave();
 }
 
-bool VEngine::delCurMode()
+bool VEngine::delCurMode(bool save)
 {
   Modes::deleteCurMode();
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
-bool VEngine::setPattern(PatternID id, const PatternArgs *args, const Colorset *set)
+bool VEngine::setPattern(PatternID id, const PatternArgs *args, const Colorset *set, bool save)
 {
   Mode *pMode = Modes::curMode();
   if (!pMode) {
@@ -133,8 +141,7 @@ bool VEngine::setPattern(PatternID id, const PatternArgs *args, const Colorset *
   if (!pMode->setPattern(id, args, set)) {
     return false;
   }
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
 PatternID VEngine::getPatternID(LedPos pos)
@@ -181,7 +188,7 @@ string VEngine::getModeName()
 }
 
 bool VEngine::setSinglePat(LedPos pos, PatternID id,
-  const PatternArgs *args, const Colorset *set)
+  const PatternArgs *args, const Colorset *set, bool save)
 {
   Mode *pMode = Modes::curMode();
   if (!pMode) {
@@ -190,8 +197,7 @@ bool VEngine::setSinglePat(LedPos pos, PatternID id,
   if (!pMode->setSinglePat(pos, id, args, set)) {
     return false;
   }
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
 bool VEngine::getColorset(LedPos pos, Colorset &set)
@@ -208,7 +214,7 @@ bool VEngine::getColorset(LedPos pos, Colorset &set)
   return true;
 }
 
-bool VEngine::setColorset(LedPos pos, const Colorset &set)
+bool VEngine::setColorset(LedPos pos, const Colorset &set, bool save)
 {
   Mode *pMode = Modes::curMode();
   if (!pMode) {
@@ -219,8 +225,7 @@ bool VEngine::setColorset(LedPos pos, const Colorset &set)
     return false;
   }
   pat->setColorset(&set);
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
 bool VEngine::getPatternArgs(LedPos pos, PatternArgs &args)
@@ -237,7 +242,7 @@ bool VEngine::getPatternArgs(LedPos pos, PatternArgs &args)
   return true;
 }
 
-bool VEngine::setPatternArgs(LedPos pos, PatternArgs &args)
+bool VEngine::setPatternArgs(LedPos pos, PatternArgs &args, bool save)
 {
   Mode *pMode = Modes::curMode();
   if (!pMode) {
@@ -251,8 +256,7 @@ bool VEngine::setPatternArgs(LedPos pos, PatternArgs &args)
   // re-initialize the mode after changing pattern args
   pMode->init();
   // save the new params
-  Modes::saveStorage();
-  return true;
+  return !save || doSave();
 }
 
 string VEngine::patternToString(PatternID id)
@@ -373,4 +377,106 @@ vector<string> VEngine::getCustomParams(PatternID id)
       break;
   }
   return vector<string>();
+}
+
+void VEngine::setUndoBufferLimit(uint32_t limit)
+{
+  m_undoLimit = limit;
+}
+
+bool VEngine::addUndoBuffer()
+{
+  if (!m_undoEnabled) {
+    return true;
+  }
+  ByteStream modes;
+  getModes(modes);
+  if (!modes.size()) {
+    return false;
+  }
+  // only save an undo if the buffer is different
+  if (m_undoBuffer.size() > 0 && modes.CRC() == m_undoBuffer.back().CRC()) {
+    printf("Not saving duplicate undo buffer\n");
+    return false;
+  }
+  // must rewind to that step before pushing next step
+  while (m_undoIndex > 0) {
+    m_undoBuffer.pop_back();
+    m_undoIndex--;
+  }
+  m_undoBuffer.push_back(modes);
+  printf("Pushing undo buffer (pos: %u)\n", m_undoIndex);
+  // make sure list doesn't grow too big
+  if (m_undoLimit && m_undoBuffer.size() > m_undoLimit) {
+    printf("Popping front of undo buffer\n");
+    m_undoBuffer.pop_front();
+  }
+  printf("Buffer:\n");
+  for (uint32_t i = 0; i < m_undoBuffer.size(); ++i) {
+    printf("\t%u: %x", i, m_undoBuffer[i].CRC());
+    if ((m_undoBuffer.size() - 1) - m_undoIndex == i) {
+      printf(" <--\n");
+    } else {
+      printf("\n");
+    }
+  }
+  return true;
+}
+
+bool VEngine::applyUndo()
+{
+  if (!m_undoBuffer.size()) {
+    return false;
+  }
+  uint32_t highestIndex = m_undoBuffer.size() - 1;
+  if (m_undoIndex > highestIndex) {
+    m_undoIndex = highestIndex;
+  }
+  printf("Undo position: %u / %u\n", m_undoIndex, highestIndex);
+  printf("Buffer:\n");
+  for (uint32_t i = 0; i < m_undoBuffer.size(); ++i) {
+    printf("\t%u: %x", i, m_undoBuffer[i].CRC());
+    if ((m_undoBuffer.size() - 1) - m_undoIndex == i) {
+      printf(" <--\n");
+    } else {
+      printf("\n");
+    }
+  }
+  // index from the back instead of the front
+  uint32_t backIndex = highestIndex - m_undoIndex;
+  m_undoBuffer[backIndex].resetUnserializer();
+  VEngine::setModes(m_undoBuffer[backIndex], false);
+  return true;
+}
+
+bool VEngine::undo()
+{
+  if (!m_undoBuffer.size()) {
+    return false;
+  }
+  uint32_t highestIndex = m_undoBuffer.size() - 1;
+  // cannot undo further into history
+  if (m_undoIndex > highestIndex) {
+    m_undoIndex = highestIndex;
+  } else {
+    m_undoIndex++;
+  }
+  return applyUndo();
+}
+
+bool VEngine::redo()
+{
+  if (!m_undoBuffer.size()) {
+    return false;
+  }
+  // cannot undo further into history
+  if (m_undoIndex > 0) {
+    m_undoIndex--;
+  }
+  return applyUndo();
+}
+
+bool VEngine::doSave()
+{
+  return Modes::saveStorage() && addUndoBuffer();
 }

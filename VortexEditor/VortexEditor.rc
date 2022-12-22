@@ -70,6 +70,9 @@ BEGIN
     END
     POPUP "Edit"
     BEGIN
+        MENUITEM "Undo\tctrl+z",                ID_EDIT_UNDO
+        MENUITEM "Redo\tctrl+r",                ID_EDIT_REDO
+        MENUITEM SEPARATOR
         MENUITEM "Copy LED\tctrl+c",            ID_EDIT_COPY_LED
         MENUITEM "Paste LED\tctrl+v",           ID_EDIT_PASTE_LED
         MENUITEM SEPARATOR
@@ -133,7 +136,7 @@ BEGIN
         BLOCK "080904b0"
         BEGIN
             VALUE "CompanyName", "StoneOrbits"
-            VALUE "FileDescription", "An editor for the Vortex Framework"
+            VALUE "FileDescription", "Vortex Editor"
             VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "VortexEditor.exe"
             VALUE "LegalCopyright", "Copyright (C) 2022"
