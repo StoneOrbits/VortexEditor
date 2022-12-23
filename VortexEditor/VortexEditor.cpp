@@ -132,7 +132,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   }
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 694, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
+    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 693, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
   // callbacks for menus
