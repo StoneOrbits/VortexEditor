@@ -88,16 +88,35 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
-  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 80, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
-  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, 80, 24, 108, 15, ID_FILE_REFRESH_CONNECTIONS, refreshCallback);
-  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, 80, 24, 196, 15, ID_FILE_CONNECT, connectCallback);
-  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 80, 24, 284, 15, ID_FILE_PUSH, pushCallback);
-  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 80, 24, 372, 15, ID_FILE_PULL, pullCallback);
-  m_loadButton.init(hInst, m_window, "Load", BACK_COL, 80, 24, 460, 15, ID_FILE_LOAD, loadCallback);
-  m_saveButton.init(hInst, m_window, "Save", BACK_COL, 80, 24, 548, 15, ID_FILE_SAVE, saveCallback);
-  m_importButton.init(hInst, m_window, "Import", BACK_COL, 80, 24, 638, 15, ID_FILE_IMPORT, importCallback);
-  m_exportButton.init(hInst, m_window, "Export", BACK_COL, 80, 24, 728, 15, ID_FILE_EXPORT, exportCallback);
 
+  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 78, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
+
+  uint32_t buttonWidth = 76;
+  uint32_t buttonHeight = 24;
+
+  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, buttonWidth, buttonHeight, 108, 15, ID_FILE_REFRESH_CONNECTIONS, refreshCallback);
+  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, buttonWidth, buttonHeight, 196, 15, ID_FILE_CONNECT, connectCallback);
+  m_pushButton.init(hInst, m_window, "Push", BACK_COL, buttonWidth, buttonHeight, 284, 15, ID_FILE_PUSH, pushCallback);
+  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, buttonWidth, buttonHeight, 372, 15, ID_FILE_PULL, pullCallback);
+  m_loadButton.init(hInst, m_window, "Load", BACK_COL, buttonWidth, buttonHeight, 460, 15, ID_FILE_LOAD, loadCallback);
+  m_saveButton.init(hInst, m_window, "Save", BACK_COL, buttonWidth, buttonHeight, 548, 15, ID_FILE_SAVE, saveCallback);
+  m_importButton.init(hInst, m_window, "Import", BACK_COL, buttonWidth, buttonHeight, 638, 15, ID_FILE_IMPORT, importCallback);
+  m_exportButton.init(hInst, m_window, "Export", BACK_COL, buttonWidth, buttonHeight, 728, 15, ID_FILE_EXPORT, exportCallback);
+
+  // list of all the buttons along the top so we can dynamically size + position them
+  vector<VWindow *> buttonList = {
+    &m_refreshButton, &m_connectButton, &m_pushButton, &m_pullButton,
+    &m_loadButton, &m_saveButton, &m_importButton, &m_exportButton,
+  };
+
+  // starting position for buttons
+  uint32_t startPos = 105;
+  // how much space between each button
+  uint32_t buttonSep = 8;
+  // position all the buttons along the top
+  for (uint32_t i = 0; i < buttonList.size(); ++i) {
+    SetWindowPos(buttonList[i]->hwnd(), NULL, startPos + (i * (buttonWidth + buttonSep)), 15, 0, 0, SWP_NOSIZE);
+  }
   m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 270, 16, 54, SELECT_MODE_ID, selectModeCallback);
 
   m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 80, 24, 101, 320, ADD_MODE_ID, addModeCallback);
@@ -105,17 +124,16 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 24, 185, 320, COPY_MODE_ID, copyModeCallback);
 
   m_ledsMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 278, 54, SELECT_FINGER_ID, selectFingerCallback);
-  m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 170, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
-  m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 108, 24, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
+  m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 165, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
+  //m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 108, buttonHeight, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
 
   for (uint32_t i = 0; i < 8; ++i) {
     m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 520, 83 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
   }
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, 64, 24, 700, 86 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
+    m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 694, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
-  m_modeListBox.setTooltip("Test");
 
   // callbacks for menus
   m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
@@ -1146,7 +1164,7 @@ void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
   int curSel = VEngine::curMode();
-  // We have to actually iterate the modes with nextmode because VEngine can't just 
+  // We have to actually iterate the modes with nextmode because VEngine can't just
   // instantiate one and return it which is kinda dumb but just how it works for now
   VEngine::setCurMode(0, false);
   for (uint32_t i = 0; i < VEngine::numModes(); ++i) {
