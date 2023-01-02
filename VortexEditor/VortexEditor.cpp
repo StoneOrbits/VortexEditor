@@ -33,6 +33,11 @@
 #define MOVE_MODE_UP_ID     50027
 #define MOVE_MODE_DOWN_ID   50028
 
+// user defined windows messages
+#define WM_REFRESH_UI       WM_USER + 0 // refresh the UI
+#define WM_TEST_CONNECT     WM_USER + 1 // new test framework connection
+#define WM_TEST_DISCONNECT  WM_USER + 2 // test framework disconnect
+
 // the prefix of colorsets copied to clipboard
 #define COLORSET_CLIPBOARD_MARKER "COLORSET:"
 // the prefix of leds copied to clipboard
@@ -165,13 +170,27 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_FILE_SAVE, handleMenusCallback);
   m_window.addCallback(ID_FILE_IMPORT, handleMenusCallback);
   m_window.addCallback(ID_FILE_EXPORT, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_COLOR_PICKER, handleMenusCallback);
 
   // add user callback for refreshes
-  m_window.installUserCallback(refreshWindowCallback);
+  m_window.installUserCallback(WM_REFRESH_UI, refreshWindowCallback);
+  m_window.installUserCallback(WM_TEST_CONNECT, connectTestFrameworkCallback);
+  m_window.installUserCallback(WM_TEST_DISCONNECT, disconnectTestFrameworkCallback);
+
+  // the color picker
+  m_colorPickerWindow.init(hInst, "Vortex Color Picker", BACK_COL, 420, 420, nullptr);
+  m_colorPickerWindow.setVisible(false);
+
+  // the color ring
+  //m_colorRing.init(hInst, m_colorPickerWindow, "Color Ring", BACK_COL, 200, 200, 10, 10, 0, nullptr);
+  //m_colorRing.setVisible(true);
+  //m_colorRing.setEnabled(true);
+  //m_colorRing.setActive(true);
 
   // apply the icon
   HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
   SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+  SendMessage(m_colorPickerWindow.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 
   // create an accelerator table for dispatching hotkeys as WM_COMMANDS
   // for specific menu IDs
@@ -240,7 +259,7 @@ void VortexEditor::run()
 
 void VortexEditor::triggerRefresh()
 {
-  SendMessage(m_window.hwnd(), WM_USER, 0, 0);
+  PostMessage(m_window.hwnd(), WM_USER, 0, 0);
 }
 
 void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, ...)
@@ -320,6 +339,10 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_FILE_EXPORT:
     exportMode(nullptr);
+    return;
+  case ID_TOOLS_COLOR_PICKER:
+    m_colorPickerWindow.setVisible(true);
+    m_colorPickerWindow.setEnabled(true);
     return;
   default:
     break;
@@ -664,15 +687,17 @@ void VortexEditor::scanPorts()
 
 void VortexEditor::connectPort(uint32_t portNum)
 {
-  string port = "\\\\.\\COM" + to_string(portNum);
-  if (portNum == 0) {
-    port = "\\\\.\\pipe\\vortextestframework";
+  if (isPortConnected(portNum)) {
+    return;
   }
-  ArduinoSerial serialPort(port);
-  if (serialPort.isConnected()) {
-    unique_ptr<VortexPort> newPort = make_unique<VortexPort>(move(serialPort));
-    newPort->listen();
-    m_portList.push_back(make_pair(portNum, move(newPort)));
+  string portStr = "\\\\.\\COM" + to_string(portNum);
+  if (portNum == 0) {
+    portStr = "\\\\.\\pipe\\vortextestframework";
+  }
+  unique_ptr<VortexPort> port = make_unique<VortexPort>(portStr);
+  if (port->isConnected()) {
+    port->listen();
+    m_portList.push_back(make_pair(portNum, move(port)));
   }
   refreshPortList();
 }
@@ -707,7 +732,8 @@ void VortexEditor::selectPort(VWindow *window)
     return;
   }
   // try to begin operations on port
-  port->begin();
+  port->tryBegin();
+  refreshPortList();
   // refresh the status
   refreshStatus();
 }
@@ -1207,7 +1233,7 @@ void VortexEditor::refreshPortList()
     }
     m_portSelection.addItem("Port " + to_string(port->first));
   }
-  if (selectedPort) {
+  if (selectedPort && selectedPort->isActive()) {
     for (uint32_t i = 0; i < m_portList.size(); ++i) {
       if (m_portList[i].first == selectedPort->port().portNumber()) {
         m_portSelection.setSelection(i);
@@ -1417,7 +1443,8 @@ bool VortexEditor::isConnected()
     return false;
   }
   // try to begin each time we check for connection just in case the glove reset
-  if (!port->begin()) {
+  // then it will have sent it's hello and we need to capture it again
+  if (!port->tryBegin()) {
     return false;
   }
   return port->isActive();
@@ -1438,6 +1465,9 @@ bool VortexEditor::isPortConnected(uint32_t portNum) const
 
 bool VortexEditor::getCurPort(VortexPort **outPort)
 {
+  if (!m_portList.size()) {
+    return false;
+  }
   int sel = getPortListIndex();
   if (sel < 0) {
     return false;
@@ -1457,6 +1487,9 @@ uint32_t VortexEditor::getPortID() const
 
 int VortexEditor::getPortListIndex() const
 {
+  if (m_portSelection.getSelection() == -1) {
+    return -1;
+  }
   uint32_t id = getPortID();
   for (int i = 0; i < m_portList.size(); ++i) {
     if (m_portList[i].first == id) {

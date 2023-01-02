@@ -282,7 +282,16 @@
     <ClCompile Include="GUI\VStatusBar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GUI\VChildWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\VColorRing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="VortexPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\VSlider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -578,7 +587,16 @@
     <ClInclude Include="GUI\VStatusBar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GUI\VChildWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\VColorRing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="VortexPort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\VSlider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

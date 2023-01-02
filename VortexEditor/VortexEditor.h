@@ -11,6 +11,8 @@
 // gui includes
 #include "GUI/VMultiListBox.h"
 #include "GUI/VColorSelect.h"
+#include "GUI/VChildwindow.h"
+#include "GUI/VColorRing.h"
 #include "GUI/VStatusBar.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
@@ -83,6 +85,10 @@ private:
 
   // callback to refresh all uis
   static void refreshWindowCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->refreshAll(); }
+
+  // connect test framework
+  static void connectTestFrameworkCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->connectPort(0); }
+  static void disconnectTestFrameworkCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->disconnectPort(0); }
 
   // device change handler
   static void deviceChangeCallback(void *editor, DEV_BROADCAST_HDR *dbh, bool added) { ((VortexEditor *)editor)->deviceChange(dbh, added); }
@@ -197,6 +203,15 @@ private:
   VColorSelect m_colorSelects[8];
   // parameters text boxes, there's 8 params
   VTextBox m_paramTextBoxes[8];
+
+  // ==================================
+  //  Color picker GUI
+
+  // child window for color picker tool
+  VChildWindow m_colorPickerWindow;
+
+  // color ring for the color picker
+  VColorRing m_colorRing;
 };
 
 extern VortexEditor *g_pEditor;

@@ -19,6 +19,7 @@ public:
   void operator=(ArduinoSerial &&other) noexcept;
 
   bool connect(const std::string &portName);
+  void disconnect();
 
   // amount of data ready
   int bytesAvailable();
@@ -37,7 +38,7 @@ public:
   bool writeData(const void *buffer, uint32_t nbChar);
 
   // Check if we are actually connected
-  bool isConnected() const { return m_connected; }
+  bool isConnected() const;
 
   std::string portString() const { return m_port; }
   uint32_t portNumber() const { return m_portNum; }
@@ -45,7 +46,7 @@ public:
 private:
   std::string m_port;
   uint32_t m_portNum;
-  HANDLE m_hSerial;
+  HANDLE m_hFile;
   bool m_connected;
   // whether serial or pipe
   bool m_isSerial;

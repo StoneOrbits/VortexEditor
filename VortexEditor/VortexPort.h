@@ -8,11 +8,11 @@ class VortexPort
 {
 public:
   VortexPort();
-  VortexPort(ArduinoSerial &&serial);
+  VortexPort(const std::string &portName);
   VortexPort(VortexPort &&other) noexcept;
   ~VortexPort();
   void operator=(VortexPort &&other) noexcept;
-  bool begin();
+  bool tryBegin();
   void listen();
   bool isConnected() const;
   bool isActive() const;
@@ -45,5 +45,5 @@ private:
   // whether the port is 'active' ie the handshake has been received
   bool m_portActive;
   // thread func to wait and begin a port connection
-  static DWORD __stdcall beginPort(void *ptr);
+  static DWORD __stdcall begin(void *ptr);
 };
