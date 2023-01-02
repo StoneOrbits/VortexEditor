@@ -203,6 +203,15 @@ private:
   VColorSelect m_colorSelects[8];
   // parameters text boxes, there's 8 params
   VTextBox m_paramTextBoxes[8];
+
+  // ==================================
+  //  Color picker GUI
+
+  // child window for color picker tool
+  VChildWindow m_colorPickerWindow;
+
+  // color ring for the color picker
+  VColorRing m_colorRing;
 };
 
 extern VortexEditor *g_pEditor;

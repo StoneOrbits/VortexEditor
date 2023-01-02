@@ -92,6 +92,10 @@ BEGIN
             MENUITEM "Rainbow",                     ID_COLORSET_RANDOM_RAINBOW
         END
     END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "Color Picker",                ID_TOOLS_COLOR_PICKER
+    END
     POPUP "Help"
     BEGIN
         MENUITEM "About",                       ID_HELP_ABOUT
