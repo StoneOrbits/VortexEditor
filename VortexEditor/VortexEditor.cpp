@@ -338,7 +338,9 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     if (isMultiLedPatternID(VEngine::getPatternID())) {
       VEngine::setPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT));
     } else {
-      applyPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT), sels);
+      for (uint32_t i = 0; i < sels.size(); ++i) {
+        VEngine::setSinglePat((LedPos)sels[i], (PatternID)(rand() % PATTERN_SINGLE_COUNT));
+      }
     }
     refreshModeList();
     demoCurMode();
