@@ -65,6 +65,8 @@ private:
   static void addModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->addMode(window); }
   static void delModeCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->delMode(window); }
   static void copyModeCallback(void *editor, VWindow *window)      { ((VortexEditor *)editor)->copyMode(window); }
+  static void moveModeUpCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->moveModeUp(window); }
+  static void moveModeDownCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->moveModeDown(window); }
   static void selectFingerCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->selectFinger(window); }
   static void selectPatternCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->selectPattern(window); }
   static void copyToAllCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->copyToAll(window); }
@@ -93,6 +95,8 @@ private:
   void addMode(VWindow *window);
   void delMode(VWindow *window);
   void copyMode(VWindow *window);
+  void moveModeUp(VWindow *window);
+  void moveModeDown(VWindow *window);
   void selectFinger(VWindow *window);
   void selectPattern(VWindow *window);
   void copyToAll(VWindow *window);
@@ -195,6 +199,8 @@ private:
   VButton m_addModeButton;
   VButton m_delModeButton;
   VButton m_copyModeButton;
+  VButton m_moveModeUpButton;
+  VButton m_moveModeDownButton;
   // the list of fingers is a multi select
   VMultiListBox m_ledsMultiListBox;
   // the pattern selection

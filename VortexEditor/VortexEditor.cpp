@@ -28,6 +28,8 @@
 #define PARAM_EDIT_ID       50016
 #define COPY_TO_ALL_ID      50025
 #define COPY_MODE_ID        50026
+#define MOVE_MODE_UP_ID     50027
+#define MOVE_MODE_DOWN_ID   50028
 
 // the prefix of colorsets copied to clipboard
 #define COLORSET_CLIPBOARD_MARKER "COLORSET:"
@@ -119,9 +121,26 @@ bool VortexEditor::init(HINSTANCE hInst)
   }
   m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 270, 16, 54, SELECT_MODE_ID, selectModeCallback);
 
-  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, 80, 24, 101, 320, ADD_MODE_ID, addModeCallback);
-  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, 80, 24, 16, 320, DEL_MODE_ID, delModeCallback);
-  m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, 80, 24, 185, 320, COPY_MODE_ID, copyModeCallback);
+  buttonWidth = 46;
+  buttonHeight = 24;
+  m_addModeButton.init(hInst, m_window, "Add", BACK_COL, buttonWidth, buttonHeight, 16, 320, ADD_MODE_ID, addModeCallback);
+  m_delModeButton.init(hInst, m_window, "Del", BACK_COL, buttonWidth, buttonHeight, 60, 320, DEL_MODE_ID, delModeCallback);
+  m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, buttonWidth, buttonHeight, 110, 320, COPY_MODE_ID, copyModeCallback);
+  m_moveModeUpButton.init(hInst, m_window, "Up", BACK_COL, buttonWidth, buttonHeight, 110, 320, MOVE_MODE_UP_ID, moveModeUpCallback);
+  m_moveModeDownButton.init(hInst, m_window, "Down", BACK_COL, buttonWidth, buttonHeight, 110, 320, MOVE_MODE_DOWN_ID, moveModeDownCallback);
+
+  vector<VWindow *> modeButtonList = {
+    &m_addModeButton, &m_delModeButton, &m_copyModeButton, &m_moveModeUpButton, &m_moveModeDownButton
+  };
+
+  // starting position for buttons
+  startPos = 16;
+  // how much space between each button
+  buttonSep = 5;
+  // position all the buttons along the top
+  for (uint32_t i = 0; i < modeButtonList.size(); ++i) {
+    SetWindowPos(modeButtonList[i]->hwnd(), NULL, startPos + (i * (buttonWidth + buttonSep)), 320, 0, 0, SWP_NOSIZE);
+  }
 
   m_ledsMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 278, 54, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 165, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
@@ -941,6 +960,18 @@ void VortexEditor::copyMode(VWindow *window)
   ByteStream stream;
   VEngine::getCurMode(stream);
   VEngine::addNewMode(stream);
+  refreshModeList();
+}
+
+void VortexEditor::moveModeUp(VWindow *window)
+{
+  VEngine::shiftCurMode(-1);
+  refreshModeList();
+}
+
+void VortexEditor::moveModeDown(VWindow *window)
+{
+  VEngine::shiftCurMode(1);
   refreshModeList();
 }
 
