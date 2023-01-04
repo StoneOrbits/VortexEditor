@@ -36,6 +36,7 @@ public:
   static bool setCurMode(uint32_t index, bool save = true);
   static bool nextMode(bool save = true);
   static bool delCurMode(bool save = true);
+  static bool shiftCurMode(int8_t offset, bool save = true);
 
   // functions to operate on the current Mode
   static bool setPattern(PatternID id, const PatternArgs *args = nullptr,

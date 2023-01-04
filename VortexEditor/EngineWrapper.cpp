@@ -74,10 +74,12 @@ bool VEngine::getCurMode(ByteStream &outStream)
   }
   // save to ensure we get the correct mode, not using doSave() because it causes
   // an undo buffer entry to be added
-  Modes::saveStorage();
+  if (!Modes::saveStorage()) {
+    return false;
+  }
   pMode->serialize(outStream);
   outStream.recalcCRC();
-  return true;
+  return outStream.size() > 0;
 }
 
 uint32_t VEngine::curMode()
@@ -129,6 +131,19 @@ bool VEngine::nextMode(bool save)
 bool VEngine::delCurMode(bool save)
 {
   Modes::deleteCurMode();
+  return !save || doSave();
+}
+
+bool VEngine::shiftCurMode(int8_t offset, bool save)
+{
+  if (offset == 0) {
+    return true;
+  }
+  if (offset > 0) {
+    Modes::shiftCurModeDown(offset);
+  } else {
+    Modes::shiftCurModeUp((uint32_t)(-offset));
+  }
   return !save || doSave();
 }
 
