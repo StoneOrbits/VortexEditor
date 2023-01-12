@@ -9,9 +9,12 @@ public:
   ArduinoSerial();
   // Initialize Serial communication with the given COM port
   ArduinoSerial(const std::string &portName);
-  ArduinoSerial(ArduinoSerial &&other);
+  ArduinoSerial(ArduinoSerial &&other) noexcept;
   // Close the connection
   ~ArduinoSerial();
+
+  // move assignment operator
+  void operator=(ArduinoSerial &&other) noexcept;
 
   bool connect(const std::string &portName);
 
@@ -27,6 +30,8 @@ public:
 
   // Check if we are actually connected
   bool IsConnected() const { return m_connected; }
+
+  std::string portString() const { return m_port; }
 
 private:
   std::string m_port;

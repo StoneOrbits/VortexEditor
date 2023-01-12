@@ -20,8 +20,25 @@ ArduinoSerial::ArduinoSerial(const string &portName) :
   connect(portName);
 }
 
-ArduinoSerial::ArduinoSerial(ArduinoSerial &&other) :
+ArduinoSerial::ArduinoSerial(ArduinoSerial &&other) noexcept :
   ArduinoSerial()
+{
+  *this = move(other);
+}
+
+ArduinoSerial::~ArduinoSerial()
+{
+  // Check if we are connected before trying to disconnect
+  if (m_connected) {
+    // We're no longer connected
+    m_connected = false;
+    // Close the serial handler
+    CloseHandle(m_hSerial);
+    m_hSerial = nullptr;
+  }
+}
+
+void ArduinoSerial::operator=(ArduinoSerial &&other) noexcept
 {
   m_port = other.m_port;
   m_hSerial = other.m_hSerial;
@@ -97,18 +114,6 @@ bool ArduinoSerial::connect(const string &portName)
     //Sleep(ARDUINO_WAIT_TIME);
   }
   return true;
-}
-
-ArduinoSerial::~ArduinoSerial()
-{
-  // Check if we are connected before trying to disconnect
-  if (m_connected) {
-    // We're no longer connected
-    m_connected = false;
-    // Close the serial handler
-    CloseHandle(m_hSerial);
-    m_hSerial = nullptr;
-  }
 }
 
 int ArduinoSerial::ReadData(void *buffer, unsigned int nbChar)

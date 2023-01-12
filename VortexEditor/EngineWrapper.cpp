@@ -45,21 +45,15 @@ bool VEngine::getModes(ByteStream &outStream)
   // save to ensure we get the correct mode, not using doSave() because it causes
   // an undo buffer entry to be added
   Modes::saveStorage();
-  Modes::serialize(outStream);
-  if (!outStream.compress()) {
-    return false;
-  }
+  // now serialize all the modes
+  Modes::saveToBuffer(outStream);
   return true;
 }
 
 bool VEngine::setModes(ByteStream &stream, bool save)
 {
-  if (!stream.decompress()) {
-    //printf("BAD CRC !\n");
-    return false;
-  }
   // now unserialize the stream of data that was read
-  if (!Modes::unserialize(stream)) {
+  if (!Modes::loadFromBuffer(stream)) {
     //printf("Unserialize failed\n");
     return false;
   }
@@ -77,9 +71,7 @@ bool VEngine::getCurMode(ByteStream &outStream)
   if (!Modes::saveStorage()) {
     return false;
   }
-  pMode->serialize(outStream);
-  outStream.recalcCRC();
-  return outStream.size() > 0;
+  return pMode->saveToBuffer(outStream);
 }
 
 uint32_t VEngine::curMode()
@@ -110,7 +102,7 @@ bool VEngine::addNewMode(bool save)
 
 bool VEngine::addNewMode(ByteStream &stream, bool save)
 {
-  if (!Modes::addSerializedMode(stream)) {
+  if (!Modes::addModeFromBuffer(stream)) {
     return false;
   }
   return !save || doSave();
@@ -349,7 +341,7 @@ vector<string> VEngine::getCustomParams(PatternID id)
       return { "On Duration", "Off Duration", "Gap Duration", "Group Size", "Skip Colors", "Repeat Group" };
     case PATTERN_BLEND:
     case PATTERN_COMPLEMENTARY_BLEND:
-      return { "On Duration", "Off Duration", "Gap Duration" };
+      return { "On Duration", "Off Duration", "Gap Duration", "Start Offset" };
     case PATTERN_BRACKETS:
       return { "Bracket Duration", "Mid Duration", "Off Duration" };
     case PATTERN_RABBIT:

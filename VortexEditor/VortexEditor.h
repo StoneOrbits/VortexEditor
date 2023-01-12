@@ -162,10 +162,27 @@ private:
   FILE *m_consoleHandle;
 
   struct VortexPort {
+    VortexPort() :
+      serialPort(),
+      portActive(false)
+    {
+    }
     VortexPort(ArduinoSerial &&serial) :
       serialPort(std::move(serial)),
       portActive(false)
     {
+    }
+    VortexPort(VortexPort &&other) noexcept :
+      VortexPort()
+    {
+      *this = std::move(other);
+    }
+    void operator=(VortexPort &&other) noexcept
+    {
+      serialPort = std::move(other.serialPort);
+      portActive = other.portActive;
+
+      other.portActive = false;
     }
     ArduinoSerial serialPort;
     bool portActive;

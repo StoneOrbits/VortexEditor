@@ -26,6 +26,8 @@
 #include <Windows.h>
 #endif
 
+#define STORAGE_FILENAME "VortexEditor.dat"
+
 static const uint32_t pageSizes[] = { 8, 16, 32, 64, 128, 256, 512, 1024 };
 
 // using same values as recorded from Trinket M0: pagesize index 3 and 4096 pages
@@ -58,7 +60,7 @@ static inline uint32_t read_unaligned_uint32(const void *data)
 
 void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_t size)
 {
-  HANDLE hFile = CreateFile("VortexEditor.dat", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = CreateFile(STORAGE_FILENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
@@ -87,7 +89,7 @@ void FlashClass::erase(const volatile void *flash_ptr)
 
 void FlashClass::read(const volatile void *flash_ptr, void *data, uint32_t size)
 {
-  HANDLE hFile = CreateFile("VortexEditor.dat", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = CreateFile(STORAGE_FILENAME, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (!hFile) {
     // error
     return;
