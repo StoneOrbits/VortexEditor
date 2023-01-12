@@ -353,14 +353,13 @@ vector<string> VEngine::getCustomParams(PatternID id)
     case PATTERN_BRACKETS:
       return { "Bracket Duration", "Mid Duration", "Off Duration" };
     case PATTERN_RABBIT:
+    case PATTERN_FLOWERS:
     case PATTERN_TIPTOP:
       return { "On Duration 1", "Off Duration 1", "Gap Duration 1",
         "On Duration 2", "Off Duration 2", "Gap Duration 2" };
     case PATTERN_IMPACT:
       return { "On Duration 1", "Off Duration 1", "On Duration 2",
         "Off Duration 2", "On Duration 3", "Off Duration 3" };
-    case PATTERN_FLOWERS:
-      break;
     case PATTERN_JEST:
       return { "On Duration" , "Off Duration", "Gap 1 Duration", "Gap 2 Duration", "Group Size" };
     case PATTERN_HUESHIFT:
@@ -390,8 +389,11 @@ vector<string> VEngine::getCustomParams(PatternID id)
     case PATTERN_MATERIA:
       return { "On Duration 1", "Off Duration 1", "On Duration 2", "Off Duration 2", "Step Duration" };
     case PATTERN_SPLITSTROBIE:
+      return { "On Duration", "Off Duration", "Gap Duration", "Dash Duration", 
+        "Dot Duration", "Step Duration x 100ms" };
     case PATTERN_BACKSTROBE:
-      return { "Step Duration x 100ms" };
+      return { "On Duration 1", "Off Duration 1", "Gap Duration 1",  "On Duration 2", "Off Duration 2",
+        "Gap Duration 2", "Step Duration x 100ms" };
     case PATTERN_NONE:
     default:
       break;
