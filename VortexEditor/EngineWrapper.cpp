@@ -346,18 +346,23 @@ vector<string> VEngine::getCustomParams(PatternID id)
     case PATTERN_DASHDOPS:
       return { "Dash Duration", "Dot Duration", "Off Duration" };
     case PATTERN_ADVANCED:
-      return { "On Duration", "Off Duration", "Gap Duration", "Group Size", "Skip Colors", "Repeat Group"};
+      return { "On Duration", "Off Duration", "Gap Duration", "Group Size", "Skip Colors", "Repeat Group" };
     case PATTERN_BLEND:
     case PATTERN_COMPLEMENTARY_BLEND:
-      return { "On Duration", "Off Duration", "Gap Duration", "Blend Speed" };
+      return { "On Duration", "Off Duration", "Gap Duration" };
     case PATTERN_BRACKETS:
       return { "Bracket Duration", "Mid Duration", "Off Duration" };
     case PATTERN_RABBIT:
     case PATTERN_TIPTOP:
+      return { "On Duration 1", "Off Duration 1", "Gap Duration 1",
+        "On Duration 2", "Off Duration 2", "Gap Duration 2" };
     case PATTERN_IMPACT:
+      return { "On Duration 1", "Off Duration 1", "On Duration 2",
+        "Off Duration 2", "On Duration 3", "Off Duration 3" };
     case PATTERN_FLOWERS:
-    case PATTERN_JEST:
       break;
+    case PATTERN_JEST:
+      return { "On Duration" , "Off Duration", "Gap 1 Duration", "Gap 2 Duration", "Group Size" };
     case PATTERN_HUESHIFT:
       return { "Speed", "Scale" };
     case PATTERN_THEATER_CHASE:
