@@ -722,9 +722,6 @@ void VortexEditor::load(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  if (!stream.decompress()) {
-    // error
-  }
   VEngine::setModes(stream);
   debug("Loaded from [%s]", szFile);
   refreshModeList();
@@ -764,9 +761,6 @@ void VortexEditor::save(VWindow *window)
   DWORD written = 0;
   ByteStream stream;
   VEngine::getModes(stream);
-  if (!stream.compress()) {
-    // error
-  }
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
@@ -804,10 +798,6 @@ void VortexEditor::importMode(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  if (!stream.decompress()) {
-    // error
-    return;
-  }
   if (!VEngine::addNewMode(stream)) {
     // error
   }
@@ -856,11 +846,6 @@ void VortexEditor::exportMode(VWindow *window)
   DWORD written = 0;
   ByteStream stream;
   VEngine::getCurMode(stream);
-  if (!stream.compress()) {
-    CloseHandle(hFile);
-    // error
-    return;
-  }
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
