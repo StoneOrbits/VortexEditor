@@ -639,11 +639,16 @@ void VortexEditor::disconnectPort(uint32_t portNum)
   if (!m_portList.size()) {
     return;
   }
-  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
-    if (port->first != portNum) {
+  for (uint32_t i = 0; i < m_portList.size(); ++i) {
+    if (m_portList[i].first != portNum) {
       continue;
     }
-    m_portList.erase(port);
+    // are we deleting the one we have selected?
+    int sel = m_portSelection.getSelection();
+    if (sel >= i) {
+      m_portSelection.setSelection(sel - 1);
+    }
+    m_portList.erase(m_portList.begin() + i);
     refreshPortList();
     break;
   }
@@ -1199,9 +1204,24 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
 // refresh the port list
 void VortexEditor::refreshPortList()
 {
+  bool hasSelection = false;
+  uint32_t selectedPortNum = 0;
+  int sel = m_portSelection.getSelection();
+  if (sel >= 0 && m_portList.size() > 0) {
+    hasSelection = true;
+    selectedPortNum = m_portList[sel].first;
+  }
+  // perform refresh as normal
   m_portSelection.clearItems();
   for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
     m_portSelection.addItem("Port " + to_string(port->first));
+  }
+  if (hasSelection) {
+    for (uint32_t i = 0; i < m_portList.size(); ++i) {
+      if (m_portList[i].first == selectedPortNum) {
+        m_portSelection.setSelection(i);
+      }
+    }
   }
 }
 
