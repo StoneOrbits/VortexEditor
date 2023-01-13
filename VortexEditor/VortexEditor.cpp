@@ -96,7 +96,6 @@ bool VortexEditor::init(HINSTANCE hInst)
   uint32_t buttonWidth = 76;
   uint32_t buttonHeight = 24;
 
-  m_refreshButton.init(hInst, m_window, "Refresh", BACK_COL, buttonWidth, buttonHeight, 108, 15, ID_FILE_REFRESH_CONNECTIONS, refreshCallback);
   m_connectButton.init(hInst, m_window, "Connect", BACK_COL, buttonWidth, buttonHeight, 196, 15, ID_FILE_CONNECT, connectCallback);
   m_pushButton.init(hInst, m_window, "Push", BACK_COL, buttonWidth, buttonHeight, 284, 15, ID_FILE_PUSH, pushCallback);
   m_pullButton.init(hInst, m_window, "Pull", BACK_COL, buttonWidth, buttonHeight, 372, 15, ID_FILE_PULL, pullCallback);
@@ -107,8 +106,8 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // list of all the buttons along the top so we can dynamically size + position them
   vector<VWindow *> buttonList = {
-    &m_refreshButton, &m_connectButton, &m_pushButton, &m_pullButton,
-    &m_loadButton, &m_saveButton, &m_importButton, &m_exportButton,
+    &m_connectButton, &m_pushButton, &m_pullButton, &m_loadButton,
+    &m_saveButton, &m_importButton, &m_exportButton,
   };
 
   // starting position for buttons
@@ -206,8 +205,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   // install the device callback
   m_window.installDeviceCallback(deviceChangeCallback);
 
-  // check for devices
-  refresh(&m_window);
+  // check for connected devices
+  scanPorts();
 
   // trigger a ui refresh
   refreshModeList();
@@ -373,9 +372,23 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   }
 }
 
-void VortexEditor::deviceChange(bool added)
+void VortexEditor::deviceChange(DEV_BROADCAST_HDR *dbh, bool added)
 {
-  refresh(&g_pEditor->m_window);
+  if (dbh->dbch_devicetype != DBT_DEVTYP_PORT) {
+    return;
+  }
+  DEV_BROADCAST_PORT *dbp = (DEV_BROADCAST_PORT *)dbh;
+  if (!dbp->dbcp_name) {
+    return;
+  }
+  string portName = dbp->dbcp_name;
+  uint32_t portNum = strtoul(portName.c_str() + 3, NULL, 10);
+  printf("%s: %u\n", added ? "Connected" : "Disconnected", portNum);
+  if (added) {
+    connectPort(portNum);
+  } else {
+    disconnectPort(portNum);
+  }
 }
 
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
@@ -608,38 +621,43 @@ void VortexEditor::setClipboard(const string &clipData)
   CloseClipboard();
 }
 
+void VortexEditor::connectPort(uint32_t portNum)
+{
+  string port = "\\\\.\\COM" + to_string(portNum);
+  if (portNum == 0) {
+    port = "\\\\.\\pipe\\vortextestframework";
+  }
+  ArduinoSerial serialPort(port);
+  if (serialPort.IsConnected()) {
+    m_portList.push_back(make_pair(portNum, move(serialPort)));
+  }
+  refreshPortList();
+}
+
+void VortexEditor::disconnectPort(uint32_t portNum)
+{
+  if (!m_portList.size()) {
+    return;
+  }
+  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
+    if (port->first != portNum) {
+      continue;
+    }
+    m_portList.erase(port);
+    refreshPortList();
+    break;
+  }
+}
+
 void VortexEditor::selectPort(VWindow *window)
 {
   // connect to port?
   if (!isConnected()) {
-    connect(window);
+    begin(window);
   }
 }
 
-// refresh the port list
-void VortexEditor::refresh(VWindow *window)
-{
-  m_portList.clear();
-  for (uint32_t i = 0; i < 255; ++i) {
-    string port = "\\\\.\\COM" + to_string(i);
-    ArduinoSerial serialPort(port);
-    if (serialPort.IsConnected()) {
-      m_portList.push_back(make_pair(i, move(serialPort)));
-    }
-  }
-  ArduinoSerial serialPort("\\\\.\\pipe\\vortextestframework");
-  if (serialPort.IsConnected()) {
-    m_portList.push_back(make_pair(0, move(serialPort)));
-  }
-
-  m_portSelection.clearItems();
-  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
-    m_portSelection.addItem("Port " + to_string(port->first));
-    debug("Connected port %u", port->first);
-  }
-}
-
-void VortexEditor::connect(VWindow *window)
+void VortexEditor::begin(VWindow *window)
 {
   if (isConnected()) {
     return;
@@ -1178,6 +1196,15 @@ bool VortexEditor::validateHandshake(const ByteStream &handshake)
   return true;
 }
 
+// refresh the port list
+void VortexEditor::refreshPortList()
+{
+  m_portSelection.clearItems();
+  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
+    m_portSelection.addItem("Port " + to_string(port->first));
+  }
+}
+
 void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
@@ -1366,6 +1393,16 @@ void VortexEditor::refreshApplyAll(bool recursive)
   }
 }
 
+void VortexEditor::scanPorts()
+{
+  for (uint32_t i = 0; i < 255; ++i) {
+    if (isPortConnected(i)) {
+      continue;
+    }
+    connectPort(i);
+  }
+}
+
 bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
 {
   if (portIndex >= m_portList.size()) {
@@ -1514,4 +1551,17 @@ bool VortexEditor::isConnected() const
     return false;
   }
   return port->portActive;
+}
+
+bool VortexEditor::isPortConnected(uint32_t portNum) const
+{
+  if (!m_portList.size()) {
+    return false;
+  }
+  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
+    if (port->first == portNum) {
+      return port->second.serialPort.IsConnected();
+    }
+  }
+  return false;
 }

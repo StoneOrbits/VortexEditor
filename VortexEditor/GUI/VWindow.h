@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <Dbt.h>
 
 #include <map>
 #include <string>
@@ -14,7 +15,7 @@ public:
   // typedef for callback params
   typedef void (*VWindowCallback)(void *arg, VWindow *window);
   typedef void (*VMenuCallback)(void *arg, uintptr_t hMenu);
-  typedef void (*VDeviceCallback)(void *arg, bool added);
+  typedef void (*VDeviceCallback)(void *arg, DEV_BROADCAST_HDR *dbh, bool added);
 
   VWindow();
   VWindow(HINSTANCE hinstance, const std::string &title, 

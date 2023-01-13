@@ -32,9 +32,11 @@ public:
   bool IsConnected() const { return m_connected; }
 
   std::string portString() const { return m_port; }
+  uint32_t portNumber() const { return m_portNum; }
 
 private:
   std::string m_port;
+  uint32_t m_portNum;
   HANDLE m_hSerial;
   bool m_connected;
   // whether serial or pipe

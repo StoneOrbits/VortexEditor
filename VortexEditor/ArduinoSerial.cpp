@@ -66,6 +66,10 @@ bool ArduinoSerial::connect(const string &portName)
     m_isSerial = false;
   }
 
+  if (portName.substr(0, 3) == "COM") {
+    m_portNum = strtoul(portName.c_str() + 3, NULL, 10);
+  }
+
   // Try to connect to the given port throuh CreateFile
   m_hSerial = CreateFile(m_port.c_str(),
     GENERIC_READ | GENERIC_WRITE,

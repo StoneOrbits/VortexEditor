@@ -2,6 +2,7 @@
 
 // windows includes
 #include <windows.h>
+#include <Dbt.h>
 
 // arduino includes
 #include "Patterns/Patterns.h"
@@ -53,8 +54,7 @@ private:
   // callbacks wrappers so that the callback handlers of
   // the gui elements can call a static routine
   static void selectPortCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectPort(window); }
-  static void refreshCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->refresh(window); }
-  static void connectCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->connect(window); }
+  static void connectCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->begin(window); }
   static void pushCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->push(window); }
   static void pullCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->pull(window); }
   static void loadCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->load(window); }
@@ -77,12 +77,13 @@ private:
   static void handleMenusCallback(void *editor, uintptr_t hMenu)   { ((VortexEditor *)editor)->handleMenus(hMenu); }
 
   // device change handler
-  static void deviceChangeCallback(void *editor, bool added)       { ((VortexEditor *)editor)->deviceChange(added); }
+  static void deviceChangeCallback(void *editor, DEV_BROADCAST_HDR *dbh, bool added) { ((VortexEditor *)editor)->deviceChange(dbh, added); }
 
   // callbacks for actions
+  void connectPort(uint32_t portNum);
+  void disconnectPort(uint32_t portNum);
   void selectPort(VWindow *window);
-  void refresh(VWindow *window);
-  void connect(VWindow *window);
+  void begin(VWindow *window);
   void push(VWindow *window);
   void pull(VWindow *window);
   void load(VWindow *window);
@@ -111,7 +112,7 @@ private:
   void handleMenus(uintptr_t hMenu);
 
   // callback to handle menus
-  void deviceChange(bool added);
+  void deviceChange(DEV_BROADCAST_HDR *dbh, bool added);
 
   // helper for color changer menus
   void applyColorset(const Colorset &set, const std::vector<int> &selections);
@@ -130,6 +131,7 @@ private:
   bool validateHandshake(const ByteStream &handshakewindow);
 
   // refresh the mode list
+  void refreshPortList();
   void refreshModeList(bool recursive = true);
   void refreshFingerList(bool recursive = true);
   void refreshPatternSelect(bool recursive = true);
@@ -138,6 +140,7 @@ private:
   void refreshApplyAll(bool recursive = true);
 
   // various other actions
+  void scanPorts();
   bool readPort(uint32_t port, ByteStream &outStream);
   bool readModes(uint32_t portIndex, ByteStream &outModes);
   bool expectData(uint32_t port, const char *data);
@@ -148,6 +151,7 @@ private:
 
   // whether connected to gloveset
   bool isConnected() const;
+  bool isPortConnected(uint32_t port) const;
 
   // helper to split strings
   void splitString(const std::string &str, std::vector<std::string> &splits, char letter);

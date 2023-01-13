@@ -250,9 +250,9 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_DEVICECHANGE:
     // Output some messages to the window.
     if (wParam == DBT_DEVICEARRIVAL) {
-      pWindow->m_deviceCallback(pWindow->m_callbackArg, true);
+      pWindow->m_deviceCallback(pWindow->m_callbackArg, (DEV_BROADCAST_HDR *)lParam, true);
     } else if (wParam == DBT_DEVICEREMOVECOMPLETE) {
-      pWindow->m_deviceCallback(pWindow->m_callbackArg, false);
+      pWindow->m_deviceCallback(pWindow->m_callbackArg, (DEV_BROADCAST_HDR *)lParam, false);
     }
     // should we handle DBT_DEVNODES_CHANGED ?
     break;
