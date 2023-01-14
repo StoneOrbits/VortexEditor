@@ -664,10 +664,26 @@ void VortexEditor::selectPort(VWindow *window)
 
 void VortexEditor::begin(VWindow *window)
 {
-  if (isConnected()) {
+  ByteStream stream;
+  int port = m_portSelection.getSelection();
+  if (port < 0) {
     return;
   }
-  connectInternal();
+  // try to read the handshake
+  if (!readPort(port, stream)) {
+    // failure
+    return;
+  }
+  if (!validateHandshake(stream)) {
+    // failure
+    return;
+  }
+  writePort(port, EDITOR_VERB_HELLO);
+  // now wait for the idle again
+  if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
+    return;
+  }
+  m_portList[port].second.portActive = true;
 }
 
 void VortexEditor::push(VWindow *window)
@@ -1135,47 +1151,6 @@ void VortexEditor::paramEdit(VWindow *window)
   }
   // update the demo
   demoCurMode();
-}
-
-// internal connection handler, optional force waiting for a connect
-void VortexEditor::connectInternal(bool force)
-{
-  if (isConnected()) {
-    return;
-  }
-  do {
-    // try to connect
-    if (tryConnect()) {
-      // success
-      break;
-    }
-    // keep trying if we're forcing
-  } while (force);
-}
-
-bool VortexEditor::tryConnect()
-{
-  ByteStream stream;
-  int port = m_portSelection.getSelection();
-  if (port < 0) {
-    return false;
-  }
-  // try to read the handshake
-  if (!readPort(port, stream)) {
-    // failure
-    return false;
-  }
-  if (!validateHandshake(stream)) {
-    // failure
-    return false;
-  }
-  writePort(port, EDITOR_VERB_HELLO);
-  // now wait for the idle again
-  if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
-    return false;
-  }
-  m_portList[port].second.portActive = true;
-  return true;
 }
 
 bool VortexEditor::validateHandshake(const ByteStream &handshake)
