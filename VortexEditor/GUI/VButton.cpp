@@ -36,6 +36,8 @@ void VButton::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
   parent.addChild(menuID, this);
 
@@ -67,6 +69,9 @@ void VButton::paint()
 
 void VButton::command(WPARAM wParam, LPARAM lParam)
 {
+  if (!m_callback) {
+    return;
+  }
   m_callback(m_callbackArg, this);
 }
 

@@ -33,6 +33,7 @@ public:
   // windows message handlers
   virtual void create();
   virtual void paint();
+  virtual INT_PTR controlColor(WPARAM wParam, LPARAM lParam);
   virtual void command(WPARAM wParam, LPARAM lParam);
   virtual void pressButton();
   virtual void releaseButton();
@@ -40,6 +41,7 @@ public:
   // add/get a child
   virtual uint32_t addChild(uintptr_t menuID, VWindow *child);
   virtual VWindow *getChild(uintptr_t menuID);
+  virtual VWindow *getChild(HWND hwnd);
 
   // add a menu callback
   virtual uint32_t addCallback(uintptr_t menuID, VMenuCallback callback);
@@ -53,8 +55,16 @@ public:
   void setVisible(bool visible);
   void setEnabled(bool enable);
 
+  void setBackColor(COLORREF backcol);
+  void setForeColor(COLORREF forecol);
+
+  void setBackEnabled(bool enable);
+  void setForeEnabled(bool enable);
+
   bool isVisible() const;
   bool isEnabled() const;
+  bool isBackEnabled() const;
+  bool isForeEnabled() const;
 
   HWND hwnd() const { return m_hwnd; }
   HMENU menu() const { return GetMenu(m_hwnd); }
@@ -84,5 +94,13 @@ protected:
   // device callback
   HDEVNOTIFY m_hDeviceNotify;
   VDeviceCallback m_deviceCallback;
+
+  // background/foreground color
+  COLORREF m_backColor;
+  COLORREF m_foreColor;
+
+  // enable background/foreground color
+  bool m_backEnabled;
+  bool m_foreEnabled;
 };
 

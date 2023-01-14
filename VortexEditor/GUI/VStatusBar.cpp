@@ -1,8 +1,8 @@
-#include "VComboBox.h"
+#include "VStatusBar.h"
 
 // Windows includes
 #include <CommCtrl.h>
-#include <Windowsx.h>
+#include <windowsx.h>
 
 // Vortex Engine includes
 #include "EditorConfig.h"
@@ -12,26 +12,26 @@
 
 using namespace std;
 
-VComboBox::VComboBox() :
+VStatusBar::VStatusBar() :
   VWindow(),
   m_callback(nullptr)
 {
 }
 
-VComboBox::VComboBox(HINSTANCE hInstance, VWindow &parent, const string &title,
+VStatusBar::VStatusBar(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback) :
-  VComboBox()
+  VStatusBar()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
 }
 
-VComboBox::~VComboBox()
+VStatusBar::~VStatusBar()
 {
   cleanup();
 }
 
-void VComboBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
+void VStatusBar::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback)
 {
@@ -43,8 +43,8 @@ void VComboBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   parent.addChild(menuID, this);
 
   // create the window
-  m_hwnd = CreateWindow(WC_COMBOBOX, title.c_str(),
-    CBS_SIMPLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_VSCROLL | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP,
+  m_hwnd = CreateWindow(WC_EDIT, title.c_str(),
+    WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP | ES_READONLY,
     x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
@@ -56,54 +56,54 @@ void VComboBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 }
 
-void VComboBox::cleanup()
+void VStatusBar::cleanup()
 {
 }
 
-void VComboBox::create()
+void VStatusBar::create()
 {
 }
 
-void VComboBox::paint()
+void VStatusBar::paint()
 {
 }
 
-void VComboBox::command(WPARAM wParam, LPARAM lParam)
+void VStatusBar::command(WPARAM wParam, LPARAM lParam)
 {
   int reason = HIWORD(wParam);
-  if (!m_callback || reason != CBN_SELCHANGE) {
+  if (!m_callback || reason != EN_CHANGE) {
     return;
   }
   m_callback(m_callbackArg, this);
 }
 
-void VComboBox::pressButton()
+void VStatusBar::pressButton()
 {
 }
 
-void VComboBox::releaseButton()
+void VStatusBar::releaseButton()
 {
 }
 
-void VComboBox::addItem(std::string item)
+void VStatusBar::setText(std::string item)
 {
-  ComboBox_AddString(m_hwnd, item.c_str());
-  if (getSelection() == -1) {
-    setSelection(0);
-  }
+  Edit_SetText(m_hwnd, item.c_str());
 }
 
-int VComboBox::getSelection() const
+void VStatusBar::clearText()
 {
-  return ComboBox_GetCurSel(m_hwnd);
+  setText("");
 }
 
-void VComboBox::setSelection(int selection)
+string VStatusBar::getText() const
 {
-  ComboBox_SetCurSel(m_hwnd, selection);
+  char text[256] = {0};
+  Edit_GetText(m_hwnd, text, sizeof(text));
+  return text;
 }
 
-void VComboBox::clearItems()
+void VStatusBar::setStatus(COLORREF col, std::string status)
 {
-  SendMessage(m_hwnd, CB_RESETCONTENT, 0, 0);
+  setForeColor(col);
+  setText(" " + status);
 }

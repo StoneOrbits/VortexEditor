@@ -51,17 +51,19 @@ VortexEditor::VortexEditor() :
   m_accelTable(),
   m_window(),
   m_portSelection(),
-  m_connectButton(),
   m_pushButton(),
   m_pullButton(),
-  m_loadButton(),
-  m_saveButton(),
   m_modeListBox(),
   m_addModeButton(),
   m_delModeButton(),
+  m_copyModeButton(),
+  m_moveModeUpButton(),
+  m_moveModeDownButton(),
   m_ledsMultiListBox(),
   m_patternSelectComboBox(),
-  m_colorSelects()
+  m_colorSelects(),
+  m_paramTextBoxes(),
+  m_applyToAllButton()
 {
 }
 
@@ -91,37 +93,21 @@ bool VortexEditor::init(HINSTANCE hInst)
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
 
-  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 78, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
+  m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 72, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
 
-  uint32_t buttonWidth = 76;
-  uint32_t buttonHeight = 24;
+  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 78, 24, 100, 15, ID_FILE_PULL, pullCallback);
+  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 78, 24, 188, 15, ID_FILE_PUSH, pushCallback);
 
-  m_connectButton.init(hInst, m_window, "Connect", BACK_COL, buttonWidth, buttonHeight, 196, 15, ID_FILE_CONNECT, connectCallback);
-  m_pushButton.init(hInst, m_window, "Push", BACK_COL, buttonWidth, buttonHeight, 284, 15, ID_FILE_PUSH, pushCallback);
-  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, buttonWidth, buttonHeight, 372, 15, ID_FILE_PULL, pullCallback);
-  m_loadButton.init(hInst, m_window, "Load", BACK_COL, buttonWidth, buttonHeight, 460, 15, ID_FILE_LOAD, loadCallback);
-  m_saveButton.init(hInst, m_window, "Save", BACK_COL, buttonWidth, buttonHeight, 548, 15, ID_FILE_SAVE, saveCallback);
-  m_importButton.init(hInst, m_window, "Import", BACK_COL, buttonWidth, buttonHeight, 638, 15, ID_FILE_IMPORT, importCallback);
-  m_exportButton.init(hInst, m_window, "Export", BACK_COL, buttonWidth, buttonHeight, 728, 15, ID_FILE_EXPORT, exportCallback);
+  // status bar
+  m_statusBar.init(hInst, m_window, "", BACK_COL, 462, 24, 278, 15, 0, nullptr);
+  m_statusBar.setForeEnabled(true);
+  m_statusBar.setBackEnabled(true);
+  m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
 
-  // list of all the buttons along the top so we can dynamically size + position them
-  vector<VWindow *> buttonList = {
-    &m_connectButton, &m_pushButton, &m_pullButton, &m_loadButton,
-    &m_saveButton, &m_importButton, &m_exportButton,
-  };
-
-  // starting position for buttons
-  uint32_t startPos = 105;
-  // how much space between each button
-  uint32_t buttonSep = 8;
-  // position all the buttons along the top
-  for (uint32_t i = 0; i < buttonList.size(); ++i) {
-    SetWindowPos(buttonList[i]->hwnd(), NULL, startPos + (i * (buttonWidth + buttonSep)), 15, 0, 0, SWP_NOSIZE);
-  }
   m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 270, 16, 54, SELECT_MODE_ID, selectModeCallback);
 
-  buttonWidth = 46;
-  buttonHeight = 24;
+  uint32_t buttonWidth = 46;
+  uint32_t buttonHeight = 24;
   m_addModeButton.init(hInst, m_window, "Add", BACK_COL, buttonWidth, buttonHeight, 16, 320, ADD_MODE_ID, addModeCallback);
   m_delModeButton.init(hInst, m_window, "Del", BACK_COL, buttonWidth, buttonHeight, 60, 320, DEL_MODE_ID, delModeCallback);
   m_copyModeButton.init(hInst, m_window, "Copy", BACK_COL, buttonWidth, buttonHeight, 110, 320, COPY_MODE_ID, copyModeCallback);
@@ -133,9 +119,9 @@ bool VortexEditor::init(HINSTANCE hInst)
   };
 
   // starting position for buttons
-  startPos = 16;
+  uint32_t startPos = 16;
   // how much space between each button
-  buttonSep = 5;
+  uint32_t buttonSep = 5;
   // position all the buttons along the top
   for (uint32_t i = 0; i < modeButtonList.size(); ++i) {
     SetWindowPos(modeButtonList[i]->hwnd(), NULL, startPos + (i * (buttonWidth + buttonSep)), 320, 0, 0, SWP_NOSIZE);
@@ -656,13 +642,13 @@ void VortexEditor::disconnectPort(uint32_t portNum)
 
 void VortexEditor::selectPort(VWindow *window)
 {
-  // connect to port?
-  if (!isConnected()) {
-    begin(window);
-  }
+  // connect to port
+  begin();
+  // refresh the status
+  refreshStatus();
 }
 
-void VortexEditor::begin(VWindow *window)
+void VortexEditor::begin()
 {
   ByteStream stream;
   int port = m_portSelection.getSelection();
@@ -676,11 +662,6 @@ void VortexEditor::begin(VWindow *window)
   }
   if (!validateHandshake(stream)) {
     // failure
-    return;
-  }
-  writePort(port, EDITOR_VERB_HELLO);
-  // now wait for the idle again
-  if (!expectData(port, EDITOR_VERB_HELLO_ACK)) {
     return;
   }
   m_portList[port].second.portActive = true;
@@ -1198,6 +1179,22 @@ void VortexEditor::refreshPortList()
       }
     }
   }
+  // hack: for now just refresh status here
+  refreshStatus();
+}
+
+void VortexEditor::refreshStatus()
+{
+  int sel = m_portSelection.getSelection();
+  if (sel < 0 || !m_portList.size()) {
+    m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
+    return;
+  }
+  if (!isConnected()) {
+    m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
+    return;
+  }
+  m_statusBar.setStatus(RGB(0, 255, 0), "Connected");
 }
 
 void VortexEditor::refreshModeList(bool recursive)
@@ -1220,6 +1217,8 @@ void VortexEditor::refreshModeList(bool recursive)
   if (recursive) {
     refreshFingerList(recursive);
   }
+  // hack: for now just refresh status here
+  refreshStatus();
 }
 
 void VortexEditor::refreshFingerList(bool recursive)
@@ -1532,7 +1531,7 @@ void VortexEditor::writePort(uint32_t portIndex, string data)
   debug("Wrote to port %u: [%s]", m_portList[portIndex].first, data.c_str());
 }
 
-bool VortexEditor::isConnected() const
+bool VortexEditor::isConnected()
 {
   int sel = m_portSelection.getSelection();
   if (sel < 0) {
@@ -1545,6 +1544,8 @@ bool VortexEditor::isConnected() const
   if (!port->serialPort.IsConnected()) {
     return false;
   }
+  // try to begin each time we check for connection just in case the glove reset
+  begin();
   return port->portActive;
 }
 

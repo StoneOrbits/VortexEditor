@@ -11,6 +11,7 @@
 // gui includes
 #include "GUI/VMultiListBox.h"
 #include "GUI/VColorSelect.h"
+#include "GUI/VStatusBar.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
 #include "GUI/VTextBox.h"
@@ -54,7 +55,6 @@ private:
   // callbacks wrappers so that the callback handlers of
   // the gui elements can call a static routine
   static void selectPortCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectPort(window); }
-  static void connectCallback(void *editor, VWindow *window)       { ((VortexEditor *)editor)->begin(window); }
   static void pushCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->push(window); }
   static void pullCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->pull(window); }
   static void loadCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->load(window); }
@@ -83,7 +83,6 @@ private:
   void connectPort(uint32_t portNum);
   void disconnectPort(uint32_t portNum);
   void selectPort(VWindow *window);
-  void begin(VWindow *window);
   void push(VWindow *window);
   void pull(VWindow *window);
   void load(VWindow *window);
@@ -103,10 +102,6 @@ private:
   void copyToAll(VWindow *window);
   void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
-
-  // internal connection handler, optional force waiting for a connect
-  void connectInternal(bool force = false);
-  bool tryConnect();
 
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
@@ -132,6 +127,7 @@ private:
 
   // refresh the mode list
   void refreshPortList();
+  void refreshStatus();
   void refreshModeList(bool recursive = true);
   void refreshFingerList(bool recursive = true);
   void refreshPatternSelect(bool recursive = true);
@@ -140,6 +136,7 @@ private:
   void refreshApplyAll(bool recursive = true);
 
   // various other actions
+  void begin();
   void scanPorts();
   bool readPort(uint32_t port, ByteStream &outStream);
   bool readModes(uint32_t portIndex, ByteStream &outModes);
@@ -150,7 +147,7 @@ private:
   void writePort(uint32_t port, std::string data);
 
   // whether connected to gloveset
-  bool isConnected() const;
+  bool isConnected();
   bool isPortConnected(uint32_t port) const;
 
   // helper to split strings
@@ -206,14 +203,9 @@ private:
   // the list of com ports
   VComboBox m_portSelection;
   // the various buttons
-  VButton m_refreshButton;
-  VButton m_connectButton;
   VButton m_pushButton;
   VButton m_pullButton;
-  VButton m_loadButton;
-  VButton m_saveButton;
-  VButton m_exportButton;
-  VButton m_importButton;
+  VStatusBar m_statusBar;
   // the list of modes
   VListBox m_modeListBox;
   // the add/remove mode button

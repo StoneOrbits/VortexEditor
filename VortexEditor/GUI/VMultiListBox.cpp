@@ -37,6 +37,8 @@ void VMultiListBox::init(HINSTANCE hInstance, VWindow &parent, const string &tit
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
   parent.addChild(menuID, this);
 
@@ -69,7 +71,7 @@ void VMultiListBox::paint()
 void VMultiListBox::command(WPARAM wParam, LPARAM lParam)
 {
   int reason = HIWORD(wParam);
-  if (reason != LBN_SELCHANGE) {
+  if (!m_callback || reason != LBN_SELCHANGE) {
     return;
   }
   m_callback(m_callbackArg, this);

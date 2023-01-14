@@ -54,14 +54,11 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "File"
     BEGIN
-        MENUITEM "Refresh Connections",         ID_FILE_REFRESH_CONNECTIONS
-        MENUITEM "Connect to Device",           ID_FILE_CONNECT
+        MENUITEM "Pull Savefile",               ID_FILE_PULL
+        MENUITEM "Push Savefile",               ID_FILE_PUSH
         MENUITEM SEPARATOR
-        MENUITEM "Push to Device",              ID_FILE_PUSH
-        MENUITEM "Pull from Device",            ID_FILE_PULL
-        MENUITEM SEPARATOR
-        MENUITEM "Load from File",              ID_FILE_LOAD
-        MENUITEM "Save to File",                ID_FILE_SAVE
+        MENUITEM "Load Savefile",             ID_FILE_LOAD
+        MENUITEM "Save Savefile",             ID_FILE_SAVE
         MENUITEM SEPARATOR
         MENUITEM "Import Mode",                 ID_FILE_IMPORT
         MENUITEM "Export Mode",                 ID_FILE_EXPORT

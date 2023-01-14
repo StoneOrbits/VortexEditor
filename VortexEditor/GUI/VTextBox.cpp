@@ -37,6 +37,8 @@ void VTextBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
   parent.addChild(menuID, this);
 
@@ -69,7 +71,7 @@ void VTextBox::paint()
 void VTextBox::command(WPARAM wParam, LPARAM lParam)
 {
   int reason = HIWORD(wParam);
-  if (reason != EN_CHANGE) {
+  if (!m_callback || reason != EN_CHANGE) {
     return;
   }
   m_callback(m_callbackArg, this);

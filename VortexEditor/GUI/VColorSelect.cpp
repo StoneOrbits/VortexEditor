@@ -44,6 +44,8 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
   // register window class if it hasn't been registered yet
   registerWindowClass(hInstance, backcol);
@@ -126,6 +128,9 @@ void VColorSelect::command(WPARAM wParam, LPARAM lParam)
 
 void VColorSelect::pressButton()
 {
+  if (!m_callback) {
+    return;
+  }
   CHOOSECOLOR col;
   memset(&col, 0, sizeof(col));
   ZeroMemory(&col, sizeof(col));
