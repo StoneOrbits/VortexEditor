@@ -159,6 +159,12 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_UNDO, handleMenusCallback);
   m_window.addCallback(ID_EDIT_REDO, handleMenusCallback);
+  m_window.addCallback(ID_FILE_PULL, handleMenusCallback);
+  m_window.addCallback(ID_FILE_PUSH, handleMenusCallback);
+  m_window.addCallback(ID_FILE_LOAD, handleMenusCallback);
+  m_window.addCallback(ID_FILE_SAVE, handleMenusCallback);
+  m_window.addCallback(ID_FILE_IMPORT, handleMenusCallback);
+  m_window.addCallback(ID_FILE_EXPORT, handleMenusCallback);
 
   // apply the icon
   HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -182,6 +188,18 @@ bool VortexEditor::init(HINSTANCE hInst)
     { FCONTROL | FSHIFT | FVIRTKEY, 'C', ID_EDIT_COPY_COLORSET },
     // ctrl + shift + v   paste colorset
     { FCONTROL | FSHIFT | FVIRTKEY, 'V', ID_EDIT_PASTE_COLORSET },
+    // ctrl + e  pull
+    { FCONTROL | FVIRTKEY, 'E', ID_FILE_PULL },
+    // ctrl + t  push
+    { FCONTROL | FVIRTKEY, 'T', ID_FILE_PUSH },
+    // ctrl + s  save
+    { FCONTROL | FVIRTKEY, 'S', ID_FILE_SAVE },
+    // ctrl + o  open
+    { FCONTROL | FVIRTKEY, 'O', ID_FILE_LOAD },
+    // ctrl + shift + s  save
+    { FCONTROL | FSHIFT | FVIRTKEY, 'S', ID_FILE_EXPORT },
+    // ctrl + shift + o  open
+    { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_FILE_IMPORT },
   };
   m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
   if (!m_accelTable) {
@@ -275,6 +293,24 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   case ID_EDIT_REDO:
     VEngine::redo();
     refreshModeList();
+    return;
+  case ID_FILE_PULL:
+    pull(nullptr);
+    return;
+  case ID_FILE_PUSH:
+    push(nullptr);
+    return;
+  case ID_FILE_LOAD:
+    load(nullptr);
+    return;
+  case ID_FILE_SAVE:
+    save(nullptr);
+    return;
+  case ID_FILE_IMPORT:
+    importMode(nullptr);
+    return;
+  case ID_FILE_EXPORT:
+    exportMode(nullptr);
     return;
   default:
     break;

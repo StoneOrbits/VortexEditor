@@ -54,14 +54,14 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "File"
     BEGIN
-        MENUITEM "Pull Savefile",               ID_FILE_PULL
-        MENUITEM "Push Savefile",               ID_FILE_PUSH
+        MENUITEM "Pull\tctrl+e",                ID_FILE_PULL
+        MENUITEM "Push\tctrl+t",                ID_FILE_PUSH
         MENUITEM SEPARATOR
-        MENUITEM "Load Savefile",             ID_FILE_LOAD
-        MENUITEM "Save Savefile",             ID_FILE_SAVE
+        MENUITEM "Load Savefile\tctrl+o",       ID_FILE_LOAD
+        MENUITEM "Save Savefile\tctrl+s",       ID_FILE_SAVE
         MENUITEM SEPARATOR
-        MENUITEM "Import Mode",                 ID_FILE_IMPORT
-        MENUITEM "Export Mode",                 ID_FILE_EXPORT
+        MENUITEM "Import Mode\tctrl+shift+o",   ID_FILE_IMPORT
+        MENUITEM "Export Mode\tctrl+shift+s",   ID_FILE_EXPORT
         MENUITEM SEPARATOR
         MENUITEM "Quit",                        ID_FILE_QUIT
     END
