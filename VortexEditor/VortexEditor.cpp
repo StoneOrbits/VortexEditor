@@ -99,7 +99,10 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_pushButton.init(hInst, m_window, "Push", BACK_COL, 78, 24, 188, 15, ID_FILE_PUSH, pushCallback);
 
   // status bar
-  m_statusBar.init(hInst, m_window, " Disconnected", BACK_COL, 462, 24, 278, 15, 0, nullptr);
+  m_statusBar.init(hInst, m_window, "", BACK_COL, 462, 24, 278, 15, 0, nullptr);
+  m_statusBar.setForeEnabled(true);
+  m_statusBar.setBackEnabled(true);
+  m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
 
   m_modeListBox.init(hInst, m_window, "Mode List", BACK_COL, 250, 270, 16, 54, SELECT_MODE_ID, selectModeCallback);
 
@@ -641,6 +644,8 @@ void VortexEditor::selectPort(VWindow *window)
 {
   // connect to port
   begin();
+  // refresh the status
+  refreshStatus();
 }
 
 void VortexEditor::begin()
@@ -1174,6 +1179,22 @@ void VortexEditor::refreshPortList()
       }
     }
   }
+  // hack: for now just refresh status here
+  refreshStatus();
+}
+
+void VortexEditor::refreshStatus()
+{
+  int sel = m_portSelection.getSelection();
+  if (sel < 0 || !m_portList.size()) {
+    m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
+    return;
+  }
+  if (!isConnected()) {
+    m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
+    return;
+  }
+  m_statusBar.setStatus(RGB(0, 255, 0), "Connected");
 }
 
 void VortexEditor::refreshModeList(bool recursive)
@@ -1196,6 +1217,8 @@ void VortexEditor::refreshModeList(bool recursive)
   if (recursive) {
     refreshFingerList(recursive);
   }
+  // hack: for now just refresh status here
+  refreshStatus();
 }
 
 void VortexEditor::refreshFingerList(bool recursive)

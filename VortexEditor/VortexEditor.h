@@ -127,6 +127,7 @@ private:
 
   // refresh the mode list
   void refreshPortList();
+  void refreshStatus();
   void refreshModeList(bool recursive = true);
   void refreshFingerList(bool recursive = true);
   void refreshPatternSelect(bool recursive = true);

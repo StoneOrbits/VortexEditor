@@ -37,6 +37,8 @@ void VMultiListBox::init(HINSTANCE hInstance, VWindow &parent, const string &tit
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
   parent.addChild(menuID, this);
 

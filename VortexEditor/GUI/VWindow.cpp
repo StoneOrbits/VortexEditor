@@ -24,11 +24,16 @@ GUID WceusbshGUID = { 0x25dbce51, 0x6c8f, 0x4a72,
 
 VWindow::VWindow() :
   m_hwnd(nullptr),
+  m_tooltipHwnd(nullptr),
   m_children(),
   m_pParent(nullptr),
   m_callbackArg(nullptr),
   m_hDeviceNotify(nullptr),
-  m_deviceCallback(nullptr)
+  m_deviceCallback(nullptr),
+  m_backColor(0),
+  m_foreColor(0),
+  m_backEnabled(false),
+  m_foreEnabled(false)
 {
 }
 
@@ -51,6 +56,11 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
 {
   // store callback
   m_callbackArg = callbackArg;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
+
+  m_backEnabled = true;
+  m_foreEnabled = true;
 
   // register a window class for the window if not done yet
   registerWindowClass(hInstance, backcol);
@@ -95,8 +105,23 @@ void VWindow::paint()
   EndPaint(m_hwnd, &ps);
 }
 
-void VWindow::controlColor(WPARAM wParam, LPARAM lParam)
+INT_PTR VWindow::controlColor(WPARAM wParam, LPARAM lParam)
 {
+  // this function is kinda hacky and not really proper...
+  // ... but it works.
+  HWND childHwnd = (HWND)lParam;
+  VWindow *child = getChild(childHwnd);
+  if (child){
+    return child->controlColor(wParam, lParam);
+  }
+  if (m_foreEnabled) {
+    SetTextColor((HDC)wParam, m_foreColor);
+  }
+  if (m_backEnabled) {
+    SetBkColor((HDC)wParam, m_backColor);
+    return (INT_PTR)m_wc.hbrBackground;
+  }
+  return 0;
 }
 
 void VWindow::command(WPARAM wParam, LPARAM lParam)
@@ -141,6 +166,16 @@ VWindow *VWindow::getChild(uintptr_t id)
     return nullptr;
   }
   return result->second;
+}
+
+VWindow *VWindow::getChild(HWND hwnd)
+{
+  for (auto child = m_children.begin(); child != m_children.end(); ++child) {
+    if (child->second->hwnd() == hwnd) {
+      return child->second;
+    }
+  }
+  return nullptr;
 }
 
 uint32_t VWindow::addCallback(uintptr_t menuID, VMenuCallback callback)
@@ -210,6 +245,26 @@ void VWindow::setEnabled(bool enable)
   EnableWindow(m_hwnd, enable);
 }
 
+void VWindow::setBackColor(COLORREF backcol)
+{
+  m_backColor = backcol;
+}
+
+void VWindow::setForeColor(COLORREF forecol)
+{
+  m_foreColor = forecol;
+}
+
+void VWindow::setBackEnabled(bool enable)
+{
+  m_backEnabled = enable;
+}
+
+void VWindow::setForeEnabled(bool enable)
+{
+  m_foreEnabled = enable;
+}
+
 bool VWindow::isVisible() const
 {
   return IsWindowVisible(m_hwnd);
@@ -218,6 +273,16 @@ bool VWindow::isVisible() const
 bool VWindow::isEnabled() const
 {
   return IsWindowEnabled(m_hwnd);
+}
+
+bool VWindow::isBackEnabled() const
+{
+  return m_backEnabled;
+}
+
+bool VWindow::isForeEnabled() const
+{
+  return m_foreEnabled;
 }
 
 LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -236,10 +301,11 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     pWindow->releaseButton();
     break;
   case WM_CTLCOLORSTATIC:
-  //case WM_CTLCOLOREDIT:
-    SetTextColor((HDC)wParam, RGB(0xD0, 0x0, 0x0));
-    SetBkColor((HDC)wParam, BACK_COL);
-    return (INT_PTR)pWindow->m_wc.hbrBackground;
+    // for static controls we pass the hwnd of the window itself
+    return pWindow->controlColor(wParam, lParam);
+  case WM_CTLCOLOREDIT:
+    // for edit controls we pass the lParam which is the hwnd of the control
+    return pWindow->controlColor(wParam, lParam);
   case WM_CREATE:
     pWindow->create();
     break;

@@ -44,6 +44,8 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
   // register window class if it hasn't been registered yet
   registerWindowClass(hInstance, backcol);

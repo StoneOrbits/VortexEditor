@@ -37,6 +37,12 @@ void VLabel::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 {
   // store callback and menu id
   m_callback = callback;
+  m_backColor = backcol;
+  m_foreColor = RGB(0xD0, 0xD0, 0xD0);
+
+  // label needs these
+  m_backEnabled = true;
+  m_foreEnabled = true;
 
   parent.addChild(menuID, this);
 
