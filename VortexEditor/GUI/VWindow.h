@@ -33,6 +33,7 @@ public:
   // windows message handlers
   virtual void create();
   virtual void paint();
+  virtual void controlColor(WPARAM wParam, LPARAM lParam);
   virtual void command(WPARAM wParam, LPARAM lParam);
   virtual void pressButton();
   virtual void releaseButton();

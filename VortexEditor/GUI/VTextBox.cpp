@@ -69,7 +69,7 @@ void VTextBox::paint()
 void VTextBox::command(WPARAM wParam, LPARAM lParam)
 {
   int reason = HIWORD(wParam);
-  if (reason != EN_CHANGE) {
+  if (!m_callback || reason != EN_CHANGE) {
     return;
   }
   m_callback(m_callbackArg, this);

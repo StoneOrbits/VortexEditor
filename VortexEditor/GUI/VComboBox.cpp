@@ -69,7 +69,7 @@ void VComboBox::paint()
 void VComboBox::command(WPARAM wParam, LPARAM lParam)
 {
   int reason = HIWORD(wParam);
-  if (reason != CBN_SELCHANGE) {
+  if (!m_callback || reason != CBN_SELCHANGE) {
     return;
   }
   m_callback(m_callbackArg, this);

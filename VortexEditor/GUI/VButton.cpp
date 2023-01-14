@@ -67,6 +67,9 @@ void VButton::paint()
 
 void VButton::command(WPARAM wParam, LPARAM lParam)
 {
+  if (!m_callback) {
+    return;
+  }
   m_callback(m_callbackArg, this);
 }
 

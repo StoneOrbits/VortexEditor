@@ -95,6 +95,10 @@ void VWindow::paint()
   EndPaint(m_hwnd, &ps);
 }
 
+void VWindow::controlColor(WPARAM wParam, LPARAM lParam)
+{
+}
+
 void VWindow::command(WPARAM wParam, LPARAM lParam)
 {
   uintptr_t menuID = LOWORD(wParam);
@@ -232,7 +236,8 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     pWindow->releaseButton();
     break;
   case WM_CTLCOLORSTATIC:
-    SetTextColor((HDC)wParam, RGB(0xD0, 0xD0, 0xD0));
+  //case WM_CTLCOLOREDIT:
+    SetTextColor((HDC)wParam, RGB(0xD0, 0x0, 0x0));
     SetBkColor((HDC)wParam, BACK_COL);
     return (INT_PTR)pWindow->m_wc.hbrBackground;
   case WM_CREATE:
