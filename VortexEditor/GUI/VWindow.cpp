@@ -301,10 +301,8 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     pWindow->releaseButton();
     break;
   case WM_CTLCOLORSTATIC:
-    // for static controls we pass the hwnd of the window itself
-    return pWindow->controlColor(wParam, lParam);
   case WM_CTLCOLOREDIT:
-    // for edit controls we pass the lParam which is the hwnd of the control
+    // for static controls we pass the hwnd of the window itself
     return pWindow->controlColor(wParam, lParam);
   case WM_CREATE:
     pWindow->create();
