@@ -50,6 +50,49 @@ public:
   HINSTANCE hInst() const { return m_hInstance; }
 
 private:
+  class VortexPort {
+  public:
+    VortexPort();
+    VortexPort(ArduinoSerial &&serial);
+    VortexPort(VortexPort &&other) noexcept;
+    ~VortexPort();
+    void operator=(VortexPort &&other) noexcept;
+    bool begin();
+    void listen();
+    bool isConnected() const;
+    bool isActive() const;
+    ArduinoSerial &port();
+    // set whether active or not
+    void setActive(bool active);
+    // amount of data ready
+    int bytesAvailable();
+    // read out any available data
+    int readData(ByteStream &stream);
+    // wait till data arrives then read it out
+    int waitData(ByteStream &stream);
+    // write a message to the port
+    int writeData(const std::string &message);
+    // write a buffer of binary data to the port
+    int writeData(ByteStream &stream);
+    // wait for some data
+    bool expectData(const std::string &data);
+    // read data in a loop
+    void readInLoop(ByteStream &outStream);
+    // helper to validate a handshake message
+    bool parseHandshake(const ByteStream &handshakewindow);
+    // read out the full list of modes
+    bool readModes(ByteStream &outModes);
+  private:
+    // the raw serial connection
+    ArduinoSerial m_serialPort;
+    // a handle to the thread that waits for the initial handshake
+    HANDLE m_hThread;
+    // whether the port is 'active' ie the handshake has been received
+    bool m_portActive;
+    // thread func to wait and begin a port connection
+    static DWORD __stdcall beginPort(void *ptr);
+  };
+
   // print to the log
   static void printlog(const char *file, const char *func, int line, const char *msg, ...);
 
@@ -80,9 +123,12 @@ private:
   // device change handler
   static void deviceChangeCallback(void *editor, DEV_BROADCAST_HDR *dbh, bool added) { ((VortexEditor *)editor)->deviceChange(dbh, added); }
 
-  // callbacks for actions
+  // scan all ports for new connections
+  void scanPorts();
   void connectPort(uint32_t portNum);
   void disconnectPort(uint32_t portNum);
+
+  // callbacks for actions
   void selectPort(VWindow *window);
   void push(VWindow *window);
   void pull(VWindow *window);
@@ -107,7 +153,7 @@ private:
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
 
-  // callback to handle menus
+  // callback to handle device notifications
   void deviceChange(DEV_BROADCAST_HDR *dbh, bool added);
 
   // helper for color changer menus
@@ -124,9 +170,7 @@ private:
   void getClipboard(std::string &clipData);
   void setClipboard(const std::string &clipData);
 
-  bool validateHandshake(const ByteStream &handshakewindow);
-
-  // refresh the mode list
+  // refresh the various UI elements
   void refreshPortList();
   void refreshStatus();
   void refreshModeList(bool recursive = true);
@@ -135,20 +179,10 @@ private:
   void refreshColorSelect(bool recursive = true);
   void refreshParams(bool recursive = true);
 
-  // various other actions
-  void begin();
-  void scanPorts();
-  bool readPort(uint32_t port, ByteStream &outStream);
-  bool readModes(uint32_t portIndex, ByteStream &outModes);
-  bool expectData(uint32_t port, const char *data);
-  void readInLoop(uint32_t port, ByteStream &outStream);
-  void writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size);
-  void writePort(uint32_t portIndex, const ByteStream &data);
-  void writePort(uint32_t port, std::string data);
-
   // whether connected to gloveset
   bool isConnected();
   bool isPortConnected(uint32_t port) const;
+  bool getCurPort(VortexEditor::VortexPort **outPort);
 
   uint32_t getPortID() const;
   int getPortListIndex() const;
@@ -161,60 +195,10 @@ private:
 
   // main instance
   HINSTANCE m_hInstance;
-
   // Console handle for debugging
   FILE *m_consoleHandle;
-
-  class VortexPort {
-  public:
-    VortexPort() :
-      serialPort(),
-      hThread(nullptr),
-      portActive(false)
-    {
-    }
-    VortexPort(ArduinoSerial &&serial) :
-      serialPort(std::move(serial)),
-      hThread(nullptr),
-      portActive(false)
-    {
-    }
-    VortexPort(VortexPort &&other) noexcept :
-      VortexPort()
-    {
-      *this = std::move(other);
-    }
-    ~VortexPort()
-    {
-      if (hThread) {
-        TerminateThread(hThread, 0);
-        CloseHandle(hThread);
-      }
-    }
-    void operator=(VortexPort &&other) noexcept
-    {
-      serialPort = std::move(other.serialPort);
-      portActive = other.portActive;
-      hThread = other.hThread;
-
-      other.portActive = false;
-      other.hThread = nullptr;
-    }
-    void listen()
-    {
-      hThread = CreateThread(NULL, 0, beginPort, this, 0, NULL);
-    }
-    ArduinoSerial serialPort;
-    HANDLE hThread;
-    bool portActive;
-  private:
-    // thread func to wait and begin a port connection
-    static DWORD __stdcall beginPort(void *ptr);
-  };
-
   // list of ports
   std::vector<std::pair<uint32_t, std::unique_ptr<VortexPort>>> m_portList;
-
   // accelerator table for hotkeys
   HACCEL m_accelTable;
 

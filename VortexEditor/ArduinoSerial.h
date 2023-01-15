@@ -24,20 +24,17 @@ public:
   int bytesAvailable();
 
   // wait till data is available
-  int waitData(ByteStream &stream);
-
-  // read all data into bytestream
-  int readData(ByteStream &stream);
+  int rawRead(void *buffer, uint32_t amount);
 
   // Read data in a buffer, if nbChar is greater than the
   // maximum number of bytes available, it will return only the
   // bytes available. The function return -1 when nothing could
   // be read, the number of bytes actually read.
-  int readData(void *buffer, unsigned int nbChar);
+  int readData(void *buffer, uint32_t nbChar);
 
   // Writes data from a buffer through the Serial connection
   // return true on success.
-  bool writeData(const void *buffer, unsigned int nbChar);
+  bool writeData(const void *buffer, uint32_t nbChar);
 
   // Check if we are actually connected
   bool isConnected() const { return m_connected; }

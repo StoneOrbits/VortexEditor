@@ -646,24 +646,36 @@ void VortexEditor::setClipboard(const string &clipData)
 DWORD __stdcall VortexEditor::VortexPort::beginPort(void *ptr)
 {
   VortexEditor::VortexPort *port = (VortexEditor::VortexPort *)ptr;
-  ArduinoSerial *serial = &port->serialPort;
-  while (!port->portActive) {
+  while (!port->m_portActive) {
     ByteStream handshake;
     // wait for the handshake data indefinitely
-    int32_t actual = serial->waitData(handshake);
+    int32_t actual = port->waitData(handshake);
     if (!actual || !handshake.size()) {
       continue;
     }
     // validate it
-    if (!g_pEditor->validateHandshake(handshake)) {
+    if (!port->parseHandshake(handshake)) {
       // failure
       continue;
     }
-    debug("Port %u active\n", port->serialPort.portNumber());
-    port->portActive = true;
+    debug("Port %u active\n", port->m_serialPort.portNumber());
+    port->m_portActive = true;
   }
   g_pEditor->refreshPortList();
+  // cleanup this thread this function is running in
+  CloseHandle(port->m_hThread);
+  port->m_hThread = nullptr;
   return 0;
+}
+
+void VortexEditor::scanPorts()
+{
+  for (uint32_t i = 0; i < 255; ++i) {
+    if (isPortConnected(i)) {
+      continue;
+    }
+    connectPort(i);
+  }
 }
 
 void VortexEditor::connectPort(uint32_t portNum)
@@ -706,69 +718,54 @@ void VortexEditor::disconnectPort(uint32_t portNum)
 
 void VortexEditor::selectPort(VWindow *window)
 {
-  // connect to port
-  begin();
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  // try to begin operations on port
+  port->begin();
   // refresh the status
   refreshStatus();
 }
 
-void VortexEditor::begin()
-{
-  ByteStream stream;
-  int port = getPortListIndex();
-  if (port < 0) {
-    return;
-  }
-  // try to read the handshake
-  if (!readPort(port, stream)) {
-    // failure
-    return;
-  }
-  if (!validateHandshake(stream)) {
-    // failure
-    return;
-  }
-  m_portList[port].second->portActive = true;
-}
-
 void VortexEditor::push(VWindow *window)
 {
-  if (!isConnected()) {
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
     return;
   }
-  uint32_t port = getPortListIndex();
-  // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_PUSH_MODES);
+  // send the push modes command
+  port->writeData(EDITOR_VERB_PUSH_MODES);
   // read data again
-  expectData(port, EDITOR_VERB_READY);
+  port->expectData(EDITOR_VERB_READY);
   // now unserialize the stream of data that was read
   ByteStream modes;
   VEngine::getModes(modes);
   // send the modes
-  writePort(port, modes);
+  port->writeData(modes);
   // wait for the done response
-  expectData(port, EDITOR_VERB_PUSH_MODES_ACK);
+  port->expectData(EDITOR_VERB_PUSH_MODES_ACK);
 }
 
 void VortexEditor::pull(VWindow *window)
 {
-  if (!isConnected()) {
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
     return;
   }
   ByteStream stream;
-  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_PULL_MODES);
+  port->writeData(EDITOR_VERB_PULL_MODES);
   stream.clear();
-  if (!readModes(port, stream) || !stream.size()) {
+  if (!port->readModes(stream) || !stream.size()) {
     debug("Couldn't read anything");
     return;
   }
   VEngine::setModes(stream);
   // now send the done message
-  writePort(port, EDITOR_VERB_PULL_MODES_DONE);
+  port->writeData(EDITOR_VERB_PULL_MODES_DONE);
   // wait for the ack from the gloves
-  expectData(port, EDITOR_VERB_PULL_MODES_ACK);
+  port->expectData(EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
   debug("Unserialized %u modes", VEngine::numModes());
   // refresh the mode list
@@ -958,18 +955,18 @@ void VortexEditor::selectMode(VWindow *window)
 
 void VortexEditor::demoCurMode()
 {
-  if (!isConnected()) {
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
     return;
   }
   int sel = m_modeListBox.getSelection();
   if (sel < 0 || !isConnected()) {
     return;
   }
-  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_DEMO_MODE);
+  port->writeData(EDITOR_VERB_DEMO_MODE);
   // read data again
-  expectData(port, EDITOR_VERB_READY);
+  port->expectData(EDITOR_VERB_READY);
   // now unserialize the stream of data that was read
   ByteStream curMode;
   if (!VEngine::getCurMode(curMode) || !curMode.size()) {
@@ -977,9 +974,9 @@ void VortexEditor::demoCurMode()
     // TODO: abort
   }
   // send, the, mode
-  writePort(port, curMode);
+  port->writeData(curMode);
   // wait for the done response
-  expectData(port, EDITOR_VERB_DEMO_MODE_ACK);
+  port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
   string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
@@ -987,14 +984,14 @@ void VortexEditor::demoCurMode()
 
 void VortexEditor::clearDemo()
 {
-  if (!isConnected()) {
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
     return;
   }
-  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
-  writePort(port, EDITOR_VERB_CLEAR_DEMO);
+  port->writeData(EDITOR_VERB_CLEAR_DEMO);
   // read data again
-  expectData(port, EDITOR_VERB_CLEAR_DEMO_ACK);
+  port->expectData(EDITOR_VERB_CLEAR_DEMO_ACK);
 }
 
 void VortexEditor::addMode(VWindow *window)
@@ -1206,51 +1203,23 @@ void VortexEditor::paramEdit(VWindow *window)
   demoCurMode();
 }
 
-bool VortexEditor::validateHandshake(const ByteStream &handshake)
-{
-  // check the handshake for valid data
-  if (handshake.size() < 10) {
-    debug("Handshake size bad: %u", handshake.size());
-    // bad handshake
-    return false;
-  }
-  if (handshake.data()[0] != '=' || handshake.data()[1] != '=') {
-    debug("Handshake start bad: [%c%c]",
-      handshake.data()[0], handshake.data()[1]);
-    // bad handshake
-    return false;
-  }
-  if (memcmp(handshake.data(), "== Vortex Framework v", sizeof("== Vortex Framework v") - 1) != 0) {
-    debug("Handshake data bad: [%s]", handshake.data());
-    // bad handshake
-    return false;
-  }
-  // looks good
-  return true;
-}
-
 // refresh the port list
 void VortexEditor::refreshPortList()
 {
-  bool hasSelection = false;
-  uint32_t selectedPortNum = 0;
-  int sel = getPortListIndex();
-  if (sel >= 0 && m_portList.size() > 0) {
-    hasSelection = true;
-    selectedPortNum = m_portList[sel].first;
-  }
+  VortexPort *selectedPort = nullptr;
+  getCurPort(&selectedPort);
   // perform refresh as normal
   m_portSelection.clearItems();
   for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
     // if the port isn't active don't show it yet
-    if (!port->second->portActive) {
+    if (!port->second->isActive()) {
       continue;
     }
     m_portSelection.addItem("Port " + to_string(port->first));
   }
-  if (hasSelection) {
+  if (selectedPort) {
     for (uint32_t i = 0; i < m_portList.size(); ++i) {
-      if (m_portList[i].first == selectedPortNum) {
+      if (m_portList[i].first == selectedPort->port().portNumber()) {
         m_portSelection.setSelection(i);
       }
     }
@@ -1448,165 +1417,20 @@ void VortexEditor::refreshParams(bool recursive)
   }
 }
 
-void VortexEditor::scanPorts()
-{
-  for (uint32_t i = 0; i < 255; ++i) {
-    if (isPortConnected(i)) {
-      continue;
-    }
-    connectPort(i);
-  }
-}
-
-bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
-{
-  if (portIndex >= m_portList.size()) {
-    return false;
-  }
-  ArduinoSerial *serial = &m_portList[portIndex].second->serialPort;
-  // read with NULL args to get expected amount
-  int32_t amt = serial->readData(NULL, 0);
-  if (amt == -1 || amt == 0) {
-    // no data to read
-    return false;
-  }
-  outStream.init(amt);
-  // read the data into the buffer
-  int32_t actual = serial->readData((void *)outStream.data(), amt);
-  if (actual != amt) {
-    return false;
-  }
-  // size is the first param of the data, just override it
-  // idk I don't want to change the ByteStream class to accomodate
-  // the editor, maybe the Serial class should accomodate the Bytestream
-  *(uint32_t *)outStream.rawData() = amt;
-  // just print the buffer
-  debug("Data on port %u: [%s] (%u bytes)", m_portList[portIndex].first, outStream.data(), amt);
-  return true;
-}
-
-bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
-{
-  if (portIndex >= m_portList.size()) {
-    return false;
-  }
-  ArduinoSerial *serial = &m_portList[portIndex].second->serialPort;
-  uint32_t size = 0;
-
-  // first check how much is in the serial port
-  int32_t amt = 0;
-  do {
-    // read with NULL args to get expected amount
-    amt = serial->readData(NULL, 0);
-    // we need at least a size value
-  } while (amt < sizeof(size));
-
-  // read the size out of the serial port
-  serial->readData((void *)&size, sizeof(size));
-  if (!size || size > 4096) {
-    debug("Bad IR Data size: %u", size);
-    return false;
-  }
-
-  // init outmodes so it's big enough
-  outModes.init(size);
-  uint32_t amtRead = 0;
-  do {
-    // read straight into the raw buffer, this will always have enough
-    // space because outModes is big enough to hold the entire data
-    uint8_t *readPos = ((uint8_t *)outModes.rawData()) + amtRead;
-    amtRead += serial->readData((void *)readPos, size);
-  } while (amtRead < size);
-  return true;
-}
-
-bool VortexEditor::expectData(uint32_t port, const char *data)
-{
-  ByteStream stream;
-  readInLoop(port, stream);
-  if (stream.size() < strlen(data)) {
-    return false;
-  }
-  if (strcmp((char *)stream.data(), data) != 0) {
-    return false;
-  }
-  return true;
-}
-
-void VortexEditor::readInLoop(uint32_t port, ByteStream &outStream)
-{
-  outStream.clear();
-  // TODO: proper timeout lol
-  while (1) {
-    if (!readPort(port, outStream)) {
-      // error?
-      continue;
-    }
-    if (!outStream.size()) {
-      continue;
-    }
-    break;
-  }
-}
-
-void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t size)
-{
-  if (portIndex >= m_portList.size()) {
-    return;
-  }
-  ArduinoSerial *serial = &m_portList[portIndex].second->serialPort;
-  // write the data into the serial port
-  serial->writeData(data, (unsigned int)size);
-}
-
-void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
-{
-  if (portIndex >= m_portList.size()) {
-    return;
-  }
-  uint32_t size = data.rawSize();
-  // first build a buffer with the size at the start
-  uint8_t *buf = new uint8_t[size + sizeof(size)];
-  if (!buf) {
-    return;
-  }
-  memcpy(buf, &size, sizeof(size));
-  memcpy(buf + sizeof(size), data.rawData(), size);
-  // send the whole buffer in one go
-  // NOTE: when I sent this in two sends it would actually cause the arduino
-  // to only receive the size and not the buffer. It worked fine in the test
-  // framework but not for arduino serial. So warning, always send in one chunk.
-  // Even when I flushed the file buffers it didn't fix it.
-  writePortRaw(portIndex, buf, size + sizeof(size));
-  delete[] buf;
-  debug("Wrote %u bytes of raw data", size);
-}
-
-void VortexEditor::writePort(uint32_t portIndex, string data)
-{
-  if (portIndex >= m_portList.size()) {
-    return;
-  }
-  writePortRaw(portIndex, (uint8_t *)data.c_str(), data.size());
-  // just print the buffer
-  debug("Wrote to port %u: [%s]", m_portList[portIndex].first, data.c_str());
-}
-
 bool VortexEditor::isConnected()
 {
-  int sel = getPortListIndex();
-  if (sel < 0) {
+  VortexPort *port = nullptr;
+  if (!getCurPort(&port)) {
     return false;
   }
-  if (!m_portList.size()) {
-    return false;
-  }
-  if (!m_portList[sel].second->serialPort.isConnected()) {
+  if (!port->isConnected()) {
     return false;
   }
   // try to begin each time we check for connection just in case the glove reset
-  begin();
-  return m_portList[sel].second->portActive;
+  if (!port->begin()) {
+    return false;
+  }
+  return port->isActive();
 }
 
 bool VortexEditor::isPortConnected(uint32_t portNum) const
@@ -1616,10 +1440,23 @@ bool VortexEditor::isPortConnected(uint32_t portNum) const
   }
   for (uint32_t i = 0; i < m_portList.size(); ++i) {
     if (m_portList[i].first == portNum) {
-      return m_portList[i].second->serialPort.isConnected();
+      return m_portList[i].second->isConnected();
     }
   }
   return false;
+}
+
+bool VortexEditor::getCurPort(VortexEditor::VortexPort **outPort)
+{
+  int sel = getPortListIndex();
+  if (sel < 0) {
+    return false;
+  }
+  if (!m_portList.size()) {
+    return false;
+  }
+  *outPort = m_portList[sel].second.get();
+  return (*outPort != nullptr);
 }
 
 uint32_t VortexEditor::getPortID() const
@@ -1637,4 +1474,242 @@ int VortexEditor::getPortListIndex() const
     }
   }
   return -1;
+}
+
+VortexEditor::VortexPort::VortexPort() :
+  m_serialPort(),
+  m_hThread(nullptr),
+  m_portActive(false)
+{
+}
+
+VortexEditor::VortexPort::VortexPort(ArduinoSerial &&serial) :
+  m_serialPort(std::move(serial)),
+  m_hThread(nullptr),
+  m_portActive(false)
+{
+}
+
+VortexEditor::VortexPort::VortexPort(VortexPort &&other) noexcept :
+  VortexPort()
+{
+  *this = std::move(other);
+}
+
+VortexEditor::VortexPort::~VortexPort()
+{
+  if (m_hThread) {
+    TerminateThread(m_hThread, 0);
+    CloseHandle(m_hThread);
+  }
+}
+
+void VortexEditor::VortexPort::operator=(VortexPort &&other) noexcept
+{
+  m_serialPort = std::move(other.m_serialPort);
+  m_portActive = other.m_portActive;
+  m_hThread = other.m_hThread;
+
+  other.m_portActive = false;
+  other.m_hThread = nullptr;
+}
+
+bool VortexEditor::VortexPort::begin()
+{
+  ByteStream stream;
+  if (!isConnected()) {
+    setActive(false);
+    return false;
+  }
+  // try to read the handshake
+  if (!readData(stream)) {
+    // no handshake or goodbye so just return whether currently active
+    return m_portActive;
+  }
+  // validate the handshake is correct
+  if (!parseHandshake(stream)) {
+    // failure
+    return false;
+  }
+  setActive(true);
+  return true;
+}
+
+void VortexEditor::VortexPort::listen()
+{
+  m_hThread = CreateThread(NULL, 0, beginPort, this, 0, NULL);
+}
+
+bool VortexEditor::VortexPort::isConnected() const
+{
+  return m_serialPort.isConnected();
+}
+
+bool VortexEditor::VortexPort::isActive() const
+{
+  return m_portActive;
+}
+
+ArduinoSerial &VortexEditor::VortexPort::port()
+{
+  return m_serialPort;
+}
+
+void VortexEditor::VortexPort::setActive(bool active)
+{
+  m_portActive = active;
+}
+
+// amount of data ready
+int VortexEditor::VortexPort::bytesAvailable()
+{
+  return m_serialPort.bytesAvailable();
+}
+
+int VortexEditor::VortexPort::readData(ByteStream &stream)
+{
+  uint32_t avail = bytesAvailable();
+  // if there's data already just extend, otherwise init
+  if (!avail || !stream.extend(avail)) {
+    return 0;
+  }
+  uint32_t amt = m_serialPort.readData((void *)(stream.data() + stream.size()), avail);
+  // hack to increase ByteStream size
+  **(uint32_t **)&stream += amt;
+  return amt;
+}
+
+int VortexEditor::VortexPort::waitData(ByteStream &stream)
+{
+  BOOL result;
+  int len = 0;
+  DWORD bytesRead = 0;
+  uint8_t byte = 0;
+  // Try to read 1 byte so we block till data arrives
+  if (!m_serialPort.rawRead(&byte, 1)) {
+    return 0;
+  }
+  // insert the byte into the output stream
+  stream.serialize(byte);
+  // check how much more data is avail
+  int data = bytesAvailable();
+  if (data > 0) {
+    // read the rest of the data into the stream
+    readData(stream);
+  }
+  return stream.size();
+}
+
+int VortexEditor::VortexPort::writeData(const std::string &message)
+{
+  // just print the buffer
+  debug("Wrote to port %u: [%s]", m_serialPort.portNumber(), message.c_str());
+  return m_serialPort.writeData(message.c_str(), message.size());
+}
+
+int VortexEditor::VortexPort::writeData(ByteStream &stream)
+{
+  // write the data into the serial port
+  uint32_t size = stream.rawSize();
+  // create a new ByteStream that will contain the size + full stream
+  ByteStream buf(size + sizeof(size));
+  // serialize the size into the buf
+  buf.serialize(size);
+  // append the raw data of the input stream (crc/flags/size/buffer)
+  buf.append(ByteStream(size, (const uint8_t *)stream.rawData()));
+  // We must send the whole buffer in one go, cannot send size first
+  // NOTE: when I sent this in two sends it would actually cause the arduino
+  // to only receive the size and not the buffer. It worked fine in the test
+  // framework but not for arduino serial. So warning, always send in one chunk.
+  // Even when I flushed the file buffers it didn't fix it.
+  m_serialPort.writeData(buf.data(), buf.size());
+  debug("Wrote %u bytes of raw data", size);
+  return buf.size();
+}
+
+bool VortexEditor::VortexPort::expectData(const std::string &data)
+{
+  ByteStream stream;
+  readInLoop(stream);
+  if (stream.size() < data.size()) {
+    return false;
+  }
+  if (data != (char *)stream.data()) {
+    return false;
+  }
+  return true;
+}
+
+void VortexEditor::VortexPort::readInLoop(ByteStream &outStream)
+{
+  outStream.clear();
+  // TODO: proper timeout lol
+  while (1) {
+    if (!readData(outStream)) {
+      // error?
+      continue;
+    }
+    if (!outStream.size()) {
+      continue;
+    }
+    break;
+  }
+}
+
+bool VortexEditor::VortexPort::parseHandshake(const ByteStream &handshake)
+{
+  string handshakeStr = (char *)handshake.data();
+  // if there is a goodbye message then the gloveset just left the editor
+  // menu and we cannot send it messages anymore
+  if (handshakeStr.find(EDITOR_VERB_GOODBYE) != std::string::npos) {
+    setActive(false);
+    g_pEditor->refreshPortList();
+    listen();
+    return false;
+  }
+  // check the handshake for valid data
+  if (handshakeStr.size() < 10) {
+    debug("Handshake size bad: %u", handshake.size());
+    // bad handshake
+    return false;
+  }
+  if (handshakeStr[0] != '=' || handshakeStr[1] != '=') {
+    debug("Handshake start bad: [%c%c]", handshakeStr[0], handshakeStr[1]);
+    // bad handshake
+    return false;
+  }
+  // TODO: improve handshake check
+  string handshakeStart = handshakeStr.substr(0, 21);
+  if (handshakeStart != "== Vortex Framework v") {
+    debug("Handshake data bad: [%s]", handshake.data());
+    // bad handshake
+    return false;
+  }
+  // looks good
+  return true;
+}
+
+bool VortexEditor::VortexPort::readModes(ByteStream &outModes)
+{
+  uint32_t size = 0;
+  // first check how much is in the serial port
+  int32_t amt = 0;
+  // wait till amount available is enough
+  while (m_serialPort.bytesAvailable() < sizeof(size));
+  // read the size out of the serial port
+  m_serialPort.readData((void *)&size, sizeof(size));
+  if (!size || size > 4096) {
+    debug("Bad IR Data size: %u", size);
+    return false;
+  }
+  // init outmodes so it's big enough
+  outModes.init(size);
+  uint32_t amtRead = 0;
+  do {
+    // read straight into the raw buffer, this will always have enough
+    // space because outModes is big enough to hold the entire data
+    uint8_t *readPos = ((uint8_t *)outModes.rawData()) + amtRead;
+    amtRead += m_serialPort.readData((void *)readPos, size);
+  } while (amtRead < size);
+  return true;
 }

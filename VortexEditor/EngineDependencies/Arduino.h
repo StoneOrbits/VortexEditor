@@ -52,6 +52,7 @@ class SerialClass
 {
 public:
     void begin(uint32_t i) {}
+    void end() {}
     void print(uint32_t i) {}
     void print(const char *s) {}
     void println(const char *s) {}

@@ -124,48 +124,33 @@ bool ArduinoSerial::connect(const string &portName)
   }
   return true;
 }
-
 // amount of data ready
 int ArduinoSerial::bytesAvailable()
 {
-  return readData(NULL, 0);
+  if (!m_isSerial) {
+    DWORD toRead = 0;
+    PeekNamedPipe(m_hSerial, 0, 0, 0, (LPDWORD)&toRead, 0);
+    return toRead;
+  }
+  ClearCommError(m_hSerial, &m_errors, &m_status);
+  return m_status.cbInQue;
 }
 
-int ArduinoSerial::waitData(ByteStream &stream)
+// wait till data is available
+int ArduinoSerial::rawRead(void *buffer, uint32_t amount)
 {
-  BOOL result;
-  int len = 0;
   DWORD bytesRead = 0;
-  uint8_t byte = 0;
-  // Try to read 1 byte so we block till data arrives
-  if (!ReadFile(m_hSerial, &byte, 1, &bytesRead, NULL)) {
-    return bytesRead;
-  }
-  stream.serialize(byte);
-  // check how much more data is avail
-  int data = bytesAvailable();
-  if (data > 0) {
-    readData(stream);
-  }
-  return stream.size();
-}
-
-int ArduinoSerial::readData(ByteStream &stream)
-{
-  uint32_t avail = bytesAvailable();
-  if (!stream.extend(avail)) {
+  // Try to read the require number of chars, and return the number of read bytes on success
+  if (!ReadFile(m_hSerial, buffer, amount, &bytesRead, NULL)) {
     return 0;
   }
-  uint32_t amt = readData((void *)(stream.data() + stream.size()), avail);
-  // hack to increase ByteStream size
-  **(uint32_t **)&stream += amt;
-  return amt;
+  return bytesRead;
 }
 
-int ArduinoSerial::readData(void *buffer, unsigned int nbChar)
+int ArduinoSerial::readData(void *buffer, uint32_t nbChar)
 {
   // Number of bytes we'll really ask to read
-  unsigned int toRead = 0;
+  uint32_t toRead = 0;
   // Number of bytes we'll have read
   DWORD bytesRead = 0;
   // Use the ClearCommError function to get status info on the Serial port
@@ -196,7 +181,7 @@ int ArduinoSerial::readData(void *buffer, unsigned int nbChar)
   return 0;
 }
 
-bool ArduinoSerial::writeData(const void *buffer, unsigned int nbChar)
+bool ArduinoSerial::writeData(const void *buffer, uint32_t nbChar)
 {
   DWORD bytesSend;
 
