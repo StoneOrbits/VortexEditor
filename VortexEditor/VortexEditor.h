@@ -23,6 +23,7 @@
 #include "ArduinoSerial.h"
 
 // stl includes
+#include <memory>
 #include <vector>
 
 class ByteStream;
@@ -133,7 +134,6 @@ private:
   void refreshPatternSelect(bool recursive = true);
   void refreshColorSelect(bool recursive = true);
   void refreshParams(bool recursive = true);
-  void refreshApplyAll(bool recursive = true);
 
   // various other actions
   void begin();
@@ -150,6 +150,9 @@ private:
   bool isConnected();
   bool isPortConnected(uint32_t port) const;
 
+  uint32_t getPortID() const;
+  int getPortListIndex() const;
+
   // helper to split strings
   void splitString(const std::string &str, std::vector<std::string> &splits, char letter);
 
@@ -162,14 +165,17 @@ private:
   // Console handle for debugging
   FILE *m_consoleHandle;
 
-  struct VortexPort {
+  class VortexPort {
+  public:
     VortexPort() :
       serialPort(),
+      hThread(nullptr),
       portActive(false)
     {
     }
     VortexPort(ArduinoSerial &&serial) :
       serialPort(std::move(serial)),
+      hThread(nullptr),
       portActive(false)
     {
     }
@@ -178,19 +184,36 @@ private:
     {
       *this = std::move(other);
     }
+    ~VortexPort()
+    {
+      if (hThread) {
+        TerminateThread(hThread, 0);
+        CloseHandle(hThread);
+      }
+    }
     void operator=(VortexPort &&other) noexcept
     {
       serialPort = std::move(other.serialPort);
       portActive = other.portActive;
+      hThread = other.hThread;
 
       other.portActive = false;
+      other.hThread = nullptr;
+    }
+    void listen()
+    {
+      hThread = CreateThread(NULL, 0, beginPort, this, 0, NULL);
     }
     ArduinoSerial serialPort;
+    HANDLE hThread;
     bool portActive;
+  private:
+    // thread func to wait and begin a port connection
+    static DWORD __stdcall beginPort(void *ptr);
   };
 
   // list of ports
-  std::vector<std::pair<uint32_t, VortexPort>> m_portList;
+  std::vector<std::pair<uint32_t, std::unique_ptr<VortexPort>>> m_portList;
 
   // accelerator table for hotkeys
   HACCEL m_accelTable;
@@ -222,8 +245,6 @@ private:
   VColorSelect m_colorSelects[8];
   // parameters text boxes, there's 8 params
   VTextBox m_paramTextBoxes[8];
-  // apply to all button
-  VButton m_applyToAllButton;
 };
 
 extern VortexEditor *g_pEditor;

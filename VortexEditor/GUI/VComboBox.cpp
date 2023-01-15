@@ -107,3 +107,10 @@ void VComboBox::clearItems()
 {
   SendMessage(m_hwnd, CB_RESETCONTENT, 0, 0);
 }
+
+string VComboBox::getSelectionText() const
+{
+  char str[256] = {0};
+  ComboBox_GetText(m_hwnd, str, sizeof(str));
+  return str;
+}

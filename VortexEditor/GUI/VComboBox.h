@@ -27,6 +27,7 @@ public:
   int getSelection() const;
   void setSelection(int selection);
   void clearItems();
+  std::string getSelectionText() const;
 
 private:
   VWindowCallback m_callback;

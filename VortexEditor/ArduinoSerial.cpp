@@ -1,11 +1,14 @@
 #include "ArduinoSerial.h"
 
+#include "Serial/ByteStream.h"
+
 #define ARDUINO_WAIT_TIME 2000
 
 using namespace std;
 
 ArduinoSerial::ArduinoSerial() :
   m_port(),
+  m_portNum(0),
   m_hSerial(nullptr),
   m_connected(false),
   m_isSerial(false),
@@ -41,6 +44,7 @@ ArduinoSerial::~ArduinoSerial()
 void ArduinoSerial::operator=(ArduinoSerial &&other) noexcept
 {
   m_port = other.m_port;
+  m_portNum = other.m_portNum;
   m_hSerial = other.m_hSerial;
   m_connected = other.m_connected;
   m_status = other.m_status;
@@ -48,11 +52,12 @@ void ArduinoSerial::operator=(ArduinoSerial &&other) noexcept
   m_isSerial = other.m_isSerial;
 
   other.m_port.clear();
+  other.m_portNum = 0;
   other.m_hSerial = nullptr;
   other.m_connected = false;
-  other.m_isSerial = false;
   memset(&other.m_status, 0, sizeof(other.m_status));
   other.m_errors = 0;
+  other.m_isSerial = false;
 }
 
 bool ArduinoSerial::connect(const string &portName)
@@ -66,8 +71,8 @@ bool ArduinoSerial::connect(const string &portName)
     m_isSerial = false;
   }
 
-  if (portName.substr(0, 3) == "COM") {
-    m_portNum = strtoul(portName.c_str() + 3, NULL, 10);
+  if (portName.find("\\\\.\\COM") != std::string::npos) {
+    m_portNum = strtoul(portName.c_str() + 7, NULL, 10);
   }
 
   // Try to connect to the given port throuh CreateFile
@@ -120,46 +125,78 @@ bool ArduinoSerial::connect(const string &portName)
   return true;
 }
 
-int ArduinoSerial::ReadData(void *buffer, unsigned int nbChar)
+// amount of data ready
+int ArduinoSerial::bytesAvailable()
 {
-  // Number of bytes we'll have read
-  DWORD bytesRead;
-  // Number of bytes we'll really ask to read
-  unsigned int toRead;
+  return readData(NULL, 0);
+}
 
+int ArduinoSerial::waitData(ByteStream &stream)
+{
+  BOOL result;
+  int len = 0;
+  DWORD bytesRead = 0;
+  uint8_t byte = 0;
+  // Try to read 1 byte so we block till data arrives
+  if (!ReadFile(m_hSerial, &byte, 1, &bytesRead, NULL)) {
+    return bytesRead;
+  }
+  stream.serialize(byte);
+  // check how much more data is avail
+  int data = bytesAvailable();
+  if (data > 0) {
+    readData(stream);
+  }
+  return stream.size();
+}
+
+int ArduinoSerial::readData(ByteStream &stream)
+{
+  uint32_t avail = bytesAvailable();
+  if (!stream.extend(avail)) {
+    return 0;
+  }
+  uint32_t amt = readData((void *)(stream.data() + stream.size()), avail);
+  // hack to increase ByteStream size
+  **(uint32_t **)&stream += amt;
+  return amt;
+}
+
+int ArduinoSerial::readData(void *buffer, unsigned int nbChar)
+{
+  // Number of bytes we'll really ask to read
+  unsigned int toRead = 0;
+  // Number of bytes we'll have read
+  DWORD bytesRead = 0;
   // Use the ClearCommError function to get status info on the Serial port
   ClearCommError(m_hSerial, &m_errors, &m_status);
-
   // Check if there is something to read
-  if (!m_isSerial || m_status.cbInQue > 0) {
-    // If there is we check if there is enough data to read the required number
-    // of characters, if not we'll read only the available characters to prevent
-    // locking of the application.
-    if (m_status.cbInQue > nbChar) {
-      toRead = nbChar;
-    } else {
-      toRead = m_status.cbInQue;
-    }
-
-    if (!m_isSerial && !PeekNamedPipe(m_hSerial, 0, 0, 0, (LPDWORD)&toRead, 0)) {
-      // Handle failure.
-    }
-
-    if (!buffer || !nbChar) {
-      return m_isSerial ? m_status.cbInQue : toRead;
-    }
-
-    // Try to read the require number of chars, and return the number of read bytes on success
-    if (ReadFile(m_hSerial, buffer, toRead, &bytesRead, NULL)) {
-      return bytesRead;
-    }
+  if (m_isSerial && !m_status.cbInQue) {
+    return 0;
   }
-
+  // If there is we check if there is enough data to read the required number
+  // of characters, if not we'll read only the available characters to prevent
+  // locking of the application.
+  if (m_status.cbInQue > nbChar) {
+    toRead = nbChar;
+  } else {
+    toRead = m_status.cbInQue;
+  }
+  if (!m_isSerial && !PeekNamedPipe(m_hSerial, 0, 0, 0, (LPDWORD)&toRead, 0)) {
+    // Handle failure.
+  }
+  if (!buffer || !nbChar) {
+    return m_isSerial ? m_status.cbInQue : toRead;
+  }
+  // Try to read the require number of chars, and return the number of read bytes on success
+  if (ReadFile(m_hSerial, buffer, toRead, &bytesRead, NULL)) {
+    return bytesRead;
+  }
   // If nothing has been read, or that an error was detected return 0
   return 0;
 }
 
-bool ArduinoSerial::WriteData(const void *buffer, unsigned int nbChar)
+bool ArduinoSerial::writeData(const void *buffer, unsigned int nbChar)
 {
   DWORD bytesSend;
 

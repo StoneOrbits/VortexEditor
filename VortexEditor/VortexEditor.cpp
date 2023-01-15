@@ -14,6 +14,7 @@
 
 // stl includes
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -62,8 +63,7 @@ VortexEditor::VortexEditor() :
   m_ledsMultiListBox(),
   m_patternSelectComboBox(),
   m_colorSelects(),
-  m_paramTextBoxes(),
-  m_applyToAllButton()
+  m_paramTextBoxes()
 {
 }
 
@@ -129,7 +129,6 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   m_ledsMultiListBox.init(hInst, m_window, "Fingers", BACK_COL, 230, 305, 278, 54, SELECT_FINGER_ID, selectFingerCallback);
   m_patternSelectComboBox.init(hInst, m_window, "Select Pattern", BACK_COL, 165, 300, 520, 54, SELECT_PATTERN_ID, selectPatternCallback);
-  //m_applyToAllButton.init(hInst, m_window, "Copy To All", BACK_COL, 108, buttonHeight, 700, 54, COPY_TO_ALL_ID, copyToAllCallback);
 
   for (uint32_t i = 0; i < 8; ++i) {
     m_colorSelects[i].init(hInst, m_window, "Color Select", BACK_COL, 36, 30, 520, 83 + (33 * i), SELECT_COLOR_ID + i, selectColorCallback);
@@ -139,7 +138,7 @@ bool VortexEditor::init(HINSTANCE hInst)
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 693, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
-  // callbacks for menus
+  // install callback for all menu IDs, these could be separate, idk
   m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
   m_window.addCallback(ID_COLORSET_RANDOM_MONOCHROMATIC, handleMenusCallback);
   m_window.addCallback(ID_COLORSET_RANDOM_TRIADIC, handleMenusCallback);
@@ -171,6 +170,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 
   // create an accelerator table for dispatching hotkeys as WM_COMMANDS
+  // for specific menu IDs
   ACCEL accelerators[] = {
     // ctrl + z   undo
     { FCONTROL | FVIRTKEY, 'Z', ID_EDIT_UNDO },
@@ -405,7 +405,7 @@ void VortexEditor::deviceChange(DEV_BROADCAST_HDR *dbh, bool added)
   }
   string portName = dbp->dbcp_name;
   uint32_t portNum = strtoul(portName.c_str() + 3, NULL, 10);
-  printf("%s: %u\n", added ? "Connected" : "Disconnected", portNum);
+  debug("%s: %u\n", added ? "Connected" : "Disconnected", portNum);
   if (added) {
     connectPort(portNum);
   } else {
@@ -643,6 +643,29 @@ void VortexEditor::setClipboard(const string &clipData)
   CloseClipboard();
 }
 
+DWORD __stdcall VortexEditor::VortexPort::beginPort(void *ptr)
+{
+  VortexEditor::VortexPort *port = (VortexEditor::VortexPort *)ptr;
+  ArduinoSerial *serial = &port->serialPort;
+  while (!port->portActive) {
+    ByteStream handshake;
+    // wait for the handshake data indefinitely
+    int32_t actual = serial->waitData(handshake);
+    if (!actual || !handshake.size()) {
+      continue;
+    }
+    // validate it
+    if (!g_pEditor->validateHandshake(handshake)) {
+      // failure
+      continue;
+    }
+    debug("Port %u active\n", port->serialPort.portNumber());
+    port->portActive = true;
+  }
+  g_pEditor->refreshPortList();
+  return 0;
+}
+
 void VortexEditor::connectPort(uint32_t portNum)
 {
   string port = "\\\\.\\COM" + to_string(portNum);
@@ -650,8 +673,10 @@ void VortexEditor::connectPort(uint32_t portNum)
     port = "\\\\.\\pipe\\vortextestframework";
   }
   ArduinoSerial serialPort(port);
-  if (serialPort.IsConnected()) {
-    m_portList.push_back(make_pair(portNum, move(serialPort)));
+  if (serialPort.isConnected()) {
+    unique_ptr<VortexPort> newPort = make_unique<VortexPort>(move(serialPort));
+    newPort->listen();
+    m_portList.push_back(make_pair(portNum, move(newPort)));
   }
   refreshPortList();
 }
@@ -666,8 +691,11 @@ void VortexEditor::disconnectPort(uint32_t portNum)
       continue;
     }
     // are we deleting the one we have selected?
-    int sel = m_portSelection.getSelection();
-    if (sel >= i) {
+    int sel = getPortListIndex();
+    if (sel < 0) {
+      continue;
+    }
+    if ((uint32_t)sel >= i) {
       m_portSelection.setSelection(sel - 1);
     }
     m_portList.erase(m_portList.begin() + i);
@@ -687,7 +715,7 @@ void VortexEditor::selectPort(VWindow *window)
 void VortexEditor::begin()
 {
   ByteStream stream;
-  int port = m_portSelection.getSelection();
+  int port = getPortListIndex();
   if (port < 0) {
     return;
   }
@@ -700,7 +728,7 @@ void VortexEditor::begin()
     // failure
     return;
   }
-  m_portList[port].second.portActive = true;
+  m_portList[port].second->portActive = true;
 }
 
 void VortexEditor::push(VWindow *window)
@@ -708,7 +736,7 @@ void VortexEditor::push(VWindow *window)
   if (!isConnected()) {
     return;
   }
-  uint32_t port = m_portSelection.getSelection();
+  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_PUSH_MODES);
   // read data again
@@ -728,7 +756,7 @@ void VortexEditor::pull(VWindow *window)
     return;
   }
   ByteStream stream;
-  uint32_t port = m_portSelection.getSelection();
+  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_PULL_MODES);
   stream.clear();
@@ -912,7 +940,12 @@ void VortexEditor::exportMode(VWindow *window)
 void VortexEditor::selectMode(VWindow *window)
 {
   int sel = m_modeListBox.getSelection();
-  if (sel < 0 || sel == VEngine::curMode()) {
+  if (sel == VEngine::curMode()) {
+    // trigger demo again w/e
+    demoCurMode();
+    return;
+  }
+  if (sel < 0) {
     return;
   }
   VEngine::setCurMode(sel);
@@ -932,7 +965,7 @@ void VortexEditor::demoCurMode()
   if (sel < 0 || !isConnected()) {
     return;
   }
-  uint32_t port = m_portSelection.getSelection();
+  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_DEMO_MODE);
   // read data again
@@ -947,6 +980,9 @@ void VortexEditor::demoCurMode()
   writePort(port, curMode);
   // wait for the done response
   expectData(port, EDITOR_VERB_DEMO_MODE_ACK);
+  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  // Set status? maybe soon
+  //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
 
 void VortexEditor::clearDemo()
@@ -954,7 +990,7 @@ void VortexEditor::clearDemo()
   if (!isConnected()) {
     return;
   }
-  uint32_t port = m_portSelection.getSelection();
+  uint32_t port = getPortListIndex();
   // now immediately tell it what to do
   writePort(port, EDITOR_VERB_CLEAR_DEMO);
   // read data again
@@ -1198,7 +1234,7 @@ void VortexEditor::refreshPortList()
 {
   bool hasSelection = false;
   uint32_t selectedPortNum = 0;
-  int sel = m_portSelection.getSelection();
+  int sel = getPortListIndex();
   if (sel >= 0 && m_portList.size() > 0) {
     hasSelection = true;
     selectedPortNum = m_portList[sel].first;
@@ -1206,6 +1242,10 @@ void VortexEditor::refreshPortList()
   // perform refresh as normal
   m_portSelection.clearItems();
   for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
+    // if the port isn't active don't show it yet
+    if (!port->second->portActive) {
+      continue;
+    }
     m_portSelection.addItem("Port " + to_string(port->first));
   }
   if (hasSelection) {
@@ -1221,7 +1261,7 @@ void VortexEditor::refreshPortList()
 
 void VortexEditor::refreshStatus()
 {
-  int sel = m_portSelection.getSelection();
+  int sel = getPortListIndex();
   if (sel < 0 || !m_portList.size()) {
     m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
     return;
@@ -1276,7 +1316,6 @@ void VortexEditor::refreshFingerList(bool recursive)
     refreshPatternSelect(recursive);
     refreshColorSelect(recursive);
     refreshParams(recursive);
-    refreshApplyAll(recursive);
   }
 }
 
@@ -1385,7 +1424,6 @@ void VortexEditor::refreshParams(bool recursive)
         m_paramTextBoxes[i].setEnabled(false);
         m_paramTextBoxes[i].setVisible(false);
       }
-      refreshApplyAll();
       return;
     }
   }
@@ -1408,19 +1446,6 @@ void VortexEditor::refreshParams(bool recursive)
     m_paramTextBoxes[i].setEnabled(false);
     m_paramTextBoxes[i].setVisible(false);
   }
-  // also refresh the apply to all button, why not
-  refreshApplyAll();
-}
-
-void VortexEditor::refreshApplyAll(bool recursive)
-{
-  // also refresh the apply to all button, why not
-  if (m_ledsMultiListBox.numSelections() == 1 &&
-    !isMultiLedPatternID(VEngine::getPatternID())) {
-    m_applyToAllButton.setEnabled(true);
-  } else {
-    m_applyToAllButton.setEnabled(false);
-  }
 }
 
 void VortexEditor::scanPorts()
@@ -1438,16 +1463,16 @@ bool VortexEditor::readPort(uint32_t portIndex, ByteStream &outStream)
   if (portIndex >= m_portList.size()) {
     return false;
   }
-  ArduinoSerial *serial = &m_portList[portIndex].second.serialPort;
+  ArduinoSerial *serial = &m_portList[portIndex].second->serialPort;
   // read with NULL args to get expected amount
-  int32_t amt = serial->ReadData(NULL, 0);
+  int32_t amt = serial->readData(NULL, 0);
   if (amt == -1 || amt == 0) {
     // no data to read
     return false;
   }
   outStream.init(amt);
   // read the data into the buffer
-  int32_t actual = serial->ReadData((void *)outStream.data(), amt);
+  int32_t actual = serial->readData((void *)outStream.data(), amt);
   if (actual != amt) {
     return false;
   }
@@ -1465,21 +1490,21 @@ bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
   if (portIndex >= m_portList.size()) {
     return false;
   }
-  ArduinoSerial *serial = &m_portList[portIndex].second.serialPort;
+  ArduinoSerial *serial = &m_portList[portIndex].second->serialPort;
   uint32_t size = 0;
 
   // first check how much is in the serial port
   int32_t amt = 0;
   do {
     // read with NULL args to get expected amount
-    amt = serial->ReadData(NULL, 0);
+    amt = serial->readData(NULL, 0);
     // we need at least a size value
   } while (amt < sizeof(size));
 
   // read the size out of the serial port
-  serial->ReadData((void *)&size, sizeof(size));
+  serial->readData((void *)&size, sizeof(size));
   if (!size || size > 4096) {
-    DEBUG_LOGF("Bad IR Data size: %u", size);
+    debug("Bad IR Data size: %u", size);
     return false;
   }
 
@@ -1490,7 +1515,7 @@ bool VortexEditor::readModes(uint32_t portIndex, ByteStream &outModes)
     // read straight into the raw buffer, this will always have enough
     // space because outModes is big enough to hold the entire data
     uint8_t *readPos = ((uint8_t *)outModes.rawData()) + amtRead;
-    amtRead += serial->ReadData((void *)readPos, size);
+    amtRead += serial->readData((void *)readPos, size);
   } while (amtRead < size);
   return true;
 }
@@ -1529,9 +1554,9 @@ void VortexEditor::writePortRaw(uint32_t portIndex, const uint8_t *data, size_t 
   if (portIndex >= m_portList.size()) {
     return;
   }
-  ArduinoSerial *serial = &m_portList[portIndex].second.serialPort;
+  ArduinoSerial *serial = &m_portList[portIndex].second->serialPort;
   // write the data into the serial port
-  serial->WriteData(data, (unsigned int)size);
+  serial->writeData(data, (unsigned int)size);
 }
 
 void VortexEditor::writePort(uint32_t portIndex, const ByteStream &data)
@@ -1569,20 +1594,19 @@ void VortexEditor::writePort(uint32_t portIndex, string data)
 
 bool VortexEditor::isConnected()
 {
-  int sel = m_portSelection.getSelection();
+  int sel = getPortListIndex();
   if (sel < 0) {
     return false;
   }
   if (!m_portList.size()) {
     return false;
   }
-  const VortexPort *port = &m_portList[sel].second;
-  if (!port->serialPort.IsConnected()) {
+  if (!m_portList[sel].second->serialPort.isConnected()) {
     return false;
   }
   // try to begin each time we check for connection just in case the glove reset
   begin();
-  return port->portActive;
+  return m_portList[sel].second->portActive;
 }
 
 bool VortexEditor::isPortConnected(uint32_t portNum) const
@@ -1590,10 +1614,27 @@ bool VortexEditor::isPortConnected(uint32_t portNum) const
   if (!m_portList.size()) {
     return false;
   }
-  for (auto port = m_portList.begin(); port != m_portList.end(); ++port) {
-    if (port->first == portNum) {
-      return port->second.serialPort.IsConnected();
+  for (uint32_t i = 0; i < m_portList.size(); ++i) {
+    if (m_portList[i].first == portNum) {
+      return m_portList[i].second->serialPort.isConnected();
     }
   }
   return false;
+}
+
+uint32_t VortexEditor::getPortID() const
+{
+  string text = m_portSelection.getSelectionText();
+  return strtoul(text.c_str() + 5, NULL, 10);
+}
+
+int VortexEditor::getPortListIndex() const
+{
+  uint32_t id = getPortID();
+  for (int i = 0; i < m_portList.size(); ++i) {
+    if (m_portList[i].first == id) {
+      return i;
+    }
+  }
+  return -1;
 }
