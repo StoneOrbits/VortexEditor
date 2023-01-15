@@ -643,31 +643,6 @@ void VortexEditor::setClipboard(const string &clipData)
   CloseClipboard();
 }
 
-DWORD __stdcall VortexEditor::VortexPort::beginPort(void *ptr)
-{
-  VortexEditor::VortexPort *port = (VortexEditor::VortexPort *)ptr;
-  while (!port->m_portActive) {
-    ByteStream handshake;
-    // wait for the handshake data indefinitely
-    int32_t actual = port->waitData(handshake);
-    if (!actual || !handshake.size()) {
-      continue;
-    }
-    // validate it
-    if (!port->parseHandshake(handshake)) {
-      // failure
-      continue;
-    }
-    debug("Port %u active\n", port->m_serialPort.portNumber());
-    port->m_portActive = true;
-  }
-  g_pEditor->refreshPortList();
-  // cleanup this thread this function is running in
-  CloseHandle(port->m_hThread);
-  port->m_hThread = nullptr;
-  return 0;
-}
-
 void VortexEditor::scanPorts()
 {
   for (uint32_t i = 0; i < 255; ++i) {
@@ -1712,4 +1687,29 @@ bool VortexEditor::VortexPort::readModes(ByteStream &outModes)
     amtRead += m_serialPort.readData((void *)readPos, size);
   } while (amtRead < size);
   return true;
+}
+
+DWORD __stdcall VortexEditor::VortexPort::beginPort(void *ptr)
+{
+  VortexEditor::VortexPort *port = (VortexEditor::VortexPort *)ptr;
+  while (!port->m_portActive) {
+    ByteStream handshake;
+    // wait for the handshake data indefinitely
+    int32_t actual = port->waitData(handshake);
+    if (!actual || !handshake.size()) {
+      continue;
+    }
+    // validate it
+    if (!port->parseHandshake(handshake)) {
+      // failure
+      continue;
+    }
+    debug("Port %u active\n", port->m_serialPort.portNumber());
+    port->m_portActive = true;
+  }
+  g_pEditor->refreshPortList();
+  // cleanup this thread this function is running in
+  CloseHandle(port->m_hThread);
+  port->m_hThread = nullptr;
+  return 0;
 }
