@@ -191,7 +191,7 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
   string handshakeStr = (char *)handshake.data();
   // if there is a goodbye message then the gloveset just left the editor
   // menu and we cannot send it messages anymore
-  if (handshakeStr.find(EDITOR_VERB_GOODBYE) != std::string::npos) {
+  if (handshakeStr.find(EDITOR_VERB_GOODBYE) == (handshakeStr.size() - (sizeof(EDITOR_VERB_GOODBYE) - 1))) {
     setActive(false);
     g_pEditor->triggerRefresh();
     listen();
