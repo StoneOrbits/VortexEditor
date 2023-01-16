@@ -233,6 +233,7 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Time\Timer.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\VortexEngine.cpp" />
     <ClCompile Include="GUI\VWindow.cpp" />
+    <ClCompile Include="VortexPort.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -333,6 +334,7 @@
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexConfig.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\VortexEngine.h" />
     <ClInclude Include="GUI\VWindow.h" />
+    <ClInclude Include="VortexPort.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VortexEditor.rc" />

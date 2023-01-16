@@ -26,6 +26,7 @@
 #include <memory>
 #include <vector>
 
+class VortexPort;
 class ByteStream;
 class Colorset;
 
@@ -47,52 +48,12 @@ public:
   // run the test framework
   void run();
 
+  // send the refresh message to the window
+  void triggerRefresh();
+
   HINSTANCE hInst() const { return m_hInstance; }
 
 private:
-  class VortexPort {
-  public:
-    VortexPort();
-    VortexPort(ArduinoSerial &&serial);
-    VortexPort(VortexPort &&other) noexcept;
-    ~VortexPort();
-    void operator=(VortexPort &&other) noexcept;
-    bool begin();
-    void listen();
-    bool isConnected() const;
-    bool isActive() const;
-    ArduinoSerial &port();
-    // set whether active or not
-    void setActive(bool active);
-    // amount of data ready
-    int bytesAvailable();
-    // read out any available data
-    int readData(ByteStream &stream);
-    // wait till data arrives then read it out
-    int waitData(ByteStream &stream);
-    // write a message to the port
-    int writeData(const std::string &message);
-    // write a buffer of binary data to the port
-    int writeData(ByteStream &stream);
-    // wait for some data
-    bool expectData(const std::string &data);
-    // read data in a loop
-    void readInLoop(ByteStream &outStream);
-    // helper to validate a handshake message
-    bool parseHandshake(const ByteStream &handshakewindow);
-    // read out the full list of modes
-    bool readModes(ByteStream &outModes);
-  private:
-    // the raw serial connection
-    ArduinoSerial m_serialPort;
-    // a handle to the thread that waits for the initial handshake
-    HANDLE m_hThread;
-    // whether the port is 'active' ie the handshake has been received
-    bool m_portActive;
-    // thread func to wait and begin a port connection
-    static DWORD __stdcall beginPort(void *ptr);
-  };
-
   // print to the log
   static void printlog(const char *file, const char *func, int line, const char *msg, ...);
 
@@ -119,6 +80,9 @@ private:
 
   // menu handler
   static void handleMenusCallback(void *editor, uintptr_t hMenu)   { ((VortexEditor *)editor)->handleMenus(hMenu); }
+
+  // callback to refresh all uis
+  static void refreshWindowCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->refreshAll(); }
 
   // device change handler
   static void deviceChangeCallback(void *editor, DEV_BROADCAST_HDR *dbh, bool added) { ((VortexEditor *)editor)->deviceChange(dbh, added); }
@@ -170,9 +134,13 @@ private:
   void getClipboard(std::string &clipData);
   void setClipboard(const std::string &clipData);
 
-  // refresh the various UI elements
+  // refresh all UI elements
+  void refreshAll();
+  // port list and status are separate ui elements
   void refreshPortList();
   void refreshStatus();
+  // but the mode list, finger list, etc are all considered a heirarchy so
+  // there is an option to recursively refresh all children elements
   void refreshModeList(bool recursive = true);
   void refreshFingerList(bool recursive = true);
   void refreshPatternSelect(bool recursive = true);
@@ -182,7 +150,7 @@ private:
   // whether connected to gloveset
   bool isConnected();
   bool isPortConnected(uint32_t port) const;
-  bool getCurPort(VortexEditor::VortexPort **outPort);
+  bool getCurPort(VortexPort **outPort);
 
   uint32_t getPortID() const;
   int getPortListIndex() const;

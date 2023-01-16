@@ -282,6 +282,9 @@
     <ClCompile Include="GUI\VStatusBar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VortexPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -573,6 +576,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GUI\VStatusBar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexPort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

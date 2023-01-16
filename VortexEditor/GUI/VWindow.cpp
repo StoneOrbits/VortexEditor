@@ -30,6 +30,7 @@ VWindow::VWindow() :
   m_callbackArg(nullptr),
   m_hDeviceNotify(nullptr),
   m_deviceCallback(nullptr),
+  m_userCallback(nullptr),
   m_backColor(0),
   m_foreColor(0),
   m_backEnabled(false),
@@ -193,6 +194,11 @@ VWindow::VMenuCallback VWindow::getCallback(uintptr_t menuID)
   return entry->second;
 }
 
+void VWindow::installUserCallback(VWindowCallback callback)
+{
+  m_userCallback = callback;
+}
+
 void VWindow::installDeviceCallback(VDeviceCallback callback)
 {
   // only one is allowed
@@ -292,6 +298,11 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
   }
   switch (uMsg) {
+  case WM_USER:
+    if (pWindow->m_userCallback) {
+      pWindow->m_userCallback(pWindow->m_callbackArg, pWindow);
+    }
+    break;
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:

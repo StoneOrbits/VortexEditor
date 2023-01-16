@@ -47,6 +47,9 @@ public:
   virtual uint32_t addCallback(uintptr_t menuID, VMenuCallback callback);
   virtual VMenuCallback getCallback(uintptr_t menuID);
 
+  // add a WM_USER callback
+  virtual void installUserCallback(VWindowCallback callback);
+
   // install a device change callback
   virtual void installDeviceCallback(VDeviceCallback callback);
 
@@ -94,6 +97,9 @@ protected:
   // device callback
   HDEVNOTIFY m_hDeviceNotify;
   VDeviceCallback m_deviceCallback;
+
+  // user callback
+  VWindowCallback m_userCallback;
 
   // background/foreground color
   COLORREF m_backColor;
