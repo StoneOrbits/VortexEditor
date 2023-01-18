@@ -75,10 +75,11 @@ bool VortexPort::tryBegin()
 
 void VortexPort::listen()
 {
-  // only start the listener thread for com ports, ie not the test framework
-  //if (m_serialPort.portString().find("COM") == std::string::npos) {
-  // return;
-  //}
+  // do not spawn a thread if there is already one
+  if (m_hThread) {
+    return;
+  }
+  // spawn a new listener thread
   m_hThread = CreateThread(NULL, 0, begin, this, 0, NULL);
 }
 
