@@ -13,8 +13,8 @@ VortexPort::VortexPort() :
 {
 }
 
-VortexPort::VortexPort(ArduinoSerial &&serial) :
-  m_serialPort(std::move(serial)),
+VortexPort::VortexPort(const std::string &portName) :
+  m_serialPort(portName),
   m_hThread(nullptr),
   m_portActive(false)
 {
@@ -31,6 +31,7 @@ VortexPort::~VortexPort()
   if (m_hThread) {
     TerminateThread(m_hThread, 0);
     CloseHandle(m_hThread);
+    m_hThread = nullptr;
   }
 }
 
@@ -44,8 +45,13 @@ void VortexPort::operator=(VortexPort &&other) noexcept
   other.m_hThread = nullptr;
 }
 
-bool VortexPort::begin()
+bool VortexPort::tryBegin()
 {
+  //return true;
+  if (m_hThread != nullptr) {
+    // don't try because there's already a begin() thread waiting
+    return false;
+  }
   ByteStream stream;
   if (!isConnected()) {
     setActive(false);
@@ -67,7 +73,12 @@ bool VortexPort::begin()
 
 void VortexPort::listen()
 {
-  m_hThread = CreateThread(NULL, 0, beginPort, this, 0, NULL);
+  // do not spawn a thread if there is already one
+  if (m_hThread) {
+    return;
+  }
+  // spawn a new listener thread
+  m_hThread = CreateThread(NULL, 0, begin, this, 0, NULL);
 }
 
 bool VortexPort::isConnected() const
@@ -111,7 +122,6 @@ int VortexPort::readData(ByteStream &stream)
 
 int VortexPort::waitData(ByteStream &stream)
 {
-  BOOL result;
   int len = 0;
   DWORD bytesRead = 0;
   uint8_t byte = 0;
@@ -133,7 +143,6 @@ int VortexPort::waitData(ByteStream &stream)
 int VortexPort::writeData(const std::string &message)
 {
   // just print the buffer
-  //debug("Wrote to port %u: [%s]", m_serialPort.portNumber(), message.c_str());
   return m_serialPort.writeData(message.c_str(), message.size());
 }
 
@@ -153,7 +162,6 @@ int VortexPort::writeData(ByteStream &stream)
   // framework but not for arduino serial. So warning, always send in one chunk.
   // Even when I flushed the file buffers it didn't fix it.
   m_serialPort.writeData(buf.data(), buf.size());
-  //debug("Wrote %u bytes of raw data", size);
   return buf.size();
 }
 
@@ -194,24 +202,24 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
   if (handshakeStr.find(EDITOR_VERB_GOODBYE) == (handshakeStr.size() - (sizeof(EDITOR_VERB_GOODBYE) - 1))) {
     setActive(false);
     g_pEditor->triggerRefresh();
-    listen();
+    // if still connected, return to listening
+    if (isConnected()) {
+      listen();
+    }
     return false;
   }
   // check the handshake for valid data
   if (handshakeStr.size() < 10) {
-    //debug("Handshake size bad: %u", handshake.size());
     // bad handshake
     return false;
   }
   if (handshakeStr[0] != '=' || handshakeStr[1] != '=') {
-    //debug("Handshake start bad: [%c%c]", handshakeStr[0], handshakeStr[1]);
     // bad handshake
     return false;
   }
   // TODO: improve handshake check
-  string handshakeStart = handshakeStr.substr(0, 21);
-  if (handshakeStart != "== Vortex Framework v") {
-    //debug("Handshake data bad: [%s]", handshake.data());
+  string handshakeStart = handshakeStr.substr(0, sizeof(EDITOR_VERB_GREETING_PREFIX) - 1);
+  if (handshakeStart != EDITOR_VERB_GREETING_PREFIX) {
     // bad handshake
     return false;
   }
@@ -229,7 +237,6 @@ bool VortexPort::readModes(ByteStream &outModes)
   // read the size out of the serial port
   m_serialPort.readData((void *)&size, sizeof(size));
   if (!size || size > 4096) {
-    //debug("Bad IR Data size: %u", size);
     return false;
   }
   // init outmodes so it's big enough
@@ -244,11 +251,14 @@ bool VortexPort::readModes(ByteStream &outModes)
   return true;
 }
 
-DWORD __stdcall VortexPort::beginPort(void *ptr)
+DWORD __stdcall VortexPort::begin(void *ptr)
 {
   VortexPort *port = (VortexPort *)ptr;
+  if (!port) {
+    return 0;
+  }
+  ByteStream handshake;
   while (!port->m_portActive) {
-    ByteStream handshake;
     // wait for the handshake data indefinitely
     int32_t actual = port->waitData(handshake);
     if (!actual || !handshake.size()) {
@@ -259,9 +269,9 @@ DWORD __stdcall VortexPort::beginPort(void *ptr)
       // failure
       continue;
     }
-    //debug("Port %u active\n", port->m_serialPort.portNumber());
     port->m_portActive = true;
   }
+  // send a message to trigger a UI refresh
   g_pEditor->triggerRefresh();
   // cleanup this thread this function is running in
   CloseHandle(port->m_hThread);

@@ -6,6 +6,9 @@
 #include <map>
 #include <string>
 
+// The window class
+#define WC_VWINDOW      "VWINDOW"
+
 // The VWindow is the main window, there's only really supposed to be one
 // if you want child windows that is a separate class. This is also the base
 // class of all other GUI objects
@@ -47,8 +50,8 @@ public:
   virtual uint32_t addCallback(uintptr_t menuID, VMenuCallback callback);
   virtual VMenuCallback getCallback(uintptr_t menuID);
 
-  // add a WM_USER callback
-  virtual void installUserCallback(VWindowCallback callback);
+  // add a WM_USER + id callback
+  virtual void installUserCallback(uint32_t id, VWindowCallback callback);
 
   // install a device change callback
   virtual void installDeviceCallback(VDeviceCallback callback);
@@ -73,10 +76,6 @@ public:
   HMENU menu() const { return GetMenu(m_hwnd); }
 
 protected:
-  static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-  static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
-  static WNDCLASS m_wc;
-
   // window handle
   HWND m_hwnd;
   // tooltip handle
@@ -99,7 +98,7 @@ protected:
   VDeviceCallback m_deviceCallback;
 
   // user callback
-  VWindowCallback m_userCallback;
+  std::map<uint32_t, VWindowCallback> m_userCallbacks;
 
   // background/foreground color
   COLORREF m_backColor;
@@ -108,5 +107,10 @@ protected:
   // enable background/foreground color
   bool m_backEnabled;
   bool m_foreEnabled;
+
+private:
+  static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+  static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
+  static WNDCLASS m_wc;
 };
 

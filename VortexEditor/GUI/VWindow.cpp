@@ -19,9 +19,6 @@ WNDCLASS VWindow::m_wc = {0};
 GUID WceusbshGUID = { 0x25dbce51, 0x6c8f, 0x4a72,
                     0x8a,0x6d,0xb5,0x4c,0x2b,0x4f,0xc8,0x35 };
 
-// The window class
-#define VWINDOW      "VWINDOW"
-
 VWindow::VWindow() :
   m_hwnd(nullptr),
   m_tooltipHwnd(nullptr),
@@ -30,7 +27,7 @@ VWindow::VWindow() :
   m_callbackArg(nullptr),
   m_hDeviceNotify(nullptr),
   m_deviceCallback(nullptr),
-  m_userCallback(nullptr),
+  m_userCallbacks(),
   m_backColor(0),
   m_foreColor(0),
   m_backEnabled(false),
@@ -71,7 +68,7 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
   GetClientRect(GetDesktopWindow(), &desktop);
 
   // create the window
-  m_hwnd = CreateWindow(VWINDOW, title.c_str(),
+  m_hwnd = CreateWindow(WC_VWINDOW, title.c_str(),
     WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
     (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2),
     width, height, nullptr, nullptr, hInstance, nullptr);
@@ -194,9 +191,12 @@ VWindow::VMenuCallback VWindow::getCallback(uintptr_t menuID)
   return entry->second;
 }
 
-void VWindow::installUserCallback(VWindowCallback callback)
+void VWindow::installUserCallback(uint32_t id, VWindowCallback callback)
 {
-  m_userCallback = callback;
+  if (id < WM_USER) {
+    return;
+  }
+  m_userCallbacks.insert(make_pair(id - WM_USER, callback));
 }
 
 void VWindow::installDeviceCallback(VDeviceCallback callback)
@@ -297,10 +297,15 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   if (!pWindow) {
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
   }
+  uint32_t userMsgID = 0;
+  if (uMsg > WM_USER) {
+    userMsgID = (uint32_t)uMsg - WM_USER;
+    uMsg = WM_USER;
+  }
   switch (uMsg) {
   case WM_USER:
-    if (pWindow->m_userCallback) {
-      pWindow->m_userCallback(pWindow->m_callbackArg, pWindow);
+    if (pWindow->m_userCallbacks.find(userMsgID) != pWindow->m_userCallbacks.end()) {
+      pWindow->m_userCallbacks[userMsgID](pWindow->m_callbackArg, pWindow);
     }
     break;
   case WM_VSCROLL:
@@ -356,7 +361,7 @@ void VWindow::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
   // class registration
   m_wc.lpfnWndProc = VWindow::window_proc;
   m_wc.hInstance = hInstance;
-  m_wc.lpszClassName = VWINDOW;
+  m_wc.lpszClassName = WC_VWINDOW;
   m_wc.hbrBackground = CreateSolidBrush(backcol);
   m_wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
   RegisterClass(&m_wc);
