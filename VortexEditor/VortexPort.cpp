@@ -48,7 +48,6 @@ void VortexPort::operator=(VortexPort &&other) noexcept
 bool VortexPort::tryBegin()
 {
   //return true;
-  printf("TryBegin(): %x\n", GetCurrentThreadId());
   if (m_hThread != nullptr) {
     // don't try because there's already a begin() thread waiting
     return false;
@@ -68,7 +67,6 @@ bool VortexPort::tryBegin()
     // failure
     return false;
   }
-  printf("Trybegin(): success\n");
   setActive(true);
   return true;
 }
@@ -117,7 +115,6 @@ int VortexPort::readData(ByteStream &stream)
     return 0;
   }
   uint32_t amt = m_serialPort.readData((void *)(stream.data() + stream.size()), avail);
-  printf("Read: [%s] (%u)\n", stream.data() + stream.size(), avail);
   // hack to increase ByteStream size
   **(uint32_t **)&stream += amt;
   return amt;
@@ -146,7 +143,6 @@ int VortexPort::waitData(ByteStream &stream)
 int VortexPort::writeData(const std::string &message)
 {
   // just print the buffer
-  printf("Wrote to port %u: [%s]\n", m_serialPort.portNumber(), message.c_str());
   return m_serialPort.writeData(message.c_str(), message.size());
 }
 
@@ -160,7 +156,6 @@ int VortexPort::writeData(ByteStream &stream)
   buf.serialize(size);
   // append the raw data of the input stream (crc/flags/size/buffer)
   buf.append(ByteStream(size, (const uint8_t *)stream.rawData()));
-  printf("Wrote %u bytes of raw data\n", size);
   // We must send the whole buffer in one go, cannot send size first
   // NOTE: when I sent this in two sends it would actually cause the arduino
   // to only receive the size and not the buffer. It worked fine in the test
@@ -187,7 +182,6 @@ void VortexPort::readInLoop(ByteStream &outStream)
 {
   outStream.clear();
   // TODO: proper timeout lol
-  printf("Reading...\n");
   while (1) {
     if (!readData(outStream)) {
       // error?
@@ -216,23 +210,19 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
   }
   // check the handshake for valid data
   if (handshakeStr.size() < 10) {
-    printf("Handshake size bad: %u\n", handshake.size());
     // bad handshake
     return false;
   }
   if (handshakeStr[0] != '=' || handshakeStr[1] != '=') {
-    printf("Handshake start bad: [%c%c]\n", handshakeStr[0], handshakeStr[1]);
     // bad handshake
     return false;
   }
   // TODO: improve handshake check
   string handshakeStart = handshakeStr.substr(0, sizeof(EDITOR_VERB_GREETING_PREFIX) - 1);
   if (handshakeStart != EDITOR_VERB_GREETING_PREFIX) {
-    printf("Handshake data bad: [%s]\n", handshake.data());
     // bad handshake
     return false;
   }
-  printf("Handshake looks good\n");
   // looks good
   return true;
 }
@@ -242,14 +232,11 @@ bool VortexPort::readModes(ByteStream &outModes)
   uint32_t size = 0;
   // first check how much is in the serial port
   int32_t amt = 0;
-  printf("Starting read...\n");
   // wait till amount available is enough
   while (m_serialPort.bytesAvailable() < sizeof(size));
-  printf("Reading %u...\n", m_serialPort.bytesAvailable());
   // read the size out of the serial port
   m_serialPort.readData((void *)&size, sizeof(size));
   if (!size || size > 4096) {
-    printf("Bad IR Data size: %u\n", size);
     return false;
   }
   // init outmodes so it's big enough
@@ -270,7 +257,6 @@ DWORD __stdcall VortexPort::begin(void *ptr)
   if (!port) {
     return 0;
   }
-  printf("Begin(): %x\n", GetCurrentThreadId());
   ByteStream handshake;
   while (!port->m_portActive) {
     // wait for the handshake data indefinitely
@@ -280,11 +266,9 @@ DWORD __stdcall VortexPort::begin(void *ptr)
     }
     // validate it
     if (!port->parseHandshake(handshake)) {
-      printf("Bad handshake! [%s]\n", handshake.data());
       // failure
       continue;
     }
-    printf("Begin(): Success port %u active\n", port->m_serialPort.portNumber());
     port->m_portActive = true;
   }
   // send a message to trigger a UI refresh
