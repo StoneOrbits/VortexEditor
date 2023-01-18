@@ -291,9 +291,6 @@
     <ClCompile Include="VortexPort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\VSlider.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -594,9 +591,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexPort.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\VSlider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
