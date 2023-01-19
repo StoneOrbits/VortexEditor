@@ -71,40 +71,39 @@ void VColorRing::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 
   m_colorLabel.init(hInstance, parent, "", backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
 
-#if 0
-  for (int x = 0; x <= (m_radius * 2); ++x) {
-    for (int y = 0; y <= (m_radius * 2); ++y) {
-      // adjacent and opposite
-      int adj = m_radius - x;
-      int opp = m_radius - y;
-      // (x, y) -> (r, r)
-      double dist = sqrt((adj * adj) + (opp * opp));
-      if (dist >= m_radius) {
-        if (dist <= m_radius + 2) {
-          double diff = 2 - (dist - m_radius);
-          m_bitmap[(y * width) + x] = 0;
-        }
+
+  HDC hDC = GetDC(m_hwnd);
+  HDC memDC = CreateCompatibleDC(hDC);
+  m_bitmap = CreateCompatibleBitmap(hDC, width, height);
+  HGDIOBJ oldObj = SelectObject(memDC, m_bitmap);
+  int border = 2;
+
+  width = 255 + (border * 2);
+  height = 255 + (border * 2);
+
+  int hue = 0;
+  int sat = 255;
+  int val = 255;
+  for (int x = 0; x <= width; ++x) {
+    for (int y = 0; y <= height; ++y) {
+      if (x < border  || y < border || x > ((width - (border * 2))) || y > ((height - (border * 2)))) { 
+        SetPixel(memDC, x, y, 0);
         continue;
       }
-      // calculate hue
-      int hue = atan2(opp, -adj) * (255 / 360.0) * (180.0 / PI);
-      // calculate sat
-      int sat = 20 + ((235.0 * dist) / m_radius);
-      // calculate val
-      //int val = 200 + ((50.0 * dist) / m_radius);
-      HSVColor hsvCol = HSVColor(hue, sat, 255);
-#define SCALE8(i, scale)  (((uint16_t)i * (uint16_t)(scale)) >> 8)
-      //hsvCol.hue = SCALE8(hsvCol.hue, 191);
-      RGBColor rgbCol = hsv_to_rgb_rainbow(hsvCol);
-      COLORREF col = ((rgbCol.blue << 16) | (rgbCol.green << 8) | (rgbCol.red));
-      m_bitmap[(y * width) + x] = col;
+      RGBColor rgbCol = hsv_to_rgb_generic(HSVColor(hue, sat, val));
+      SetPixel(memDC, x, y, ((rgbCol.blue << 16) | (rgbCol.green << 8) | (rgbCol.red)));
+      sat--;
     }
+    hue++;
+    sat = 255;
   }
-#endif
+  SelectObject(memDC, oldObj);
+  DeleteDC(memDC);
 }
 
 void VColorRing::cleanup()
 {
+  DeleteObject(m_bitmap);
 }
 
 void VColorRing::create()
@@ -132,35 +131,15 @@ void VColorRing::paint()
   RECT rect;
   GetClientRect(m_hwnd, &rect);
   if (m_active) {
-    for (int x = 0; x <= (m_radius * 2); ++x) {
-      for (int y = 0; y <= (m_radius * 2); ++y) {
-        // adjacent and opposite
-        int adj = m_radius - x;
-        int opp = m_radius - y;
-        // (x, y) -> (r, r)
-        double dist = sqrt((adj * adj) + (opp * opp));
-        if (dist >= m_radius) {
-          if (dist <= m_radius + 2) {
-            double diff = 2 - (dist - m_radius);
-            SetPixel(hdc, x, y, 0);
-          }
-          continue;
-        }
-        // calculate hue
-        int hue = atan2(opp, -adj) * (255 / 360.0) * (180.0 / PI);
-        // calculate sat
-        int sat = 255; //20 + ((235.0 * dist) / m_radius);
-        // calculate val
-        //int val = 200 + ((50.0 * dist) / m_radius);
-        HSVColor hsvCol = HSVColor(hue, sat, 255);
-#define SCALE8(i, scale)  (((uint16_t)i * (uint16_t)(scale)) >> 8)
-        //hsvCol.hue = SCALE8(hsvCol.hue, 191);
-        RGBColor rgbCol = hsv_to_rgb_rainbow(hsvCol);
-        COLORREF col = ((rgbCol.blue << 16) | (rgbCol.green << 8) | (rgbCol.red));
-        SetPixel(hdc, x, y, col);
-      }
-    }
+    // draw the data
+    HDC compatDC = CreateCompatibleDC(hdc);
+    HBITMAP hbmpOld = (HBITMAP)SelectObject(compatDC, m_bitmap);
+    // copy the glove into position
+    BitBlt(hdc, 0, 0, m_radius * 2, m_radius * 2, compatDC, 0, 0, SRCCOPY);
+    SelectObject(compatDC, hbmpOld);
+    DeleteDC(compatDC);
   }
+    
   EndPaint(m_hwnd, &paintStruct);
 }
 

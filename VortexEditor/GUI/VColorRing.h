@@ -57,5 +57,5 @@ private:
 
   int m_radius;
 
-  RGBColor *m_bitmap;
+  HBITMAP m_bitmap;
 };

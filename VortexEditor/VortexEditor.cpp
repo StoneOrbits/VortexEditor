@@ -179,10 +179,10 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // the color picker
   m_colorPickerWindow.init(hInst, "Vortex Color Picker", BACK_COL, 420, 420, nullptr);
-  m_colorPickerWindow.setVisible(false);
+  m_colorPickerWindow.setVisible(true);
 
   // the color ring
-  m_colorRing.init(hInst, m_colorPickerWindow, "Color Ring", BACK_COL, 200, 200, 10, 10, 0, nullptr);
+  m_colorRing.init(hInst, m_colorPickerWindow, "Color Ring", BACK_COL, 259, 259, 10, 10, 0, nullptr);
   m_colorRing.setVisible(true);
   m_colorRing.setEnabled(true);
   m_colorRing.setActive(true);
