@@ -12,7 +12,7 @@
 #include "GUI/VMultiListBox.h"
 #include "GUI/VColorSelect.h"
 #include "GUI/VChildwindow.h"
-#include "GUI/VColorRing.h"
+#include "GUI/VHueSatBox.h"
 #include "GUI/VStatusBar.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"

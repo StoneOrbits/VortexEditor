@@ -1,4 +1,4 @@
-#include "VColorRing.h"
+#include "VHueSatBox.h"
 
 // Windows includes
 #include <CommCtrl.h>
@@ -90,7 +90,7 @@ void VColorRing::init(HINSTANCE hInstance, VWindow &parent, const string &title,
         SetPixel(memDC, x, y, 0);
         continue;
       }
-      RGBColor rgbCol = hsv_to_rgb_generic(HSVColor(hue, sat, val));
+      RGBColor rgbCol = hsv_to_rgb_rainbow(HSVColor(hue, sat, val));
       SetPixel(memDC, x, y, ((rgbCol.blue << 16) | (rgbCol.green << 8) | (rgbCol.red)));
       sat--;
     }
