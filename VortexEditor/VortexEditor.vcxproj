@@ -161,6 +161,8 @@
     <ClCompile Include="GUI\VSlider.cpp" />
     <ClCompile Include="GUI\VStatusBar.cpp" />
     <ClCompile Include="GUI\VTextBox.cpp" />
+    <ClCompile Include="GUI\VValSlider.cpp" />
+    <ClCompile Include="VortexColorPicker.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Buttons\Button.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Buttons\Buttons.cpp" />
@@ -258,7 +260,9 @@
     <ClInclude Include="GUI\VSlider.h" />
     <ClInclude Include="GUI\VStatusBar.h" />
     <ClInclude Include="GUI\VTextBox.h" />
+    <ClInclude Include="GUI\VValSlider.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="VortexColorPicker.h" />
     <ClInclude Include="VortexEditor.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Buttons\Button.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Buttons\Buttons.h" />

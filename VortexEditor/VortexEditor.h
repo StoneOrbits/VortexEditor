@@ -22,6 +22,7 @@
 #include "GUI/VLabel.h"
 
 // editor includes
+#include "VortexColorPicker.h"
 #include "ArduinoSerial.h"
 
 // stl includes
@@ -169,6 +170,8 @@ private:
 
   // main instance
   HINSTANCE m_hInstance;
+  // icon
+  HICON m_hIcon;
   // Console handle for debugging
   FILE *m_consoleHandle;
   // list of ports
@@ -207,11 +210,8 @@ private:
   // ==================================
   //  Color picker GUI
 
-  // child window for color picker tool
-  VChildWindow m_colorPickerWindow;
-
-  // color ring for the color picker
-  VColorRing m_colorRing;
+  // the vortex color picker window
+  VortexColorPicker m_colorPicker;
 };
 
 extern VortexEditor *g_pEditor;

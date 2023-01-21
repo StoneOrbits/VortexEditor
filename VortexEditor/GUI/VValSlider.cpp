@@ -1,4 +1,4 @@
-#include "VHueSatBox.h"
+#include "VValSlider.h"
 
 // Windows includes
 #include <CommCtrl.h>
@@ -13,36 +13,34 @@
 
 using namespace std;
 
-#define WC_HUE_SAT_BOX "VHueSatBox"
+#define WC_VAL_SLIDER "VValSlider"
 
 #define PI 3.141592654
 
-WNDCLASS VHueSatBox::m_wc = {0};
+WNDCLASS VValSlider::m_wc = {0};
 
-VHueSatBox::VHueSatBox() :
+VValSlider::VValSlider() :
   VWindow(),
   m_borderSize(2),
-  m_huePos(0),
-  m_satPos(0),
   m_callback(nullptr),
   m_bitmap(nullptr)
 {
 }
 
-VHueSatBox::VHueSatBox(HINSTANCE hInstance, VWindow &parent, const string &title,
+VValSlider::VValSlider(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback) :
-  VHueSatBox()
+  VValSlider()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
 }
 
-VHueSatBox::~VHueSatBox()
+VValSlider::~VValSlider()
 {
   cleanup();
 }
 
-void VHueSatBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
+void VValSlider::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback)
 {
@@ -55,11 +53,11 @@ void VHueSatBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   parent.addChild(menuID, this);
 
   uint32_t borders = m_borderSize * 2;
-  m_width = 255 + borders;
-  m_height = 255 + borders;
+  m_width = width + borders;
+  m_height = height + borders;
 
   // create the window
-  m_hwnd = CreateWindow(WC_HUE_SAT_BOX, title.c_str(),
+  m_hwnd = CreateWindow(WC_VAL_SLIDER, title.c_str(),
     WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP,
     x, y, m_width, m_height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
@@ -81,29 +79,28 @@ void VHueSatBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   int hue = 0;
   int sat = 255;
   int val = 255;
-  for (uint32_t x = 0; x < m_width; ++x) {
-    for (uint32_t y = 0; y < m_height; ++y) {
+  for (uint32_t y = 0; y < m_height; ++y) {
+    RGBColor rgbCol = hsv_to_rgb_rainbow(HSVColor(hue, sat, val));
+    COLORREF col = ((rgbCol.blue << 16) | (rgbCol.green << 8) | (rgbCol.red));
+    for (uint32_t x = 0; x < m_width; ++x) {
       if (x < m_borderSize  || y < m_borderSize || x >= ((m_width - m_borderSize)) || y >= ((m_height - m_borderSize))) { 
         SetPixel(memDC, x, y, 0);
         continue;
       }
-      RGBColor rgbCol = hsv_to_rgb_rainbow(HSVColor(hue, sat, val));
-      SetPixel(memDC, x, y, ((rgbCol.blue << 16) | (rgbCol.green << 8) | (rgbCol.red)));
-      sat--;
+      SetPixel(memDC, x, y, col);
     }
-    hue++;
-    sat = 255;
+    val--;
   }
   SelectObject(memDC, oldObj);
   DeleteDC(memDC);
 }
 
-void VHueSatBox::cleanup()
+void VValSlider::cleanup()
 {
   DeleteObject(m_bitmap);
 }
 
-void VHueSatBox::create()
+void VValSlider::create()
 {
 }
 
@@ -120,7 +117,7 @@ static HBRUSH getBrushCol(DWORD rgbcol)
   return br;
 }
 
-void VHueSatBox::paint()
+void VValSlider::paint()
 {
   PAINTSTRUCT paintStruct;
   memset(&paintStruct, 0, sizeof(paintStruct));
@@ -137,27 +134,23 @@ void VHueSatBox::paint()
   
   int selectorSize = 10;
 
-  SelectObject(hdc, GetStockObject(HOLLOW_BRUSH));
-  Ellipse(hdc, m_borderSize + (m_huePos), m_borderSize + (m_satPos), 
-               m_borderSize + (m_huePos + selectorSize), m_borderSize + (m_satPos + selectorSize));
-  SelectObject(hdc, GetStockObject(WHITE_PEN));
-  Ellipse(hdc, m_borderSize + (m_huePos) + 1, m_borderSize + (m_satPos) + 1, 
-               m_borderSize + (m_huePos + selectorSize) - 1, m_borderSize + (m_satPos + selectorSize) - 1);
+  SelectObject(hdc, GetStockObject(BLACK_PEN));
+  MoveToEx(hdc, 0, m_valPos, NULL);
+  LineTo(hdc, m_width, m_valPos);
 
   EndPaint(m_hwnd, &paintStruct);
 }
 
-void VHueSatBox::command(WPARAM wParam, LPARAM lParam)
+void VValSlider::command(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VHueSatBox::pressButton()
+void VValSlider::pressButton()
 {
   POINT pos;
   GetCursorPos(&pos);
   ScreenToClient(m_hwnd, &pos);
-  m_huePos = pos.x;
-  m_satPos = pos.y;
+  m_valPos = pos.y;
   RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
 #if 0
   CHOOSECOLOR col;
@@ -178,12 +171,12 @@ void VHueSatBox::pressButton()
 #endif
 }
 
-void VHueSatBox::releaseButton()
+void VValSlider::releaseButton()
 {
 }
 
 // window message for right button press, only exists here
-void VHueSatBox::rightButtonPress()
+void VValSlider::rightButtonPress()
 {
 #if 0
   if (m_color == 0) {
@@ -194,19 +187,19 @@ void VHueSatBox::rightButtonPress()
 #endif
 }
 
-void VHueSatBox::clear()
+void VValSlider::clear()
 {
   setColor(0);
 }
 
-void VHueSatBox::setColor(uint32_t col)
+void VValSlider::setColor(uint32_t col)
 {
   //m_color = col;
   //m_colorLabel.setText(getColorName());
   //RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
 }
 
-string VHueSatBox::getColorName() const
+string VValSlider::getColorName() const
 {
   //if (m_color == 0) {
     return "blank";
@@ -217,7 +210,7 @@ string VHueSatBox::getColorName() const
   //return colText;
 }
 
-void VHueSatBox::setColor(std::string name)
+void VValSlider::setColor(std::string name)
 {
   if (name == "blank") {
     setColor(0);
@@ -230,35 +223,35 @@ void VHueSatBox::setColor(std::string name)
   setColor(strtoul(name.c_str() + 1, NULL, 16));
 }
 
-void VHueSatBox::setFlippedColor(uint32_t col)
+void VValSlider::setFlippedColor(uint32_t col)
 {
   setColor(((col >> 16) & 0xFF) | (col & 0xFF00) | ((col << 16) & 0xFF0000));
 }
 
-uint32_t VHueSatBox::getColor() const
+uint32_t VValSlider::getColor() const
 {
   return 0; //m_color;
 }
 
-uint32_t VHueSatBox::getFlippedColor() const
+uint32_t VValSlider::getFlippedColor() const
 {
   return 0; //((m_color >> 16) & 0xFF) | (m_color & 0xFF00) | ((m_color << 16) & 0xFF0000);
 }
 
-bool VHueSatBox::isActive() const
+bool VValSlider::isActive() const
 {
   return 0; //m_active;
 }
 
-void VHueSatBox::setActive(bool active)
+void VValSlider::setActive(bool active)
 {
   //m_active = active;
   //m_colorLabel.setVisible(active);
 }
 
-LRESULT CALLBACK VHueSatBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK VValSlider::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-  VHueSatBox *pColorSelect = (VHueSatBox *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  VValSlider *pColorSelect = (VValSlider *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
   if (!pColorSelect) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
   }
@@ -299,18 +292,18 @@ LRESULT CALLBACK VHueSatBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void VHueSatBox::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
+void VValSlider::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
 {
-  if (m_wc.lpfnWndProc == VHueSatBox::window_proc) {
+  if (m_wc.lpfnWndProc == VValSlider::window_proc) {
     // alredy registered
     return;
   }
   // class registration
-  m_wc.lpfnWndProc = VHueSatBox::window_proc;
+  m_wc.lpfnWndProc = VValSlider::window_proc;
   m_wc.hInstance = hInstance;
   m_wc.hbrBackground = CreateSolidBrush(backcol);
   m_wc.style = CS_GLOBALCLASS | CS_HREDRAW | CS_VREDRAW;
   m_wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-  m_wc.lpszClassName = WC_HUE_SAT_BOX;
+  m_wc.lpszClassName = WC_VAL_SLIDER;
   RegisterClass(&m_wc);
 }

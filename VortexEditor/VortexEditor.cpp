@@ -75,6 +75,9 @@ VortexEditor::VortexEditor() :
 
 VortexEditor::~VortexEditor()
 {
+  if (m_hIcon) {
+    DestroyIcon(m_hIcon);
+  }
 }
 
 bool VortexEditor::init(HINSTANCE hInst)
@@ -177,20 +180,12 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.installUserCallback(WM_TEST_CONNECT, connectTestFrameworkCallback);
   m_window.installUserCallback(WM_TEST_DISCONNECT, disconnectTestFrameworkCallback);
 
-  // the color picker
-  m_colorPickerWindow.init(hInst, "Vortex Color Picker", BACK_COL, 420, 420, nullptr);
-  m_colorPickerWindow.setVisible(true);
-
-  // the color ring
-  m_colorRing.init(hInst, m_colorPickerWindow, "Color Ring", BACK_COL, 259, 259, 10, 10, 0, nullptr);
-  m_colorRing.setVisible(true);
-  m_colorRing.setEnabled(true);
-  m_colorRing.setActive(true);
+  // initialize the color picker window
+  m_colorPicker.init(hInst);
 
   // apply the icon
-  HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
-  SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-  SendMessage(m_colorPickerWindow.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+  m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+  SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)m_hIcon);
 
   // create an accelerator table for dispatching hotkeys as WM_COMMANDS
   // for specific menu IDs
@@ -341,8 +336,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     exportMode(nullptr);
     return;
   case ID_TOOLS_COLOR_PICKER:
-    m_colorPickerWindow.setVisible(true);
-    m_colorPickerWindow.setEnabled(true);
+    m_colorPicker.show();
     return;
   default:
     break;

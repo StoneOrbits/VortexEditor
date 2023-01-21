@@ -6,14 +6,14 @@
 
 class RGBColor;
 
-class VHueSatBox : public VWindow
+class VValSlider : public VWindow
 {
 public:
-  VHueSatBox();
-  VHueSatBox(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
+  VValSlider();
+  VValSlider(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
     COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
     uintptr_t menuID, VWindowCallback callback);
-  virtual ~VHueSatBox();
+  virtual ~VValSlider();
 
   virtual void init(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
     COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
@@ -50,8 +50,7 @@ private:
   uint32_t m_width;
   uint32_t m_height;
 
-  uint32_t m_huePos;
-  uint32_t m_satPos;
+  uint32_t m_valPos;
 
   // internal vgui label for display of color code
   VLabel m_colorLabel;
@@ -59,3 +58,5 @@ private:
   VWindowCallback m_callback;
   HBITMAP m_bitmap;
 };
+
+
