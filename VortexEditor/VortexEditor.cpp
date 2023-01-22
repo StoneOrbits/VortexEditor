@@ -4,6 +4,8 @@
 #include "Serial/ByteStream.h"
 #include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
+#include "Modes/ModeBuilder.h"
+#include "Modes/Mode.h"
 
 // Editor includes
 #include "EngineWrapper.h"
@@ -56,6 +58,7 @@ VortexEditor::VortexEditor() :
   m_consoleHandle(nullptr),
   m_portList(),
   m_accelTable(),
+  m_selectedColorSlot(0),
   m_window(),
   m_portSelection(),
   m_pushButton(),
@@ -437,6 +440,41 @@ void VortexEditor::deviceChange(DEV_BROADCAST_HDR *dbh, bool added)
   } else {
     disconnectPort(portNum);
   }
+}
+
+void VortexEditor::updateSelectedColor(uint32_t rawCol)
+{
+  VColorSelect *colSelect = g_pEditor->m_selectedColorSlot;
+  int pos = m_ledsMultiListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  uint32_t colorIndex = (uint32_t)((uintptr_t)colSelect->menu() - SELECT_COLOR_ID);
+  colSelect->setColor(rawCol);
+  Colorset newSet;
+  VEngine::getColorset((LedPos)pos, newSet);
+  // if the color select was made inactive
+  if (!colSelect->isActive()) {
+    debug("Disabled color slot");
+    newSet.removeColor(colorIndex);
+  } else {
+    debug("Updating color slot");
+    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
+  }
+  vector<int> sels;
+  m_ledsMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // this should never happen
+    return;
+  }
+  // set the colorset on all selected patterns
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    // only set the pattern on a single position
+    VEngine::setColorset((LedPos)sels[i], newSet);
+  }
+  refreshModeList();
+  // update the demo
+  demoCurMode();
 }
 
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
@@ -1134,36 +1172,8 @@ void VortexEditor::selectColor(VWindow *window)
   if (!window) {
     return;
   }
-  VColorSelect *colSelect = (VColorSelect *)window;
-  int pos = m_ledsMultiListBox.getSelection();
-  if (pos < 0) {
-    return;
-  }
   uint32_t colorIndex = (uint32_t)((uintptr_t)window->menu() - SELECT_COLOR_ID);
-  Colorset newSet;
-  VEngine::getColorset((LedPos)pos, newSet);
-  // if the color select was made inactive
-  if (!colSelect->isActive()) {
-    debug("Disabled color slot %u", colorIndex);
-    newSet.removeColor(colorIndex);
-  } else {
-    debug("Updating color slot %u", colorIndex);
-    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
-  }
-  vector<int> sels;
-  m_ledsMultiListBox.getSelections(sels);
-  if (!sels.size()) {
-    // this should never happen
-    return;
-  }
-  // set the colorset on all selected patterns
-  for (uint32_t i = 0; i < sels.size(); ++i) {
-    // only set the pattern on a single position
-    VEngine::setColorset((LedPos)sels[i], newSet);
-  }
-  refreshModeList();
-  // update the demo
-  demoCurMode();
+  m_selectedColorSlot = m_colorSelects + colorIndex;
 }
 
 void VortexEditor::paramEdit(VWindow *window)
@@ -1205,6 +1215,31 @@ void VortexEditor::paramEdit(VWindow *window)
   }
   // update the demo
   demoCurMode();
+}
+
+void VortexEditor::demoColor(uint32_t rawCol)
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_DEMO_MODE);
+  // read data again
+  port->expectData(EDITOR_VERB_READY);
+  // now unserialize the stream of data that was read
+  ByteStream curMode;
+  PatternArgs args(1, 0, 0);
+  Colorset newSet(rawCol);
+  Mode *newMode = ModeBuilder::make(PATTERN_BASIC, &args, &newSet);
+  newMode->saveToBuffer(curMode);
+  // send, the, mode
+  port->writeData(curMode);
+  // wait for the done response
+  port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
+  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  // Set status? maybe soon
+  //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
 
 void VortexEditor::refreshAll()

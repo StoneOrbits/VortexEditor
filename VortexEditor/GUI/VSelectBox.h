@@ -9,8 +9,14 @@ class RGBColor;
 class VSelectBox : public VWindow
 {
 public:
+  // type of selection event for callback
+  enum SelectEvent {
+    SELECT_PRESS,
+    SELECT_DRAG,
+    SELECT_RELEASE
+  };
   // callback upon selection
-  typedef void (*VSelectBoxCallback)(void *arg, uint32_t x, uint32_t y);
+  typedef void (*VSelectBoxCallback)(void *arg, uint32_t x, uint32_t y, SelectEvent sevent);
 
   VSelectBox();
   VSelectBox(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
@@ -45,6 +51,8 @@ private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
   static WNDCLASS m_wc;
+
+  void doCallback(SelectEvent sevent);
 
   uint32_t m_borderSize;
 

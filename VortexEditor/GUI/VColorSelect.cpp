@@ -94,31 +94,48 @@ void VColorSelect::paint()
   PAINTSTRUCT paintStruct;
   memset(&paintStruct, 0, sizeof(paintStruct));
   HDC hdc = BeginPaint(m_hwnd, &paintStruct);
+
   RECT rect;
   GetClientRect(m_hwnd, &rect);
+
+  uint32_t width = rect.right - rect.left;
+  uint32_t height = rect.bottom - rect.top;
+
+  // create a backbuffer and select it
+  HDC backbuffDC = CreateCompatibleDC(hdc);
+  HBITMAP backbuffer = CreateCompatibleBitmap(hdc, width, height);
+  SelectObject(backbuffDC, backbuffer);
+
+
   COLORREF frontCol;
   if (m_active) {
     // the front color will be the actual color
     frontCol = getColor();
     if (frontCol != 0) {
       // if the frontcol is not 0, use brighter white
-      FillRect(hdc, &rect, getBrushCol(0xAAAAAA));
+      FillRect(backbuffDC, &rect, getBrushCol(0xAAAAAA));
     } else {
       // if the slot is empty use dark border
-      FillRect(hdc, &rect, getBrushCol(0x606060));
+      FillRect(backbuffDC, &rect, getBrushCol(0x606060));
     }
   } else {
     // the front color will be black
     frontCol = 0;
     // fill the back with red
-    FillRect(hdc, &rect, getBrushCol(0xFF0000));
+    FillRect(backbuffDC, &rect, getBrushCol(0xFF0000));
   }
 #define BORDER_WIDTH 1
   rect.left += BORDER_WIDTH;
   rect.top += BORDER_WIDTH;
   rect.right -= BORDER_WIDTH;
   rect.bottom -= BORDER_WIDTH;
-  FillRect(hdc, &rect, getBrushCol(frontCol));
+  FillRect(backbuffDC, &rect, getBrushCol(frontCol));
+
+  BitBlt(hdc, 0, 0, width, height, backbuffDC, 0, 0, SRCCOPY);
+
+  DeleteObject(backbuffer);
+  DeleteDC(backbuffDC);
+
   EndPaint(m_hwnd, &paintStruct);
 }
 
@@ -131,20 +148,20 @@ void VColorSelect::pressButton()
   if (!m_callback) {
     return;
   }
-  CHOOSECOLOR col;
-  memset(&col, 0, sizeof(col));
-  ZeroMemory(&col, sizeof(col));
-  col.lStructSize = sizeof(col);
-  col.hwndOwner = m_hwnd;
-  static COLORREF acrCustClr[16]; // array of custom colors 
-  col.lpCustColors = (LPDWORD)acrCustClr;
-  // windows uses BGR
-  col.rgbResult = getFlippedColor();
-  col.Flags = CC_FULLOPEN | CC_RGBINIT;
-  ChooseColor(&col);
-  // flip the result back from BGR to RGB
-  setFlippedColor(col.rgbResult);
-  setActive(true);
+  //CHOOSECOLOR col;
+  //memset(&col, 0, sizeof(col));
+  //ZeroMemory(&col, sizeof(col));
+  //col.lStructSize = sizeof(col);
+  //col.hwndOwner = m_hwnd;
+  //static COLORREF acrCustClr[16]; // array of custom colors 
+  //col.lpCustColors = (LPDWORD)acrCustClr;
+  //// windows uses BGR
+  //col.rgbResult = getFlippedColor();
+  //col.Flags = CC_FULLOPEN | CC_RGBINIT;
+  //ChooseColor(&col);
+  //// flip the result back from BGR to RGB
+  //setFlippedColor(col.rgbResult);
+  //setActive(true);
   m_callback(m_callbackArg, this);
 }
 

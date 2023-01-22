@@ -42,6 +42,7 @@ class Colorset;
 
 class VortexEditor
 {
+  friend class VortexColorPicker;
 public:
   VortexEditor();
   ~VortexEditor();
@@ -121,6 +122,9 @@ private:
   void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
 
+  // demo a color
+  void demoColor(uint32_t rawCol);
+
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
 
@@ -128,6 +132,7 @@ private:
   void deviceChange(DEV_BROADCAST_HDR *dbh, bool added);
 
   // helper for color changer menus
+  void updateSelectedColor(uint32_t rawCol);
   void applyColorset(const Colorset &set, const std::vector<int> &selections);
   void applyPattern(PatternID id, const std::vector<int> &selections);
   void applyColorsetToAll(const Colorset &set);
@@ -178,6 +183,8 @@ private:
   std::vector<std::pair<uint32_t, std::unique_ptr<VortexPort>>> m_portList;
   // accelerator table for hotkeys
   HACCEL m_accelTable;
+  // selected color slot
+  VColorSelect *m_selectedColorSlot;
 
   // ==================================
   //  GUI Members

@@ -100,7 +100,6 @@ void VSelectBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 
 void VSelectBox::cleanup()
 {
-  //DeleteObject(m_bitmap);
 }
 
 void VSelectBox::create()
@@ -125,62 +124,68 @@ void VSelectBox::paint()
   PAINTSTRUCT paintStruct;
   memset(&paintStruct, 0, sizeof(paintStruct));
   HDC hdc = BeginPaint(m_hwnd, &paintStruct);
-  RECT rect;
-  GetClientRect(m_hwnd, &rect);
-  // draw the data
-  HDC compatDC = CreateCompatibleDC(hdc);
-  HBITMAP hbmpOld = (HBITMAP)SelectObject(compatDC, m_bitmap);
-  // copy the bitmap into the hdc
-  BitBlt(hdc, 0, 0, m_width, m_height, compatDC, 0, 0, BLACKNESS);
-  BitBlt(hdc, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, compatDC, 0, 0, SRCCOPY);
-  SelectObject(compatDC, hbmpOld);
-  DeleteDC(compatDC);
 
+  // create a backbuffer and select it
+  HDC backbuffDC = CreateCompatibleDC(hdc);
+  HBITMAP backbuffer = CreateCompatibleBitmap(hdc, m_width, m_height);
+  SelectObject(backbuffDC, backbuffer);
+
+  // copy the bitmap into the backbuffer
+  HDC bmpDC = CreateCompatibleDC(hdc);
+  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, m_bitmap);
+  BitBlt(backbuffDC, 0, 0, m_width, m_height, bmpDC, 0, 0, BLACKNESS);
+  BitBlt(backbuffDC, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, bmpDC, 0, 0, SRCCOPY);
+  DeleteDC(bmpDC);
+
+  // draw the lines and circle
   int selectorSize = 5;
-
   if (m_drawHLine) {
-    SelectObject(hdc, GetStockObject(WHITE_PEN));
+    SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
     if (m_drawCircle) {
-      MoveToEx(hdc, m_innerLeft, m_innerTop + m_ySelect, NULL);
-      LineTo(hdc, m_innerLeft + (m_xSelect - selectorSize), m_innerTop + m_ySelect);
-      MoveToEx(hdc, m_innerLeft + (m_xSelect + selectorSize), m_innerTop + m_ySelect, NULL);
-      LineTo(hdc, m_innerLeft + m_innerWidth, m_innerTop + m_ySelect);
+      MoveToEx(backbuffDC, m_innerLeft, m_innerTop + m_ySelect, NULL);
+      LineTo(backbuffDC, m_innerLeft + (m_xSelect - selectorSize), m_innerTop + m_ySelect);
+      MoveToEx(backbuffDC, m_innerLeft + (m_xSelect + selectorSize), m_innerTop + m_ySelect, NULL);
+      LineTo(backbuffDC, m_innerLeft + m_innerWidth, m_innerTop + m_ySelect);
     } else {
-      MoveToEx(hdc, m_innerLeft, m_innerTop + m_ySelect, NULL);
-      LineTo(hdc, m_innerLeft + m_innerWidth, m_innerTop + m_ySelect);
+      MoveToEx(backbuffDC, m_innerLeft, m_innerTop + m_ySelect, NULL);
+      LineTo(backbuffDC, m_innerLeft + m_innerWidth, m_innerTop + m_ySelect);
     }
   }
   if (m_drawVLine) {
-    SelectObject(hdc, GetStockObject(WHITE_PEN));
+    SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
     if (m_drawCircle) {
-      MoveToEx(hdc, m_innerLeft + m_xSelect, m_innerTop, NULL);
-      LineTo(hdc, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect - selectorSize));
-      MoveToEx(hdc, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect + selectorSize), NULL);
-      LineTo(hdc, m_innerLeft + m_xSelect, m_innerTop + m_innerHeight);
+      MoveToEx(backbuffDC, m_innerLeft + m_xSelect, m_innerTop, NULL);
+      LineTo(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect - selectorSize));
+      MoveToEx(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect + selectorSize), NULL);
+      LineTo(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + m_innerHeight);
     } else {
-      MoveToEx(hdc, m_innerLeft + m_xSelect, m_innerTop, NULL);
-      LineTo(hdc, m_innerLeft + m_xSelect, m_innerTop + m_innerHeight);
+      MoveToEx(backbuffDC, m_innerLeft + m_xSelect, m_innerTop, NULL);
+      LineTo(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + m_innerHeight);
     }
   }
   if (m_drawCircle) {
-    SelectObject(hdc, GetStockObject(WHITE_PEN));
-    SelectObject(hdc, GetStockObject(HOLLOW_BRUSH));
-    Ellipse(hdc, m_innerLeft + (m_xSelect - selectorSize),
+    SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
+    SelectObject(backbuffDC, GetStockObject(HOLLOW_BRUSH));
+    Ellipse(backbuffDC, m_innerLeft + (m_xSelect - selectorSize),
       m_innerTop + (m_ySelect - selectorSize),
       m_innerLeft + (m_xSelect + selectorSize) + 1,
       m_innerTop + (m_ySelect + selectorSize) + 1);
-    SelectObject(hdc, GetStockObject(BLACK_PEN));
-    Ellipse(hdc, m_innerLeft + (m_xSelect - selectorSize) + 1,
+    SelectObject(backbuffDC, GetStockObject(BLACK_PEN));
+    Ellipse(backbuffDC, m_innerLeft + (m_xSelect - selectorSize) + 1,
       m_innerTop + (m_ySelect - selectorSize) + 1,
       m_innerLeft + (m_xSelect + selectorSize),
       m_innerTop + (m_ySelect + selectorSize));
-    SelectObject(hdc, GetStockObject(WHITE_PEN));
-    Ellipse(hdc, m_innerLeft + (m_xSelect - selectorSize) + 2,
+    SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
+    Ellipse(backbuffDC, m_innerLeft + (m_xSelect - selectorSize) + 2,
       m_innerTop + (m_ySelect - selectorSize) + 2,
       m_innerLeft + (m_xSelect + selectorSize) - 1,
       m_innerTop + (m_ySelect + selectorSize) - 1);
-
   }
+
+  BitBlt(hdc, 0, 0, m_width, m_height, backbuffDC, 0, 0, SRCCOPY);
+
+  DeleteObject(backbuffer);
+  DeleteDC(backbuffDC);
 
   EndPaint(m_hwnd, &paintStruct);
 }
@@ -194,31 +199,42 @@ void VSelectBox::pressButton()
   // Get the window client area.
   RECT rc;
   GetClientRect(m_hwnd, &rc);
-
   // Convert the client area to screen coordinates.
   POINT pt = { rc.left, rc.top };
   POINT pt2 = { rc.right, rc.bottom };
   ClientToScreen(m_hwnd, &pt);
   ClientToScreen(m_hwnd, &pt2);
   SetRect(&rc, pt.x, pt.y, pt2.x, pt2.y);
-
+  // enable mouse capture on the window so we receive mouse move
   SetCapture(m_hwnd);
-
   // Confine the cursor.
   ClipCursor(&rc);
   m_pressed = true;
+  doCallback(SELECT_PRESS);
 }
 
 void VSelectBox::releaseButton()
 {
+  if (!m_pressed) {
+    return;
+  }
   ClipCursor(NULL);
   ReleaseCapture();
   m_pressed = false;
+  doCallback(SELECT_RELEASE);
 }
 
 void VSelectBox::mouseMove()
 {
   if (!m_pressed) {
+    return;
+  }
+  doCallback(SELECT_DRAG);
+}
+
+void VSelectBox::doCallback(SelectEvent sevent)
+{
+  if (!m_callback) {
     return;
   }
   POINT pos;
@@ -231,9 +247,7 @@ void VSelectBox::mouseMove()
   uint32_t innerX = pos.x - m_innerLeft;
   uint32_t innerY = pos.y - m_innerTop;
   setSelection(innerX, innerY);
-  if (m_callback) {
-    m_callback(m_callbackArg, innerX, innerY);
-  }
+  m_callback(m_callbackArg, innerX, innerY, sevent);
 }
 
 void VSelectBox::setBackground(HBITMAP hBitmap)
@@ -245,6 +259,7 @@ void VSelectBox::setSelection(uint32_t x, uint32_t y)
 {
   m_xSelect = x;
   m_ySelect = y;
+  // redraw?
   //redraw();
 }
 

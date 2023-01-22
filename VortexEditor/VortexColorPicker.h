@@ -40,18 +40,29 @@ private:
   typedef COLORREF (*VFillCallback)(uint32_t x, uint32_t y);
 
   // callbacks for selecting sv and h
-  static void selectSVCallback(void *pthis, uint32_t x, uint32_t y) { ((VortexColorPicker *)pthis)->selectSV(x, y); }
-  static void selectHCallback(void *pthis, uint32_t x, uint32_t y) { ((VortexColorPicker *)pthis)->selectH(y); }
+  static void selectSVCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) { ((VortexColorPicker *)pthis)->selectSV(sevent, x, y); }
+  static void selectHCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectH(sevent, y); }
+  static void hueEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
+  static void satEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
+  static void valEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
+
+  void selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uint32_t v);
+  void selectH(VSelectBox::SelectEvent sevent, uint32_t h);
+  void fieldEdit(VWindow *window);
 
   void genSVBackgrounds();
   HBITMAP genSVBackground(uint32_t hue);
   HBITMAP genHueBackground(uint32_t width, uint32_t height);
+  HBITMAP genRedBackground(uint32_t width, uint32_t height);
 
+  void selectS(uint32_t sat);
+  void selectV(uint32_t val);
   void selectSV(uint32_t sat, uint32_t val);
   void selectH(uint32_t hue);
+  void refreshColor();
 
   // array of bitmaps for the SV selector background
-  HBITMAP m_svBitmaps[255];
+  HBITMAP m_svBitmaps[256];
 
   // bitmap for the H selector background
   HBITMAP m_hueBitmap;
@@ -69,6 +80,10 @@ private:
   // huesat box and value slider
   VSelectBox m_satValBox;
   VSelectBox m_hueSlider;
+
+  VSelectBox m_redSlider;
+  VSelectBox m_greenSlider;
+  VSelectBox m_blueSlider;
 
   // preview of color
   VColorSelect m_colorPreview;
