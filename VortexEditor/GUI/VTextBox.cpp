@@ -77,11 +77,11 @@ void VTextBox::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VTextBox::pressButton()
+void VTextBox::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VTextBox::releaseButton()
+void VTextBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

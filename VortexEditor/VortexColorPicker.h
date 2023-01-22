@@ -72,6 +72,8 @@ private:
   uint32_t m_xPos;
   uint32_t m_yPos;
 
+  uint64_t m_lastRefresh;
+
   HSVColor m_curColor;
 
   // child window for color picker tool

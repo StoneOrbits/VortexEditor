@@ -75,12 +75,12 @@ void VButton::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VButton::pressButton()
+void VButton::pressButton(WPARAM wParam, LPARAM lParam)
 {
   MessageBox(0, "", "", 0);
 }
 
-void VButton::releaseButton()
+void VButton::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

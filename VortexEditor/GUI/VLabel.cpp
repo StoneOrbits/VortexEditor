@@ -81,11 +81,11 @@ void VLabel::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VLabel::pressButton()
+void VLabel::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VLabel::releaseButton()
+void VLabel::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

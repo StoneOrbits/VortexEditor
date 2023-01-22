@@ -77,11 +77,11 @@ void VListBox::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VListBox::pressButton()
+void VListBox::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VListBox::releaseButton()
+void VListBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

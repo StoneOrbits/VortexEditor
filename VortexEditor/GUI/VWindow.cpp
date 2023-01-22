@@ -141,11 +141,11 @@ void VWindow::command(WPARAM wParam, LPARAM lParam)
   }
 }
 
-void VWindow::pressButton()
+void VWindow::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VWindow::releaseButton()
+void VWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
@@ -221,7 +221,7 @@ void VWindow::redraw()
   RECT wndRect;
   GetClientRect(m_hwnd, &wndRect);
   InvalidateRect(m_hwnd, &wndRect, true);
-  //RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE);
+  RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE);
 }
 
 void VWindow::setTooltip(string text)
@@ -319,10 +319,10 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pWindow->pressButton();
+    pWindow->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pWindow->releaseButton();
+    pWindow->releaseButton(wParam, lParam);
     break;
   case WM_CTLCOLORSTATIC:
   case WM_CTLCOLOREDIT:

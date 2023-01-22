@@ -77,11 +77,11 @@ void VStatusBar::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VStatusBar::pressButton()
+void VStatusBar::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VStatusBar::releaseButton()
+void VStatusBar::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

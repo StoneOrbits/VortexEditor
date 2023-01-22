@@ -194,7 +194,7 @@ void VSelectBox::command(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VSelectBox::pressButton()
+void VSelectBox::pressButton(WPARAM wParam, LPARAM lParam)
 {
   // Get the window client area.
   RECT rc;
@@ -210,10 +210,17 @@ void VSelectBox::pressButton()
   // Confine the cursor.
   ClipCursor(&rc);
   m_pressed = true;
-  doCallback(SELECT_PRESS);
+  SelectEvent sevent = SELECT_PRESS;
+  if (wParam & MK_CONTROL) {
+    sevent = SELECT_CTRL_PRESS;
+  }
+  if (wParam & MK_SHIFT) {
+    sevent = SELECT_SHIFT_PRESS;
+  }
+  doCallback(sevent);
 }
 
-void VSelectBox::releaseButton()
+void VSelectBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
   if (!m_pressed) {
     return;
@@ -273,10 +280,10 @@ LRESULT CALLBACK VSelectBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pColorSelect->pressButton();
+    pColorSelect->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pColorSelect->releaseButton();
+    pColorSelect->releaseButton(wParam, lParam);
     break;
   case WM_MOUSEMOVE:
     pColorSelect->mouseMove();

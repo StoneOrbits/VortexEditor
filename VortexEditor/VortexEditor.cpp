@@ -58,7 +58,6 @@ VortexEditor::VortexEditor() :
   m_consoleHandle(nullptr),
   m_portList(),
   m_accelTable(),
-  m_selectedColorSlot(0),
   m_window(),
   m_portSelection(),
   m_pushButton(),
@@ -442,9 +441,18 @@ void VortexEditor::deviceChange(DEV_BROADCAST_HDR *dbh, bool added)
   }
 }
 
-void VortexEditor::updateSelectedColor(uint32_t rawCol)
+void VortexEditor::updateSelectedColors(uint32_t rawCol)
 {
-  VColorSelect *colSelect = g_pEditor->m_selectedColorSlot;
+  // get list of all selected colors
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (m_colorSelects[i].isSelected()) {
+      updateSelectedColor(m_colorSelects + i, rawCol);
+    }
+  }
+}
+
+void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol)
+{
   int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     return;
@@ -1167,15 +1175,6 @@ void VortexEditor::copyToAll(VWindow *window)
   demoCurMode();
 }
 
-void VortexEditor::selectColor(VWindow *window)
-{
-  if (!window) {
-    return;
-  }
-  uint32_t colorIndex = (uint32_t)((uintptr_t)window->menu() - SELECT_COLOR_ID);
-  m_selectedColorSlot = m_colorSelects + colorIndex;
-}
-
 void VortexEditor::paramEdit(VWindow *window)
 {
   if (!window || !window->isEnabled()) {
@@ -1213,6 +1212,84 @@ void VortexEditor::paramEdit(VWindow *window)
     }
     refreshFingerList(false);
   }
+  // update the demo
+  demoCurMode();
+}
+
+void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEvent sevent)
+{
+  if (!colSelect) {
+    return;
+  }
+  uint32_t colorIndex = (uint32_t)((uintptr_t)colSelect->menu() - SELECT_COLOR_ID);
+  VColorSelect *target = m_colorSelects + colorIndex;
+  // if the target of the event is our currently selected colorselect 
+  // then unselect it because they right clicked a selected colorselect
+  // otherwise they right clicked an existing color we need to clear it
+  int pos = m_ledsMultiListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  Colorset newSet;
+  VEngine::getColorset((LedPos)pos, newSet);
+  // if the color select was made inactive
+  if (!target->isActive()) {
+    debug("Disabled color slot %u", colorIndex);
+    newSet.removeColor(colorIndex);
+  } else {
+    debug("Updating color slot %u", colorIndex);
+    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
+  }
+  // check whether the event is a left click or not, if left click only
+  // update the colorset if a new entry was added
+  if (sevent != VColorSelect::SelectEvent::SELECT_RIGHT_CLICK) {
+    // when ther user clicks and empty color that is further than
+    // the next available slot it will auto shift up, we need to
+    // unselect the target colorselect they picked in that case
+    if (newSet.numColors() <= colorIndex) {
+      target->setSelected(false);
+    }
+    if (sevent == VColorSelect::SelectEvent::SELECT_LEFT_CLICK) {
+      for (uint32_t i = 0; i < 8; ++i) {
+        if (i == colorIndex) {
+          continue;
+        }
+        m_colorSelects[i].setSelected(false);
+      }
+      m_colorSelects[colorIndex].setSelected(true);
+    }
+    if (sevent == VColorSelect::SelectEvent::SELECT_CTRL_LEFT_CLICK) {
+      // do nothing just select it
+    }
+    if (sevent == VColorSelect::SelectEvent::SELECT_SHIFT_LEFT_CLICK) {
+      // select all in between
+      if (m_colorSelects[m_lastClickedColor].isSelected()) {
+        int lower = (m_lastClickedColor < colorIndex) ? m_lastClickedColor : colorIndex;
+        int higher = (m_lastClickedColor >= colorIndex) ? m_lastClickedColor : colorIndex;
+        for (int i = lower; i <= higher; i++) {
+          m_colorSelects[i].setActive(true);
+          m_colorSelects[i].setSelected(true);
+          m_colorSelects[i].redraw();
+          if (i >= newSet.numColors()) {
+            newSet.set(i, colSelect->getColor()); // getRawColor?
+          }
+        }
+      }
+    }
+    m_lastClickedColor = colorIndex;
+  }
+  vector<int> sels;
+  m_ledsMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // this should never happen
+    return;
+  }
+  // set the colorset on all selected patterns
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    // only set the pattern on a single position
+    VEngine::setColorset((LedPos)sels[i], newSet);
+  }
+  refreshModeList();
   // update the demo
   demoCurMode();
 }

@@ -77,10 +77,10 @@ void VSlider::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VSlider::pressButton()
+void VSlider::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VSlider::releaseButton()
+void VSlider::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }

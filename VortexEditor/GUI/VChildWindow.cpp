@@ -79,7 +79,6 @@ void VChildWindow::paint()
 {
   PAINTSTRUCT ps;
   HDC hdc = BeginPaint(m_hwnd, &ps);
-
   EndPaint(m_hwnd, &ps);
 }
 
@@ -87,11 +86,11 @@ void VChildWindow::command(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VChildWindow::pressButton()
+void VChildWindow::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VChildWindow::releaseButton()
+void VChildWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
@@ -105,10 +104,10 @@ LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, 
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pWindow->pressButton();
+    pWindow->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pWindow->releaseButton();
+    pWindow->releaseButton(wParam, lParam);
     break;
   case WM_CTLCOLORSTATIC:
     SetTextColor((HDC)wParam, RGB(0xD0, 0xD0, 0xD0));

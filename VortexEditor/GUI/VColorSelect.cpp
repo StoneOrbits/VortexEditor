@@ -21,13 +21,14 @@ VColorSelect::VColorSelect() :
   VWindow(),
   m_callback(nullptr),
   m_color(0),
-  m_active(false)
+  m_active(false),
+  m_selected(false)
 {
 }
 
 VColorSelect::VColorSelect(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uintptr_t menuID, VWindowCallback callback) :
+  uintptr_t menuID, VColorSelectCallback callback) :
   VColorSelect()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
@@ -40,7 +41,7 @@ VColorSelect::~VColorSelect()
 
 void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uintptr_t menuID, VWindowCallback callback)
+  uintptr_t menuID, VColorSelectCallback callback)
 {
   // store callback and menu id
   m_callback = callback;
@@ -54,7 +55,7 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
 
   // create the window
   m_hwnd = CreateWindow(WC_COLOR_SELECT, title.c_str(),
-    WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP,
+    WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP | CS_DBLCLKS,
     x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
@@ -106,24 +107,23 @@ void VColorSelect::paint()
   HBITMAP backbuffer = CreateCompatibleBitmap(hdc, width, height);
   SelectObject(backbuffDC, backbuffer);
 
+  COLORREF frontCol = getColor();
+  COLORREF borderCol;
 
-  COLORREF frontCol;
-  if (m_active) {
-    // the front color will be the actual color
-    frontCol = getColor();
-    if (frontCol != 0) {
-      // if the frontcol is not 0, use brighter white
-      FillRect(backbuffDC, &rect, getBrushCol(0xAAAAAA));
-    } else {
-      // if the slot is empty use dark border
-      FillRect(backbuffDC, &rect, getBrushCol(0x606060));
-    }
+  if (m_selected) {
+    borderCol = 0xFFFFFF; // white
   } else {
-    // the front color will be black
-    frontCol = 0;
-    // fill the back with red
-    FillRect(backbuffDC, &rect, getBrushCol(0xFF0000));
+    if (m_active) {
+      // border is bright if a color is selected, or dark if 'blank' (black)
+      borderCol = frontCol ? 0xAAAAAA : 0x606060;
+    } else {
+      // force the frontcol to 0 if not active, and red border
+      borderCol = 0xFF0000;
+      frontCol = 0;
+    }
   }
+  FillRect(backbuffDC, &rect, getBrushCol(borderCol));
+
 #define BORDER_WIDTH 1
   rect.left += BORDER_WIDTH;
   rect.top += BORDER_WIDTH;
@@ -143,7 +143,7 @@ void VColorSelect::command(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VColorSelect::pressButton()
+void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
 {
   if (!m_callback) {
     return;
@@ -162,21 +162,38 @@ void VColorSelect::pressButton()
   //// flip the result back from BGR to RGB
   //setFlippedColor(col.rgbResult);
   //setActive(true);
-  m_callback(m_callbackArg, this);
+  m_selected = !m_selected;
+  if (m_selected && !m_active) {
+    // if the box was inactive and just selected, activate it
+    setActive(true);
+    clear();
+  }
+  SelectEvent sevent = SELECT_LEFT_CLICK;
+  if (wParam & MK_CONTROL) {
+    sevent = SELECT_CTRL_LEFT_CLICK;
+  }
+  if (wParam & MK_SHIFT) {
+    sevent = SELECT_SHIFT_LEFT_CLICK;
+  }
+  m_callback(m_callbackArg, this, sevent);
 }
 
-void VColorSelect::releaseButton()
+void VColorSelect::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
 // window message for right button press, only exists here
 void VColorSelect::rightButtonPress()
 {
-  if (m_color == 0) {
-    setActive(false);
+  if (m_selected) {
+    m_selected = false;
+  } else {
+    if (m_color == 0) {
+      setActive(false);
+    }
+    clear();
   }
-  clear();
-  m_callback(m_callbackArg, this);
+  m_callback(m_callbackArg, this, SELECT_RIGHT_CLICK);
 }
 
 void VColorSelect::clear()
@@ -239,6 +256,19 @@ void VColorSelect::setActive(bool active)
 {
   m_active = active;
   m_colorLabel.setVisible(active);
+  if (!m_active) {
+    setSelected(false);
+  }
+}
+
+bool VColorSelect::isSelected() const
+{
+  return m_selected;
+}
+
+void VColorSelect::setSelected(bool selected)
+{
+  m_selected = selected;
 }
 
 LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -251,13 +281,19 @@ LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, 
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pColorSelect->pressButton();
+    pColorSelect->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pColorSelect->releaseButton();
+    pColorSelect->releaseButton(wParam, lParam);
     break;
   case WM_RBUTTONUP:
     pColorSelect->rightButtonPress();
+    break;
+  case WM_KEYDOWN:
+    printf("Keydown\n");
+    break;
+  case WM_LBUTTONDBLCLK:
+    printf("DCLICK\n");
     break;
   case WM_CTLCOLORSTATIC:
     return (INT_PTR)pColorSelect->m_wc.hbrBackground;

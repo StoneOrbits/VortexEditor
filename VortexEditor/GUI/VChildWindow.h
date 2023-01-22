@@ -25,11 +25,11 @@ public:
   virtual bool process(MSG &msg);
 
   // windows message handlers
-  virtual void create();
-  virtual void paint();
-  virtual void command(WPARAM wParam, LPARAM lParam);
-  virtual void pressButton();
-  virtual void releaseButton();
+  virtual void create() override;
+  virtual void paint() override;
+  virtual void command(WPARAM wParam, LPARAM lParam) override;
+  virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
+  virtual void releaseButton(WPARAM wParam, LPARAM lParam) override;
 
 private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

@@ -38,8 +38,8 @@ public:
   virtual void paint();
   virtual INT_PTR controlColor(WPARAM wParam, LPARAM lParam);
   virtual void command(WPARAM wParam, LPARAM lParam);
-  virtual void pressButton();
-  virtual void releaseButton();
+  virtual void pressButton(WPARAM wParam, LPARAM lParam);
+  virtual void releaseButton(WPARAM wParam, LPARAM lParam);
 
   // add/get a child
   virtual uint32_t addChild(uintptr_t menuID, VWindow *child);

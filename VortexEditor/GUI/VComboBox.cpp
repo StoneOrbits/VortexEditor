@@ -77,11 +77,11 @@ void VComboBox::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VComboBox::pressButton()
+void VComboBox::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VComboBox::releaseButton()
+void VComboBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

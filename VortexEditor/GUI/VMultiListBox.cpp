@@ -77,11 +77,11 @@ void VMultiListBox::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VMultiListBox::pressButton()
+void VMultiListBox::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VMultiListBox::releaseButton()
+void VMultiListBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
