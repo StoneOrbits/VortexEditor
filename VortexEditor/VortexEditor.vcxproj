@@ -152,7 +152,7 @@
     <ClCompile Include="EngineWrapper.cpp" />
     <ClCompile Include="GUI\VButton.cpp" />
     <ClCompile Include="GUI\VChildWindow.cpp" />
-    <ClCompile Include="GUI\VHueSatBox.cpp" />
+    <ClCompile Include="GUI\VSelectBox.cpp" />
     <ClCompile Include="GUI\VColorSelect.cpp" />
     <ClCompile Include="GUI\VComboBox.cpp" />
     <ClCompile Include="GUI\VLabel.cpp" />
@@ -161,7 +161,6 @@
     <ClCompile Include="GUI\VSlider.cpp" />
     <ClCompile Include="GUI\VStatusBar.cpp" />
     <ClCompile Include="GUI\VTextBox.cpp" />
-    <ClCompile Include="GUI\VValSlider.cpp" />
     <ClCompile Include="VortexColorPicker.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Buttons\Button.cpp" />
@@ -251,7 +250,7 @@
     <ClInclude Include="EngineWrapper.h" />
     <ClInclude Include="GUI\VButton.h" />
     <ClInclude Include="GUI\VChildWindow.h" />
-    <ClInclude Include="GUI\VHueSatBox.h" />
+    <ClInclude Include="GUI\VSelectBox.h" />
     <ClInclude Include="GUI\VColorSelect.h" />
     <ClInclude Include="GUI\VComboBox.h" />
     <ClInclude Include="GUI\VLabel.h" />
@@ -260,7 +259,6 @@
     <ClInclude Include="GUI\VSlider.h" />
     <ClInclude Include="GUI\VStatusBar.h" />
     <ClInclude Include="GUI\VTextBox.h" />
-    <ClInclude Include="GUI\VValSlider.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="VortexColorPicker.h" />
     <ClInclude Include="VortexEditor.h" />

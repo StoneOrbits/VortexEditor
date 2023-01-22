@@ -56,6 +56,9 @@ public:
   // install a device change callback
   virtual void installDeviceCallback(VDeviceCallback callback);
 
+  // redraw this window
+  void redraw();
+
   void setTooltip(std::string text);
 
   void setVisible(bool visible);

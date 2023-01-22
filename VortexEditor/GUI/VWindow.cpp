@@ -216,6 +216,14 @@ void VWindow::installDeviceCallback(VDeviceCallback callback)
     &NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE);
 }
 
+void VWindow::redraw()
+{
+  RECT wndRect;
+  GetClientRect(m_hwnd, &wndRect);
+  InvalidateRect(m_hwnd, &wndRect, true);
+  //RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE);
+}
+
 void VWindow::setTooltip(string text)
 {
   if (m_tooltipHwnd) {

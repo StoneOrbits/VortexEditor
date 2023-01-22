@@ -171,7 +171,7 @@ void VColorSelect::setColor(uint32_t col)
 {
   m_color = col;
   m_colorLabel.setText(getColorName());
-  RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
+  redraw();
 }
 
 string VColorSelect::getColorName() const

@@ -285,7 +285,7 @@
     <ClCompile Include="GUI\VChildWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\VHueSatBox.cpp">
+    <ClCompile Include="GUI\VSelectBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VortexPort.cpp">
@@ -295,9 +295,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VortexColorPicker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\VValSlider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -596,7 +593,7 @@
     <ClInclude Include="GUI\VChildWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GUI\VHueSatBox.h">
+    <ClInclude Include="GUI\VSelectBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexPort.h">
@@ -606,9 +603,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexColorPicker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\VValSlider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
