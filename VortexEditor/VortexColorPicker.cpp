@@ -25,7 +25,8 @@ VortexColorPicker::VortexColorPicker() :
   m_xPos(0),
   m_yPos(0),
   m_lastRefresh(0),
-  m_curColor(0, 255, 255),
+  m_curHSV(0, 255, 255),
+  m_curRGB(255, 0, 0),
   m_colorPickerWindow(),
   m_satValBox(),
   m_hueSlider(),
@@ -94,13 +95,13 @@ bool VortexColorPicker::init(HINSTANCE hInst)
 
   // the sat/val box
   m_satValBox.init(hInst, m_colorPickerWindow, "Saturation and Value", BACK_COL, 256, 256, 10, 10, 0, selectSVCallback);
-  m_satValBox.setSelection(m_curColor.sat, 255 - m_curColor.val);
+  m_satValBox.setSelection(m_curHSV.sat, 255 - m_curHSV.val);
   m_satValBox.setVisible(true);
   m_satValBox.setEnabled(true);
 
   // the hue slider
   m_hueSlider.init(hInst, m_colorPickerWindow, "Hue", BACK_COL, 24, 256, 272, 10, 0, selectHCallback);
-  m_hueSlider.setSelection(0, m_curColor.hue);
+  m_hueSlider.setSelection(0, m_curHSV.hue);
   m_hueSlider.setDrawCircle(false);
   m_hueSlider.setDrawVLine(false);
 
@@ -159,8 +160,7 @@ void VortexColorPicker::selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uin
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  uint32_t rawCol = hsv_to_rgb_generic(m_curColor).raw();
-  g_pEditor->updateSelectedColors(rawCol);
+  g_pEditor->updateSelectedColors(m_curRGB.raw());
 }
 
 void VortexColorPicker::selectH(VSelectBox::SelectEvent sevent, uint32_t h)
@@ -169,8 +169,7 @@ void VortexColorPicker::selectH(VSelectBox::SelectEvent sevent, uint32_t h)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  uint32_t rawCol = hsv_to_rgb_generic(m_curColor).raw();
-  g_pEditor->updateSelectedColors(rawCol);
+  g_pEditor->updateSelectedColors(m_curRGB.raw());
 }
 
 void VortexColorPicker::fieldEdit(VWindow *window)
@@ -276,36 +275,40 @@ void VortexColorPicker::triggerRefresh()
 
 void VortexColorPicker::selectS(uint32_t sat)
 {
-  m_curColor.sat = sat;
+  m_curHSV.sat = sat;
+  m_curRGB = m_curHSV;
   refreshColor();
 }
 
 void VortexColorPicker::selectV(uint32_t val)
 {
-  m_curColor.val = val;
+  m_curHSV.val = val;
+  m_curRGB = m_curHSV;
   refreshColor();
 }
 
 void VortexColorPicker::selectSV(uint32_t sat, uint32_t ival)
 {
-  m_curColor.sat = sat;
+  m_curHSV.sat = sat;
   // value is inverted idk
-  m_curColor.val = 255 - ival;
+  m_curHSV.val = 255 - ival;
+  m_curRGB = m_curHSV;
   refreshColor();
 }
 
 void VortexColorPicker::selectH(uint32_t hue)
 {
-  m_curColor.hue = hue;
+  m_curHSV.hue = hue;
+  m_curRGB = m_curHSV;
   refreshColor();
 }
 
 void VortexColorPicker::refreshColor()
 {
-  m_hueSlider.setSelection(0, m_curColor.hue);
-  m_satValBox.setSelection(m_curColor.sat, 255 - m_curColor.val);
-  m_satValBox.setBackground(m_svBitmaps[m_curColor.hue]);
-  uint32_t rawCol = hsv_to_rgb_generic(m_curColor).raw();
+  m_hueSlider.setSelection(0, m_curHSV.hue);
+  m_satValBox.setSelection(m_curHSV.sat, 255 - m_curHSV.val);
+  m_satValBox.setBackground(m_svBitmaps[m_curHSV.hue]);
+  uint32_t rawCol = m_curRGB.raw();
   uint64_t now = GetCurrentTime();
   if (m_colorPreview.getColor() != rawCol && now > m_lastRefresh) {
     m_colorPreview.setColor(rawCol);

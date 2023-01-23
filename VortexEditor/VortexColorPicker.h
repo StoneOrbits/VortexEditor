@@ -34,8 +34,10 @@ public:
 
   bool isOpen() const { return m_isOpen; }
   
-  void setColor(HSVColor rawCol) { m_curColor = rawCol; }
-  HSVColor getColor() const { return m_curColor; }
+  void setColor(HSVColor col) { m_curHSV = col; m_curRGB = m_curHSV; }
+  void setColor(RGBColor col) { m_curRGB = col; m_curHSV = m_curRGB; }
+  HSVColor getRGB() const { return m_curRGB; }
+  RGBColor getHSV() const { return m_curHSV; }
 
 private:
   // loader thread
@@ -93,7 +95,8 @@ private:
 
   uint64_t m_lastRefresh;
 
-  HSVColor m_curColor;
+  RGBColor m_curRGB;
+  HSVColor m_curHSV;
 
   // child window for color picker tool
   VChildWindow m_colorPickerWindow;
