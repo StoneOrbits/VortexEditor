@@ -94,6 +94,19 @@ void VChildWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
+void VChildWindow::setVisible(bool visible)
+{
+  VWindow::setVisible(visible);
+  if (!visible && m_closeCallback) {
+    m_closeCallback(m_callbackArg, this);
+  }
+}
+
+void VChildWindow::setCloseCallback(VWindowCallback callback)
+{
+  m_closeCallback = callback;
+}
+
 LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   VChildWindow *pWindow = (VChildWindow *)GetWindowLongPtr(hWnd, GWLP_USERDATA);

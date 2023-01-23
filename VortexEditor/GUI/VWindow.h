@@ -57,23 +57,23 @@ public:
   virtual void installDeviceCallback(VDeviceCallback callback);
 
   // redraw this window
-  void redraw();
+  virtual void redraw();
 
-  void setTooltip(std::string text);
+  virtual void setTooltip(std::string text);
 
-  void setVisible(bool visible);
-  void setEnabled(bool enable);
+  virtual void setVisible(bool visible);
+  virtual void setEnabled(bool enable);
 
-  void setBackColor(COLORREF backcol);
-  void setForeColor(COLORREF forecol);
+  virtual void setBackColor(COLORREF backcol);
+  virtual void setForeColor(COLORREF forecol);
 
-  void setBackEnabled(bool enable);
-  void setForeEnabled(bool enable);
+  virtual void setBackEnabled(bool enable);
+  virtual void setForeEnabled(bool enable);
 
-  bool isVisible() const;
-  bool isEnabled() const;
-  bool isBackEnabled() const;
-  bool isForeEnabled() const;
+  virtual bool isVisible() const;
+  virtual bool isEnabled() const;
+  virtual bool isBackEnabled() const;
+  virtual bool isForeEnabled() const;
 
   HWND hwnd() const { return m_hwnd; }
   HMENU menu() const { return GetMenu(m_hwnd); }

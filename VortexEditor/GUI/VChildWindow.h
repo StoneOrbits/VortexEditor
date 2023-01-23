@@ -31,8 +31,14 @@ public:
   virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
   virtual void releaseButton(WPARAM wParam, LPARAM lParam) override;
 
+  virtual void setVisible(bool visible) override;
+
+  void setCloseCallback(VWindowCallback callback);
+
 private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
   static WNDCLASS m_wc;
+
+  VWindowCallback m_closeCallback;
 };

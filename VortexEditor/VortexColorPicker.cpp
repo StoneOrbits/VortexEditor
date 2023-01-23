@@ -16,6 +16,9 @@
 using namespace std;
 
 VortexColorPicker::VortexColorPicker() :
+  m_isOpen(false),
+  m_mutex(nullptr),
+  m_loadThread(nullptr),
   m_svBitmaps(),
   m_hueBitmap(nullptr),
   m_hIcon(nullptr),
@@ -31,6 +34,7 @@ VortexColorPicker::VortexColorPicker() :
   m_satTextbox(),
   m_valTextbox()
 {
+  m_mutex = CreateMutex(NULL, false, NULL);
 }
 
 VortexColorPicker::~VortexColorPicker()
@@ -38,29 +42,64 @@ VortexColorPicker::~VortexColorPicker()
   DestroyIcon(m_hIcon);
 }
 
+void VortexColorPicker::load()
+{
+  // generate the backgrounds for the sv box
+  m_loadThread = CreateThread(NULL, 0, loadThread, this, 0, NULL);
+}
+
+DWORD __stdcall VortexColorPicker::loadThread(void *arg)
+{
+  VortexColorPicker *colorPicker = (VortexColorPicker *)arg;
+  WaitForSingleObject(colorPicker->m_mutex, INFINITE);
+  colorPicker->genSVBackgrounds();
+  colorPicker->m_hueBitmap = colorPicker->genHueBackground(24, 256);
+  CloseHandle(colorPicker->m_loadThread);
+  colorPicker->m_loadThread = nullptr;
+  ReleaseMutex(colorPicker->m_mutex);
+  // show once loaded?
+  //colorPicker->show();
+  return 0;
+}
+
+bool VortexColorPicker::loaded()
+{
+  if (!m_mutex) {
+    return true;
+  }
+  if (m_mutex && WaitForSingleObject(m_mutex, 0) != WAIT_OBJECT_0) {
+    return false;
+  }
+  CloseHandle(m_mutex);
+  m_mutex = nullptr;
+  m_satValBox.setBackground(m_svBitmaps[0]);
+  m_hueSlider.setBackground(m_hueBitmap);
+  m_satValBox.redraw();
+  m_hueSlider.redraw();
+  return true;
+}
+
 // initialize the color picker
 bool VortexColorPicker::init(HINSTANCE hInst)
 {
+  load();
+
   // the color picker
   m_colorPickerWindow.init(hInst, "Vortex Color Picker", BACK_COL, 420, 420, this);
-  m_colorPickerWindow.setVisible(true);
+  m_colorPickerWindow.setVisible(false);
+  m_colorPickerWindow.setCloseCallback(hideGUICallback);
 
-  // generate the backgrounds for the sv box
-  // TODO: Do this on a background worker thread?
-  genSVBackgrounds();
-  m_hueBitmap = genHueBackground(24, 256);
-  HBITMAP m_redBitmap = genRedBackground(24, 256);
+  // trigger the background loader
+  //HBITMAP m_redBitmap = genRedBackground(24, 256);
 
   // the sat/val box
   m_satValBox.init(hInst, m_colorPickerWindow, "Saturation and Value", BACK_COL, 256, 256, 10, 10, 0, selectSVCallback);
-  m_satValBox.setBackground(m_svBitmaps[0]);
   m_satValBox.setSelection(m_curColor.sat, 255 - m_curColor.val);
   m_satValBox.setVisible(true);
   m_satValBox.setEnabled(true);
 
   // the hue slider
   m_hueSlider.init(hInst, m_colorPickerWindow, "Hue", BACK_COL, 24, 256, 272, 10, 0, selectHCallback);
-  m_hueSlider.setBackground(m_hueBitmap);
   m_hueSlider.setSelection(0, m_curColor.hue);
   m_hueSlider.setDrawCircle(false);
   m_hueSlider.setDrawVLine(false);
@@ -199,14 +238,32 @@ void VortexColorPicker::run()
 
 void VortexColorPicker::show()
 {
+  if (m_isOpen) {
+    return;
+  }
+  // wait till loaded...
+  while (!loaded());
   m_colorPickerWindow.setVisible(true);
   m_colorPickerWindow.setEnabled(true);
+  m_isOpen = true;
 }
 
 void VortexColorPicker::hide()
 {
-  m_colorPickerWindow.setVisible(false);
-  m_colorPickerWindow.setEnabled(false);
+  if (!m_isOpen) {
+    return;
+  }
+  if (m_colorPickerWindow.isVisible()) {
+    m_colorPickerWindow.setVisible(false);
+  }
+  if (m_colorPickerWindow.isEnabled()) {
+    m_colorPickerWindow.setEnabled(false);
+  }
+  for (uint32_t i = 0; i < 8; ++i) {
+    g_pEditor->m_colorSelects[i].setSelected(false);
+    g_pEditor->m_colorSelects[i].redraw();
+  }
+  m_isOpen = false;
 }
 
 // redraw all the components
@@ -214,6 +271,7 @@ void VortexColorPicker::triggerRefresh()
 {
   m_satValBox.redraw();
   m_hueSlider.redraw();
+  m_colorPreview.redraw();
 }
 
 void VortexColorPicker::selectS(uint32_t sat)
@@ -244,19 +302,21 @@ void VortexColorPicker::selectH(uint32_t hue)
 
 void VortexColorPicker::refreshColor()
 {
+  m_hueSlider.setSelection(0, m_curColor.hue);
+  m_satValBox.setSelection(m_curColor.sat, 255 - m_curColor.val);
   m_satValBox.setBackground(m_svBitmaps[m_curColor.hue]);
   uint32_t rawCol = hsv_to_rgb_generic(m_curColor).raw();
-
   uint64_t now = GetCurrentTime();
-  if (m_colorPreview.getColor() != rawCol && now > (m_lastRefresh + 25)) {
+  if (m_colorPreview.getColor() != rawCol && now > m_lastRefresh) {
     m_colorPreview.setColor(rawCol);
     g_pEditor->demoColor(rawCol);
+    //g_pEditor->updateSelectedColors(rawCol);
+    //g_pEditor->demoColorset();
     // Could actually just update the mode here... However the gloveset is
     // programmed to reset the mode from the beginning when you change it so
     // you won't get a streaming coloret change like you'd expect. If the 
     // editor connection had a new command exposed that told it to simply
     // update the color of the current mode in realtime then we could do that
-    //g_pEditor->updateSelectedColors(rawCol);
     //g_pEditor->demoCurMode();
     m_lastRefresh = now;
   }

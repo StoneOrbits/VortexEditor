@@ -30,9 +30,21 @@ public:
   void hide();
 
   // send the refresh message to the window
-  void triggerRefresh();
+  void refreshColor();
+
+  bool isOpen() const { return m_isOpen; }
+  
+  void setColor(HSVColor rawCol) { m_curColor = rawCol; }
+  HSVColor getColor() const { return m_curColor; }
 
 private:
+  // loader thread
+  static DWORD __stdcall loadThread(void *arg);
+  // trigger background loader
+  void load();
+  // whether background loader is done
+  bool loaded();
+
   // ==================================
   //  Color picker GUI
 
@@ -45,6 +57,7 @@ private:
   static void hueEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
   static void satEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
   static void valEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
+  static void hideGUICallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->hide(); }
 
   void selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uint32_t v);
   void selectH(VSelectBox::SelectEvent sevent, uint32_t h);
@@ -54,12 +67,18 @@ private:
   HBITMAP genSVBackground(uint32_t hue);
   HBITMAP genHueBackground(uint32_t width, uint32_t height);
   HBITMAP genRedBackground(uint32_t width, uint32_t height);
+  void triggerRefresh();
 
   void selectS(uint32_t sat);
   void selectV(uint32_t val);
   void selectSV(uint32_t sat, uint32_t val);
   void selectH(uint32_t hue);
-  void refreshColor();
+
+  bool m_isOpen;
+
+  // mutex that is posted once we're loaded
+  HANDLE m_mutex;
+  HANDLE m_loadThread;
 
   // array of bitmaps for the SV selector background
   HBITMAP m_svBitmaps[256];

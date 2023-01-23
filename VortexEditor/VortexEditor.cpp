@@ -1257,6 +1257,12 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
         m_colorSelects[i].setSelected(false);
       }
       m_colorSelects[colorIndex].setSelected(true);
+      if (!m_colorPicker.isOpen()) {
+        m_colorPicker.show();
+        uint32_t rawCol = m_colorSelects[colorIndex].getColor();
+        m_colorPicker.setColor(rgb_to_hsv_generic(rawCol));
+        m_colorPicker.refreshColor();
+      }
     }
     if (sevent == VColorSelect::SelectEvent::SELECT_CTRL_LEFT_CLICK) {
       // do nothing just select it
@@ -1310,6 +1316,35 @@ void VortexEditor::demoColor(uint32_t rawCol)
   Colorset newSet(rawCol);
   Mode *newMode = ModeBuilder::make(PATTERN_BASIC, &args, &newSet);
   newMode->saveToBuffer(curMode);
+  // send, the, mode
+  port->writeData(curMode);
+  // wait for the done response
+  port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
+  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  // Set status? maybe soon
+  //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
+}
+
+void VortexEditor::demoColorset()
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_DEMO_COL);
+  // read data again
+  port->expectData(EDITOR_VERB_READY);
+  // now unserialize the stream of data that was read
+  int pos = m_ledsMultiListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  ByteStream curMode;
+  Colorset curSet;
+  VEngine::getColorset((LedPos)pos, curSet);
+  curSet.serialize(curMode);
+  curMode.recalcCRC();
   // send, the, mode
   port->writeData(curMode);
   // wait for the done response
