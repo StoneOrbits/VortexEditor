@@ -12,6 +12,11 @@
 #include "Serial/Compression.h"
 
 #define FIELD_EDIT_ID       55001
+#define SATVAL_BOX_ID       56001
+#define HUE_SLIDER_ID       56002
+#define RED_SLIDER_ID       56003
+#define GREEN_SLIDER_ID     56004
+#define BLUE_SLIDER_ID      56005
 
 using namespace std;
 
@@ -21,6 +26,9 @@ VortexColorPicker::VortexColorPicker() :
   m_loadThread(nullptr),
   m_svBitmaps(),
   m_hueBitmap(nullptr),
+  m_redBitmap(nullptr),
+  m_greenBitmap(nullptr),
+  m_blueBitmap(nullptr),
   m_hIcon(nullptr),
   m_xPos(0),
   m_yPos(0),
@@ -52,14 +60,22 @@ void VortexColorPicker::load()
 DWORD __stdcall VortexColorPicker::loadThread(void *arg)
 {
   VortexColorPicker *colorPicker = (VortexColorPicker *)arg;
+  // grab the loading mutex
   WaitForSingleObject(colorPicker->m_mutex, INFINITE);
+
+  // load the backgrounds
   colorPicker->genSVBackgrounds();
+  // load the hue bitmap
   colorPicker->m_hueBitmap = colorPicker->genHueBackground(24, 256);
+
+  colorPicker->m_redBitmap = colorPicker->genRGBBackground(24, 256, 1, 0, 0);
+  colorPicker->m_greenBitmap = colorPicker->genRGBBackground(24, 256, 0, 1, 0);
+  colorPicker->m_blueBitmap = colorPicker->genRGBBackground(24, 256, 0, 0, 1);
+
+  // done loading
   CloseHandle(colorPicker->m_loadThread);
   colorPicker->m_loadThread = nullptr;
   ReleaseMutex(colorPicker->m_mutex);
-  // show once loaded?
-  //colorPicker->show();
   return 0;
 }
 
@@ -73,10 +89,22 @@ bool VortexColorPicker::loaded()
   }
   CloseHandle(m_mutex);
   m_mutex = nullptr;
+
   m_satValBox.setBackground(m_svBitmaps[0]);
-  m_hueSlider.setBackground(m_hueBitmap);
   m_satValBox.redraw();
+
+  m_hueSlider.setBackground(m_hueBitmap);
   m_hueSlider.redraw();
+
+  m_redSlider.setBackground(m_redBitmap);
+  m_redSlider.redraw();
+
+  m_greenSlider.setBackground(m_greenBitmap);
+  m_greenSlider.redraw();
+
+  m_blueSlider.setBackground(m_blueBitmap);
+  m_blueSlider.redraw();
+  
   return true;
 }
 
@@ -94,21 +122,32 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   //HBITMAP m_redBitmap = genRedBackground(24, 256);
 
   // the sat/val box
-  m_satValBox.init(hInst, m_colorPickerWindow, "Saturation and Value", BACK_COL, 256, 256, 10, 10, 0, selectSVCallback);
+  m_satValBox.init(hInst, m_colorPickerWindow, "Saturation and Value", BACK_COL, 256, 256, 10, 10, SATVAL_BOX_ID, selectSVCallback);
   m_satValBox.setSelection(m_curHSV.sat, 255 - m_curHSV.val);
   m_satValBox.setVisible(true);
   m_satValBox.setEnabled(true);
 
   // the hue slider
-  m_hueSlider.init(hInst, m_colorPickerWindow, "Hue", BACK_COL, 24, 256, 272, 10, 0, selectHCallback);
+  m_hueSlider.init(hInst, m_colorPickerWindow, "Hue", BACK_COL, 24, 256, 274, 10, HUE_SLIDER_ID, selectHCallback);
   m_hueSlider.setSelection(0, m_curHSV.hue);
   m_hueSlider.setDrawCircle(false);
   m_hueSlider.setDrawVLine(false);
 
   // the rgb sliders
-  //m_redSlider.init(hInst, m_colorPickerWindow, "Red", BACK_COL, 24, 256, 306, 10, 0, selectRedCallback);
-  //m_redSlider.setBackground(m_redBitmap);
-  //m_redSlider.setSelection(0, m_curColor.hue);
+  m_redSlider.init(hInst, m_colorPickerWindow, "Red", BACK_COL, 24, 256, 306, 10, RED_SLIDER_ID, selectRCallback);
+  m_redSlider.setSelection(0, 0);
+  m_redSlider.setDrawCircle(false);
+  m_redSlider.setDrawVLine(false);
+
+  m_greenSlider.init(hInst, m_colorPickerWindow, "Green", BACK_COL, 24, 256, 338, 10, GREEN_SLIDER_ID, selectGCallback);
+  m_greenSlider.setSelection(0, 255);
+  m_greenSlider.setDrawCircle(false);
+  m_greenSlider.setDrawVLine(false);
+
+  m_blueSlider.init(hInst, m_colorPickerWindow, "Blue", BACK_COL, 24, 256, 370, 10, BLUE_SLIDER_ID, selectBCallback);
+  m_blueSlider.setSelection(0, 255);
+  m_blueSlider.setDrawCircle(false);
+  m_blueSlider.setDrawVLine(false);
 
   m_colorPreview.init(hInst, m_colorPickerWindow, "Preview", BACK_COL, 32, 32, 10, 280, 0, nullptr);
   m_colorPreview.setActive(true);
@@ -192,6 +231,33 @@ void VortexColorPicker::fieldEdit(VWindow *window)
   }
   //demoCurMode();
 }
+  
+void VortexColorPicker::selectR(VSelectBox::SelectEvent sevent, uint32_t r)
+{
+  selectR(r);
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+  g_pEditor->updateSelectedColors(m_curRGB.raw());
+}
+
+void VortexColorPicker::selectG(VSelectBox::SelectEvent sevent, uint32_t g)
+{
+  selectG(g);
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+  g_pEditor->updateSelectedColors(m_curRGB.raw());
+}
+
+void VortexColorPicker::selectB(VSelectBox::SelectEvent sevent, uint32_t b)
+{
+  selectB(b);
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+  g_pEditor->updateSelectedColors(m_curRGB.raw());
+}
 
 HBITMAP VortexColorPicker::genHueBackground(uint32_t width, uint32_t height)
 {
@@ -212,7 +278,7 @@ HBITMAP VortexColorPicker::genHueBackground(uint32_t width, uint32_t height)
   return bitmap;
 }
 
-HBITMAP VortexColorPicker::genRedBackground(uint32_t width, uint32_t height)
+HBITMAP VortexColorPicker::genRGBBackground(uint32_t width, uint32_t height, int rmult, int gmult, int bmult)
 {
   COLORREF *cols = new COLORREF[256 * 256];
   if (!cols) {
@@ -221,7 +287,7 @@ HBITMAP VortexColorPicker::genRedBackground(uint32_t width, uint32_t height)
   // the real x and y are the internal coords inside the border where as
   // m_width and m_height contain the border size in them
   for (uint32_t y = 0; y < height; ++y) {
-    RGBColor rgbCol(y, 0, 0);
+    RGBColor rgbCol(rmult * (height - y), gmult * (height - y), bmult * (height - y));
     for (uint32_t x = 0; x < width; ++x) {
       cols[(y * width) + x] = rgbCol.raw();
     }
@@ -268,6 +334,9 @@ void VortexColorPicker::hide()
 // redraw all the components
 void VortexColorPicker::triggerRefresh()
 {
+  m_redSlider.redraw();
+  m_greenSlider.redraw();
+  m_blueSlider.redraw();
   m_satValBox.redraw();
   m_hueSlider.redraw();
   m_colorPreview.redraw();
@@ -303,8 +372,32 @@ void VortexColorPicker::selectH(uint32_t hue)
   refreshColor();
 }
 
+void VortexColorPicker::selectR(uint32_t r)
+{
+  m_curRGB.red = 255 - r;
+  m_curHSV = m_curRGB;
+  refreshColor();
+}
+
+void VortexColorPicker::selectG(uint32_t g)
+{
+  m_curRGB.green = 255 - g;
+  m_curHSV = m_curRGB;
+  refreshColor();
+}
+
+void VortexColorPicker::selectB(uint32_t b)
+{
+  m_curRGB.blue = 255 - b;
+  m_curHSV = m_curRGB;
+  refreshColor();
+}
+
 void VortexColorPicker::refreshColor()
 {
+  m_redSlider.setSelection(0, 255 - m_curRGB.red);
+  m_greenSlider.setSelection(0, 255 - m_curRGB.green);
+  m_blueSlider.setSelection(0, 255 - m_curRGB.blue);
   m_hueSlider.setSelection(0, m_curHSV.hue);
   m_satValBox.setSelection(m_curHSV.sat, 255 - m_curHSV.val);
   m_satValBox.setBackground(m_svBitmaps[m_curHSV.hue]);

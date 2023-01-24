@@ -56,6 +56,9 @@ private:
   // callbacks for selecting sv and h
   static void selectSVCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) { ((VortexColorPicker *)pthis)->selectSV(sevent, x, y); }
   static void selectHCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectH(sevent, y); }
+  static void selectRCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectR(sevent, y); }
+  static void selectGCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectG(sevent, y); }
+  static void selectBCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectB(sevent, y); }
   static void hueEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
   static void satEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
   static void valEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
@@ -65,16 +68,24 @@ private:
   void selectH(VSelectBox::SelectEvent sevent, uint32_t h);
   void fieldEdit(VWindow *window);
 
+  void selectR(VSelectBox::SelectEvent sevent, uint32_t r);
+  void selectG(VSelectBox::SelectEvent sevent, uint32_t g);
+  void selectB(VSelectBox::SelectEvent sevent, uint32_t b);
+
   void genSVBackgrounds();
   HBITMAP genSVBackground(uint32_t hue);
   HBITMAP genHueBackground(uint32_t width, uint32_t height);
-  HBITMAP genRedBackground(uint32_t width, uint32_t height);
+  HBITMAP genRGBBackground(uint32_t width, uint32_t height, int rmult, int gmult, int bmult);
   void triggerRefresh();
 
   void selectS(uint32_t sat);
   void selectV(uint32_t val);
   void selectSV(uint32_t sat, uint32_t val);
   void selectH(uint32_t hue);
+
+  void selectR(uint32_t r);
+  void selectG(uint32_t g);
+  void selectB(uint32_t b);
 
   bool m_isOpen;
 
@@ -87,6 +98,11 @@ private:
 
   // bitmap for the H selector background
   HBITMAP m_hueBitmap;
+
+  // rgb slider bitmaps
+  HBITMAP m_redBitmap;
+  HBITMAP m_greenBitmap;
+  HBITMAP m_blueBitmap;
 
   HICON m_hIcon;
 
