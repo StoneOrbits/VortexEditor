@@ -111,15 +111,13 @@ bool VortexColorPicker::loaded()
 // initialize the color picker
 bool VortexColorPicker::init(HINSTANCE hInst)
 {
+  // trigger the background loader
   load();
 
   // the color picker
   m_colorPickerWindow.init(hInst, "Vortex Color Picker", BACK_COL, 420, 420, this);
   m_colorPickerWindow.setVisible(false);
   m_colorPickerWindow.setCloseCallback(hideGUICallback);
-
-  // trigger the background loader
-  //HBITMAP m_redBitmap = genRedBackground(24, 256);
 
   // the sat/val box
   m_satValBox.init(hInst, m_colorPickerWindow, "Saturation and Value", BACK_COL, 256, 256, 9, 10, SATVAL_BOX_ID, selectSVCallback);
@@ -408,13 +406,11 @@ void VortexColorPicker::refreshColor()
   if (m_colorPreview.getColor() != rawCol && now > m_lastRefresh) {
     m_colorPreview.setColor(rawCol);
     g_pEditor->demoColor(rawCol);
+    // if we want to carry through the updates to the colorset call this:
     //g_pEditor->updateSelectedColors(rawCol);
-    //g_pEditor->demoColorset();
     // Could actually just update the mode here... However the gloveset is
     // programmed to reset the mode from the beginning when you change it so
-    // you won't get a streaming coloret change like you'd expect. If the 
-    // editor connection had a new command exposed that told it to simply
-    // update the color of the current mode in realtime then we could do that
+    // you won't get a streaming coloret change like you'd expect
     //g_pEditor->demoCurMode();
     m_lastRefresh = now;
   }
