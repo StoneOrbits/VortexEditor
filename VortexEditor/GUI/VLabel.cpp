@@ -35,6 +35,10 @@ void VLabel::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
   uintptr_t menuID, VWindowCallback callback)
 {
+  if (!title.length()) {
+    return;
+  }
+
   // store callback and menu id
   m_callback = callback;
   m_backColor = backcol;

@@ -23,7 +23,7 @@ VColorSelect::VColorSelect() :
   m_color(0),
   m_active(false),
   m_selected(false),
-  m_selectable(false)
+  m_selectable(true)
 {
 }
 
@@ -67,7 +67,7 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
   // routine can access the object
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
-  m_colorLabel.init(hInstance, parent, "", backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
+  m_colorLabel.init(hInstance, parent, title, backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
 }
 
 void VColorSelect::cleanup()
@@ -178,7 +178,9 @@ void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
   if (wParam & MK_SHIFT) {
     sevent = SELECT_SHIFT_LEFT_CLICK;
   }
-  m_callback(m_callbackArg, this, sevent);
+  if (m_callback) {
+    m_callback(m_callbackArg, this, sevent);
+  }
 }
 
 void VColorSelect::releaseButton(WPARAM wParam, LPARAM lParam)
@@ -198,7 +200,9 @@ void VColorSelect::rightButtonPress()
       clear();
     }
   }
-  m_callback(m_callbackArg, this, SELECT_RIGHT_CLICK);
+  if (m_callback) {
+    m_callback(m_callbackArg, this, SELECT_RIGHT_CLICK);
+  }
 }
 
 void VColorSelect::clear()

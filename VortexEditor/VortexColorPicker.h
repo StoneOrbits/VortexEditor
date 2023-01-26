@@ -167,5 +167,8 @@ private:
 
   // hex label
   VLabel m_hexLabel;
+
+  // custom colors label
+  VLabel m_customColorsLabel;
 };
 

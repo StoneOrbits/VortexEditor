@@ -153,6 +153,7 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_colorPreview.init(hInst, m_colorPickerWindow, "", BACK_COL, 122, 96, 273, 274, 0, nullptr);
   m_colorPreview.setActive(true);
   m_colorPreview.setColor(0xFF0000);
+  m_colorPreview.setSelectable(false);
 
   // color picker history
   for (uint32_t i = 0; i < sizeof(m_colorHistory) / sizeof(m_colorHistory[0]); ++i) {
@@ -163,14 +164,14 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   }
 
   // the hsv labels
-  m_hueLabel.init(hInst, m_colorPickerWindow, "Hue:", BACK_COL, 32, 20, 133, 275, 0, nullptr);
-  m_satLabel.init(hInst, m_colorPickerWindow, "Sat:", BACK_COL, 32, 20, 138, 301, 0, nullptr);
-  m_valLabel.init(hInst, m_colorPickerWindow, "Val:", BACK_COL, 32, 20, 139, 325, 0, nullptr);
+  m_hueLabel.init(hInst, m_colorPickerWindow, "Hue:", BACK_COL, 32, 20, 131, 275, 0, nullptr);
+  m_satLabel.init(hInst, m_colorPickerWindow, "Sat:", BACK_COL, 32, 20, 136, 301, 0, nullptr);
+  m_valLabel.init(hInst, m_colorPickerWindow, "Val:", BACK_COL, 32, 20, 137, 325, 0, nullptr);
 
   // hsv text boxes
-  m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.hue).c_str(), BACK_COL, 32, 20, 166, 274, FIELD_EDIT_ID + 0, fieldEditCallback);
-  m_satTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.sat).c_str(), BACK_COL, 32, 20, 166, 300, FIELD_EDIT_ID + 1, fieldEditCallback);
-  m_valTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.val).c_str(), BACK_COL, 32, 20, 166, 324, FIELD_EDIT_ID + 2, fieldEditCallback);
+  m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.hue).c_str(), BACK_COL, 32, 20, 164, 274, FIELD_EDIT_ID + 0, fieldEditCallback);
+  m_satTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.sat).c_str(), BACK_COL, 32, 20, 164, 300, FIELD_EDIT_ID + 1, fieldEditCallback);
+  m_valTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.val).c_str(), BACK_COL, 32, 20, 164, 324, FIELD_EDIT_ID + 2, fieldEditCallback);
   m_hueTextbox.setEnabled(true);
   m_satTextbox.setEnabled(true);
   m_valTextbox.setEnabled(true);
@@ -189,14 +190,26 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_bluTextbox.setEnabled(true);
 
   // hex label
-  m_hexLabel.init(hInst, m_colorPickerWindow, "Hex:", BACK_COL, 32, 20, 133, 352, 0, nullptr);
+  m_hexLabel.init(hInst, m_colorPickerWindow, "Hex:", BACK_COL, 32, 20, 131, 352, 0, nullptr);
 
   // hex text box
-  m_hexTextbox.init(hInst, m_colorPickerWindow, "#FF0000", BACK_COL, 101, 20, 166, 350, FIELD_EDIT_ID + 6, fieldEditCallback);
+  m_hexTextbox.init(hInst, m_colorPickerWindow, "#FF0000", BACK_COL, 103, 20, 164, 350, FIELD_EDIT_ID + 6, fieldEditCallback);
   m_hexTextbox.setEnabled(true);
 
   m_savedColorsBox.init(hInst, m_colorPickerWindow, "", BACK_COL, 114, 70, 9, 300, 0, nullptr);
-  //VColorSelect m_savedColors[8];
+  m_savedColorsBox.setActive(true);
+  m_savedColorsBox.setEnabled(true);
+  m_savedColorsBox.setSelectable(false);
+  m_savedColorsBox.setColor(0x1D1D1D);
+
+  for (uint32_t i = 0; i < 8; ++i) {
+    m_savedColors[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 19, 19, 17 + (26 * (i % 4)), i < 4 ? 319 : 344, 0, historyCallback);
+    m_savedColors[i].setActive(true);
+    m_savedColors[i].setColor(0x000000);
+    m_savedColors[i].setSelectable(false);
+  }
+
+  m_customColorsLabel.init(hInst, m_colorPickerWindow, "Saved", BACK_COL, 42, 16, 17, 302, 0, nullptr);
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));

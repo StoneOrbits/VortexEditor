@@ -1226,12 +1226,15 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
   // if the target of the event is our currently selected colorselect 
   // then unselect it because they right clicked a selected colorselect
   // otherwise they right clicked an existing color we need to clear it
-  int pos = m_ledsMultiListBox.getSelection();
-  if (pos < 0) {
+  vector<int> sels;
+  m_ledsMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    colSelect->setSelected(false);
+    colSelect->setActive(false);
     return;
   }
   Colorset newSet;
-  VEngine::getColorset((LedPos)pos, newSet);
+  VEngine::getColorset((LedPos)sels[0], newSet);
   // if the color select was made inactive
   if (!target->isActive()) {
     debug("Disabled color slot %u", colorIndex);
@@ -1283,12 +1286,6 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
       m_colorPicker.refreshColor();
     }
     m_lastClickedColor = colorIndex;
-  }
-  vector<int> sels;
-  m_ledsMultiListBox.getSelections(sels);
-  if (!sels.size()) {
-    // this should never happen
-    return;
   }
   // set the colorset on all selected patterns
   for (uint32_t i = 0; i < sels.size(); ++i) {
