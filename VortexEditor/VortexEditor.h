@@ -127,9 +127,6 @@ private:
   // demo a color
   void demoColor(uint32_t rawCol);
 
-  // demo current colorset on the current pattern live
-  void demoColorset();
-
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
 

@@ -14,7 +14,8 @@ using namespace std;
 
 VTextBox::VTextBox() :
   VWindow(),
-  m_callback(nullptr)
+  m_callback(nullptr),
+  m_notifications(true)
 {
 }
 
@@ -70,6 +71,9 @@ void VTextBox::paint()
 
 void VTextBox::command(WPARAM wParam, LPARAM lParam)
 {
+  if (!m_notifications) {
+    return;
+  }
   int reason = HIWORD(wParam);
   if (!m_callback || reason != EN_CHANGE) {
     return;
@@ -85,9 +89,12 @@ void VTextBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VTextBox::setText(std::string item)
+void VTextBox::setText(std::string item, bool notify)
 {
+  bool oldNotify = m_notifications;
+  enableChangeNotifications(notify);
   Edit_SetText(m_hwnd, item.c_str());
+  enableChangeNotifications(oldNotify);
 }
 
 void VTextBox::clearText()
@@ -109,4 +116,9 @@ uint8_t VTextBox::getValue() const
     val = UINT8_MAX;
   }
   return (uint8_t)val;
+}
+
+void VTextBox::enableChangeNotifications(bool enabled)
+{
+  m_notifications = enabled;
 }

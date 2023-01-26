@@ -150,10 +150,9 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_blueSlider.setDrawVLine(false);
 
   // preview box for current color
-  m_colorPreview.init(hInst, m_colorPickerWindow, "Preview", BACK_COL, 122, 96, 273, 274, 0, nullptr);
+  m_colorPreview.init(hInst, m_colorPickerWindow, "", BACK_COL, 122, 96, 273, 274, 0, nullptr);
   m_colorPreview.setActive(true);
   m_colorPreview.setColor(0xFF0000);
-  m_colorPreview.setLabelEnabled(false);
 
   // color picker history
   for (uint32_t i = 0; i < sizeof(m_colorHistory) / sizeof(m_colorHistory[0]); ++i) {
@@ -161,7 +160,6 @@ bool VortexColorPicker::init(HINSTANCE hInst)
     m_colorHistory[i].setActive(true);
     m_colorHistory[i].setColor(0x000000);
     m_colorHistory[i].setSelectable(false);
-    m_colorHistory[i].setLabelEnabled(false);
   }
 
   // the hsv labels
@@ -196,6 +194,9 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   // hex text box
   m_hexTextbox.init(hInst, m_colorPickerWindow, "#FF0000", BACK_COL, 101, 20, 166, 350, FIELD_EDIT_ID + 6, fieldEditCallback);
   m_hexTextbox.setEnabled(true);
+
+  m_savedColorsBox.init(hInst, m_colorPickerWindow, "", BACK_COL, 114, 70, 9, 300, 0, nullptr);
+  //VColorSelect m_savedColors[8];
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -280,11 +281,15 @@ void VortexColorPicker::fieldEdit(VWindow *window)
     selectB(field->getValue());
     break;
   case 6: // hex
-    uint32_t rawCol = strtoul(field->getText().c_str() + 1, NULL, 16);
-    setColor(RGBColor(rawCol));
-    refreshColor();
+    setColor(RGBColor(strtoul(field->getText().c_str() + 1, NULL, 16)));
     break;
+  default: // unknown
+    // ???
+    return;
   }
+  g_pEditor->updateSelectedColors(m_curRGB.raw());
+  pushHistory(m_curRGB.raw());
+  refreshColor();
   //demoCurMode();
 }
 
@@ -320,6 +325,28 @@ void VortexColorPicker::pickCol(const RGBColor &col)
   if (!g_pEditor) {
     return;
   }
+  // update all textboxes and do not notify of the change
+  m_hueTextbox.setText(to_string(m_curHSV.hue).c_str(), false);
+  m_satTextbox.setText(to_string(m_curHSV.sat).c_str(), false);
+  m_valTextbox.setText(to_string(m_curHSV.val).c_str(), false);
+  m_redTextbox.setText(to_string(m_curRGB.red).c_str(), false);
+  m_grnTextbox.setText(to_string(m_curRGB.green).c_str(), false);
+  m_bluTextbox.setText(to_string(m_curRGB.blue).c_str(), false);
+  uint32_t rawCol = m_curRGB.raw();
+  if (rawCol) {
+    m_hexTextbox.setText(m_colorPreview.getColorName().c_str(), false);
+  } else {
+    // must set #000000 because colorSelect will return 'blank'
+    m_hexTextbox.setText("#000000");
+  }
+  // redraw all of the textboxes
+  m_hueTextbox.redraw();
+  m_satTextbox.redraw();
+  m_valTextbox.redraw();
+  m_redTextbox.redraw();
+  m_grnTextbox.redraw();
+  m_bluTextbox.redraw();
+  m_hexTextbox.redraw();
   g_pEditor->updateSelectedColors(col.raw());
   pushHistory(col.raw());
 }
@@ -473,21 +500,9 @@ void VortexColorPicker::refreshColor()
   m_hueSlider.setSelection(0, m_curHSV.hue);
   m_satValBox.setSelection(m_curHSV.sat, 255 - m_curHSV.val);
   m_satValBox.setBackground(m_svBitmaps[m_curHSV.hue]);
-  m_hueTextbox.setText(to_string(m_curHSV.hue).c_str());
-  m_satTextbox.setText(to_string(m_curHSV.sat).c_str());
-  m_valTextbox.setText(to_string(m_curHSV.val).c_str());
-  m_redTextbox.setText(to_string(m_curRGB.red).c_str());
-  m_grnTextbox.setText(to_string(m_curRGB.green).c_str());
-  m_bluTextbox.setText(to_string(m_curRGB.blue).c_str());
+  uint64_t now = GetCurrentTime();
   uint32_t rawCol = m_curRGB.raw();
   m_colorPreview.setColor(rawCol);
-  if (rawCol) {
-    m_hexTextbox.setText(m_colorPreview.getColorName().c_str());
-  } else {
-    // must set #000000 because colorSelect will return 'blank'
-    m_hexTextbox.setText("#000000");
-  }
-  uint64_t now = GetCurrentTime();
   if (m_lastCol != rawCol && now > m_lastRefresh) {
     g_pEditor->demoColor(rawCol);
     // if we want to carry through the updates to the colorset call this:
@@ -505,11 +520,4 @@ void VortexColorPicker::refreshColor()
   m_satValBox.redraw();
   m_hueSlider.redraw();
   m_colorPreview.redraw();
-  m_hueTextbox.redraw();
-  m_satTextbox.redraw();
-  m_valTextbox.redraw();
-  m_redTextbox.redraw();
-  m_grnTextbox.redraw();
-  m_bluTextbox.redraw();
-  m_hexTextbox.redraw();
 }

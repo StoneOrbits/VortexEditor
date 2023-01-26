@@ -138,6 +138,10 @@ private:
   // color histories
   VColorSelect m_colorHistory[5];
 
+  // color histories
+  VColorSelect m_savedColorsBox;
+  VColorSelect m_savedColors[8];
+
   //  text entry
   VTextBox m_hueTextbox;
   VTextBox m_satTextbox;

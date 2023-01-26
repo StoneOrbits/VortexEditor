@@ -1531,8 +1531,7 @@ void VortexEditor::refreshParams(bool recursive)
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
-    m_paramTextBoxes[i].setEnabled(false);
-    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
+    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str(), false);
     m_paramTextBoxes[i].setEnabled(true);
     m_paramTextBoxes[i].setVisible(true);
     m_paramTextBoxes[i].setTooltip(tips[i]);
