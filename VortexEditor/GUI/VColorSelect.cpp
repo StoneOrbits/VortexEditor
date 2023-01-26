@@ -271,6 +271,12 @@ void VColorSelect::setSelected(bool selected)
   m_selected = selected;
 }
 
+void VColorSelect::setLabelEnabled(bool enabled)
+{
+  m_colorLabel.setVisible(enabled);
+  m_colorLabel.setEnabled(enabled);
+}
+
 LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   VColorSelect *pColorSelect = (VColorSelect *)GetWindowLongPtr(hwnd, GWLP_USERDATA);

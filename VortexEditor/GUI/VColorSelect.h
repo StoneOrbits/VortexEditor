@@ -51,6 +51,8 @@ public:
   bool isSelected() const;
   void setSelected(bool selected);
 
+  void setLabelEnabled(bool enabled);
+
 private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);

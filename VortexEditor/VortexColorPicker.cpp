@@ -147,13 +147,14 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_blueSlider.setDrawCircle(false);
   m_blueSlider.setDrawVLine(false);
 
-  m_colorPreview.init(hInst, m_colorPickerWindow, "Preview", BACK_COL, 32, 32, 10, 280, 0, nullptr);
+  m_colorPreview.init(hInst, m_colorPickerWindow, "Preview", BACK_COL, 96, 96, 10, 278, 0, nullptr);
   m_colorPreview.setActive(true);
+  m_colorPreview.setLabelEnabled(false);
   m_colorPreview.setColor(0xFF0000);
 
-  //m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.hue).c_str(), BACK_COL, 50, 18, 306, 12, FIELD_EDIT_ID + 0, hueEditCallback);
-  //m_satTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.sat).c_str(), BACK_COL, 50, 18, 306, 42, FIELD_EDIT_ID + 1, satEditCallback);
-  //m_valTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.val).c_str(), BACK_COL, 50, 18, 306, 72, FIELD_EDIT_ID + 2, valEditCallback);
+  m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.hue).c_str(), BACK_COL, 50, 18, 306, 12, FIELD_EDIT_ID + 0, hueEditCallback);
+  m_satTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.sat).c_str(), BACK_COL, 50, 18, 306, 42, FIELD_EDIT_ID + 1, satEditCallback);
+  m_valTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.val).c_str(), BACK_COL, 50, 18, 306, 72, FIELD_EDIT_ID + 2, valEditCallback);
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
