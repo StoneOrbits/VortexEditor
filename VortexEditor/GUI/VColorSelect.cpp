@@ -22,7 +22,8 @@ VColorSelect::VColorSelect() :
   m_callback(nullptr),
   m_color(0),
   m_active(false),
-  m_selected(false)
+  m_selected(false),
+  m_selectable(false)
 {
 }
 
@@ -162,11 +163,13 @@ void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
   //// flip the result back from BGR to RGB
   //setFlippedColor(col.rgbResult);
   //setActive(true);
-  m_selected = !m_selected;
-  if (m_selected && !m_active) {
-    // if the box was inactive and just selected, activate it
-    setActive(true);
-    clear();
+  if (m_selectable) {
+    m_selected = !m_selected;
+    if (m_selected && !m_active) {
+      // if the box was inactive and just selected, activate it
+      setActive(true);
+      clear();
+    }
   }
   SelectEvent sevent = SELECT_LEFT_CLICK;
   if (wParam & MK_CONTROL) {
@@ -185,13 +188,15 @@ void VColorSelect::releaseButton(WPARAM wParam, LPARAM lParam)
 // window message for right button press, only exists here
 void VColorSelect::rightButtonPress()
 {
-  if (m_selected) {
-    m_selected = false;
-  } else {
-    if (m_color == 0) {
-      setActive(false);
+  if (m_selectable) {
+    if (m_selected) {
+      m_selected = false;
+    } else {
+      if (m_color == 0) {
+        setActive(false);
+      }
+      clear();
     }
-    clear();
   }
   m_callback(m_callbackArg, this, SELECT_RIGHT_CLICK);
 }
@@ -275,6 +280,14 @@ void VColorSelect::setLabelEnabled(bool enabled)
 {
   m_colorLabel.setVisible(enabled);
   m_colorLabel.setEnabled(enabled);
+}
+
+void VColorSelect::setSelectable(bool selectable)
+{
+  m_selectable = selectable;
+  if (!m_selectable) {
+    setSelected(false);
+  }
 }
 
 LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

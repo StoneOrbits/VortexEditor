@@ -12,6 +12,7 @@
 #include "Serial/Compression.h"
 
 #define FIELD_EDIT_ID       55001
+
 #define SATVAL_BOX_ID       56001
 #define HUE_SLIDER_ID       56002
 #define RED_SLIDER_ID       56003
@@ -33,6 +34,7 @@ VortexColorPicker::VortexColorPicker() :
   m_xPos(0),
   m_yPos(0),
   m_lastRefresh(0),
+  m_lastCol(0),
   m_curHSV(0, 255, 255),
   m_curRGB(255, 0, 0),
   m_colorPickerWindow(),
@@ -147,14 +149,53 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_blueSlider.setDrawCircle(false);
   m_blueSlider.setDrawVLine(false);
 
-  m_colorPreview.init(hInst, m_colorPickerWindow, "Preview", BACK_COL, 96, 96, 10, 278, 0, nullptr);
+  // preview box for current color
+  m_colorPreview.init(hInst, m_colorPickerWindow, "Preview", BACK_COL, 122, 96, 273, 274, 0, nullptr);
   m_colorPreview.setActive(true);
-  m_colorPreview.setLabelEnabled(false);
   m_colorPreview.setColor(0xFF0000);
+  m_colorPreview.setLabelEnabled(false);
 
-  m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.hue).c_str(), BACK_COL, 50, 18, 306, 12, FIELD_EDIT_ID + 0, hueEditCallback);
-  m_satTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.sat).c_str(), BACK_COL, 50, 18, 306, 42, FIELD_EDIT_ID + 1, satEditCallback);
-  m_valTextbox.init(hInst, m_colorPickerWindow, to_string(m_curColor.val).c_str(), BACK_COL, 50, 18, 306, 72, FIELD_EDIT_ID + 2, valEditCallback);
+  // color picker history
+  for (uint32_t i = 0; i < sizeof(m_colorHistory) / sizeof(m_colorHistory[0]); ++i) {
+    m_colorHistory[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 18, 18, 9 + (24 * i), 274, 0, historyCallback);
+    m_colorHistory[i].setActive(true);
+    m_colorHistory[i].setColor(0x000000);
+    m_colorHistory[i].setSelectable(false);
+    m_colorHistory[i].setLabelEnabled(false);
+  }
+
+  // the hsv labels
+  m_hueLabel.init(hInst, m_colorPickerWindow, "Hue:", BACK_COL, 32, 20, 133, 275, 0, nullptr);
+  m_satLabel.init(hInst, m_colorPickerWindow, "Sat:", BACK_COL, 32, 20, 138, 301, 0, nullptr);
+  m_valLabel.init(hInst, m_colorPickerWindow, "Val:", BACK_COL, 32, 20, 139, 325, 0, nullptr);
+
+  // hsv text boxes
+  m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.hue).c_str(), BACK_COL, 32, 20, 166, 274, FIELD_EDIT_ID + 0, fieldEditCallback);
+  m_satTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.sat).c_str(), BACK_COL, 32, 20, 166, 300, FIELD_EDIT_ID + 1, fieldEditCallback);
+  m_valTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.val).c_str(), BACK_COL, 32, 20, 166, 324, FIELD_EDIT_ID + 2, fieldEditCallback);
+  m_hueTextbox.setEnabled(true);
+  m_satTextbox.setEnabled(true);
+  m_valTextbox.setEnabled(true);
+
+  // the rgb labels
+  m_redLabel.init(hInst, m_colorPickerWindow, "Red:", BACK_COL, 32, 20, 202, 275, 0, nullptr);
+  m_grnLabel.init(hInst, m_colorPickerWindow, "Grn:", BACK_COL, 32, 20, 205, 301, 0, nullptr);
+  m_bluLabel.init(hInst, m_colorPickerWindow, "Blu:", BACK_COL, 32, 20, 206, 325, 0, nullptr);
+  
+  // rgb text boxes
+  m_redTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.hue).c_str(), BACK_COL, 32, 20, 235, 274, FIELD_EDIT_ID + 3, fieldEditCallback);
+  m_grnTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.sat).c_str(), BACK_COL, 32, 20, 235, 300, FIELD_EDIT_ID + 4, fieldEditCallback);
+  m_bluTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.val).c_str(), BACK_COL, 32, 20, 235, 324, FIELD_EDIT_ID + 5, fieldEditCallback);
+  m_redTextbox.setEnabled(true);
+  m_grnTextbox.setEnabled(true);
+  m_bluTextbox.setEnabled(true);
+
+  // hex label
+  m_hexLabel.init(hInst, m_colorPickerWindow, "Hex:", BACK_COL, 32, 20, 133, 352, 0, nullptr);
+
+  // hex text box
+  m_hexTextbox.init(hInst, m_colorPickerWindow, "#FF0000", BACK_COL, 101, 20, 166, 350, FIELD_EDIT_ID + 6, fieldEditCallback);
+  m_hexTextbox.setEnabled(true);
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -200,7 +241,7 @@ void VortexColorPicker::selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uin
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  g_pEditor->updateSelectedColors(m_curRGB.raw());
+  pickCol(m_curRGB);
 }
 
 void VortexColorPicker::selectH(VSelectBox::SelectEvent sevent, uint32_t h)
@@ -209,7 +250,7 @@ void VortexColorPicker::selectH(VSelectBox::SelectEvent sevent, uint32_t h)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  g_pEditor->updateSelectedColors(m_curRGB.raw());
+  pickCol(m_curRGB);
 }
 
 void VortexColorPicker::fieldEdit(VWindow *window)
@@ -229,17 +270,31 @@ void VortexColorPicker::fieldEdit(VWindow *window)
   case 2: // val
     selectV(field->getValue());
     break;
+  case 3: // red
+    selectR(field->getValue());
+    break;
+  case 4: // grn
+    selectG(field->getValue());
+    break;
+  case 5: // blu
+    selectB(field->getValue());
+    break;
+  case 6: // hex
+    uint32_t rawCol = strtoul(field->getText().c_str() + 1, NULL, 16);
+    setColor(RGBColor(rawCol));
+    refreshColor();
+    break;
   }
   //demoCurMode();
 }
-  
+
 void VortexColorPicker::selectR(VSelectBox::SelectEvent sevent, uint32_t r)
 {
   selectR(255 - r);
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  g_pEditor->updateSelectedColors(m_curRGB.raw());
+  pickCol(m_curRGB);
 }
 
 void VortexColorPicker::selectG(VSelectBox::SelectEvent sevent, uint32_t g)
@@ -248,7 +303,7 @@ void VortexColorPicker::selectG(VSelectBox::SelectEvent sevent, uint32_t g)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  g_pEditor->updateSelectedColors(m_curRGB.raw());
+  pickCol(m_curRGB);
 }
 
 void VortexColorPicker::selectB(VSelectBox::SelectEvent sevent, uint32_t b)
@@ -257,7 +312,16 @@ void VortexColorPicker::selectB(VSelectBox::SelectEvent sevent, uint32_t b)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  g_pEditor->updateSelectedColors(m_curRGB.raw());
+  pickCol(m_curRGB);
+}
+
+void VortexColorPicker::pickCol(const RGBColor &col)
+{
+  if (!g_pEditor) {
+    return;
+  }
+  g_pEditor->updateSelectedColors(col.raw());
+  pushHistory(col.raw());
 }
 
 HBITMAP VortexColorPicker::genHueBackground(uint32_t width, uint32_t height)
@@ -333,15 +397,22 @@ void VortexColorPicker::hide()
   m_isOpen = false;
 }
 
-// redraw all the components
-void VortexColorPicker::triggerRefresh()
+// push a color into the history
+void VortexColorPicker::pushHistory(uint32_t rawCol)
 {
-  m_redSlider.redraw();
-  m_greenSlider.redraw();
-  m_blueSlider.redraw();
-  m_satValBox.redraw();
-  m_hueSlider.redraw();
-  m_colorPreview.redraw();
+  uint32_t numHistory = sizeof(m_colorHistory) / sizeof(m_colorHistory[0]);
+  for (uint32_t i = 0; i < (numHistory - 1); ++i) {
+    m_colorHistory[i].setColor(m_colorHistory[i + 1].getColor());
+  }
+  m_colorHistory[numHistory - 1].setColor(rawCol);
+}
+
+void VortexColorPicker::recallHistory(VColorSelect *history)
+{
+  m_curRGB = history->getColor();
+  m_curHSV = m_curRGB;
+  pickCol(history->getColor());
+  refreshColor();
 }
 
 void VortexColorPicker::selectS(uint32_t sat)
@@ -402,10 +473,22 @@ void VortexColorPicker::refreshColor()
   m_hueSlider.setSelection(0, m_curHSV.hue);
   m_satValBox.setSelection(m_curHSV.sat, 255 - m_curHSV.val);
   m_satValBox.setBackground(m_svBitmaps[m_curHSV.hue]);
+  m_hueTextbox.setText(to_string(m_curHSV.hue).c_str());
+  m_satTextbox.setText(to_string(m_curHSV.sat).c_str());
+  m_valTextbox.setText(to_string(m_curHSV.val).c_str());
+  m_redTextbox.setText(to_string(m_curRGB.red).c_str());
+  m_grnTextbox.setText(to_string(m_curRGB.green).c_str());
+  m_bluTextbox.setText(to_string(m_curRGB.blue).c_str());
   uint32_t rawCol = m_curRGB.raw();
+  m_colorPreview.setColor(rawCol);
+  if (rawCol) {
+    m_hexTextbox.setText(m_colorPreview.getColorName().c_str());
+  } else {
+    // must set #000000 because colorSelect will return 'blank'
+    m_hexTextbox.setText("#000000");
+  }
   uint64_t now = GetCurrentTime();
-  if (m_colorPreview.getColor() != rawCol && now > m_lastRefresh) {
-    m_colorPreview.setColor(rawCol);
+  if (m_lastCol != rawCol && now > m_lastRefresh) {
     g_pEditor->demoColor(rawCol);
     // if we want to carry through the updates to the colorset call this:
     //g_pEditor->updateSelectedColors(rawCol);
@@ -414,6 +497,19 @@ void VortexColorPicker::refreshColor()
     // you won't get a streaming coloret change like you'd expect
     //g_pEditor->demoCurMode();
     m_lastRefresh = now;
+    m_lastCol = rawCol;
   }
-  triggerRefresh();
+  m_redSlider.redraw();
+  m_greenSlider.redraw();
+  m_blueSlider.redraw();
+  m_satValBox.redraw();
+  m_hueSlider.redraw();
+  m_colorPreview.redraw();
+  m_hueTextbox.redraw();
+  m_satTextbox.redraw();
+  m_valTextbox.redraw();
+  m_redTextbox.redraw();
+  m_grnTextbox.redraw();
+  m_bluTextbox.redraw();
+  m_hexTextbox.redraw();
 }

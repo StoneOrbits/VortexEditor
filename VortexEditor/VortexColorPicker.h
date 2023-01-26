@@ -59,10 +59,13 @@ private:
   static void selectRCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectR(sevent, y); }
   static void selectGCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectG(sevent, y); }
   static void selectBCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectB(sevent, y); }
-  static void hueEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
-  static void satEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
-  static void valEditCallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->fieldEdit(window); }
+  static void fieldEditCallback(void *pthis, VWindow *window)       { ((VortexColorPicker *)pthis)->fieldEdit(window); }
   static void hideGUICallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->hide(); }
+  static void historyCallback(void *pthis, VColorSelect *colSelect, VColorSelect::SelectEvent sevent)       { 
+    if (sevent == VColorSelect::SelectEvent::SELECT_LEFT_CLICK) {
+      ((VortexColorPicker *)pthis)->recallHistory(colSelect);
+    }
+  }
 
   void selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uint32_t v);
   void selectH(VSelectBox::SelectEvent sevent, uint32_t h);
@@ -72,11 +75,14 @@ private:
   void selectG(VSelectBox::SelectEvent sevent, uint32_t g);
   void selectB(VSelectBox::SelectEvent sevent, uint32_t b);
 
+  void pickCol(const RGBColor &col);
+
   void genSVBackgrounds();
   HBITMAP genSVBackground(uint32_t hue);
   HBITMAP genHueBackground(uint32_t width, uint32_t height);
   HBITMAP genRGBBackground(uint32_t width, uint32_t height, int rmult, int gmult, int bmult);
-  void triggerRefresh();
+  void pushHistory(uint32_t rawCol);
+  void recallHistory(VColorSelect *history);
 
   void selectS(uint32_t sat);
   void selectV(uint32_t val);
@@ -110,6 +116,7 @@ private:
   uint32_t m_yPos;
 
   uint64_t m_lastRefresh;
+  uint32_t m_lastCol;
 
   RGBColor m_curRGB;
   HSVColor m_curHSV;
@@ -128,9 +135,33 @@ private:
   // preview of color
   VColorSelect m_colorPreview;
 
-  // hue/sat/val text entry
+  // color histories
+  VColorSelect m_colorHistory[5];
+
+  //  text entry
   VTextBox m_hueTextbox;
   VTextBox m_satTextbox;
   VTextBox m_valTextbox;
+
+  // text entry labels
+  VLabel m_hueLabel;
+  VLabel m_satLabel;
+  VLabel m_valLabel;
+
+  // rgb text entry
+  VTextBox m_redTextbox;
+  VTextBox m_grnTextbox;
+  VTextBox m_bluTextbox;
+
+  // text entry labels
+  VLabel m_redLabel;
+  VLabel m_grnLabel;
+  VLabel m_bluLabel;
+
+  // hex entry
+  VTextBox m_hexTextbox;
+
+  // hex label
+  VLabel m_hexLabel;
 };
 

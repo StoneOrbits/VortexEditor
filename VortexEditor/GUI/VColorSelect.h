@@ -52,6 +52,7 @@ public:
   void setSelected(bool selected);
 
   void setLabelEnabled(bool enabled);
+  void setSelectable(bool selectable);
 
 private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -68,4 +69,6 @@ private:
   bool m_active;
   // whether this slot is selected for changes
   bool m_selected;
+  // whether this control is selectable
+  bool m_selectable;
 };

@@ -82,10 +82,6 @@ void VChildWindow::paint()
   EndPaint(m_hwnd, &ps);
 }
 
-void VChildWindow::command(WPARAM wParam, LPARAM lParam)
-{
-}
-
 void VChildWindow::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
