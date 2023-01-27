@@ -206,10 +206,10 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_savedColorsBox.setColor(0x1D1D1D);
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_savedColors[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 19, 19, 17 + (26 * (i % 4)), i < 4 ? 319 : 344, 0, historyCallback);
+    m_savedColors[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 19, 19, 17 + (26 * (i % 4)), i < 4 ? 319 : 344, 0, nullptr);
+    m_savedColors[i].setSelectable(true);
     m_savedColors[i].setActive(true);
     m_savedColors[i].setColor(0x000000);
-    m_savedColors[i].setSelectable(false);
   }
 
   m_customColorsLabel.init(hInst, m_colorPickerWindow, "Saved Colors", 0x1D1D1D, 75, 15, 17, 302, 0, nullptr);
@@ -461,6 +461,16 @@ void VortexColorPicker::recallHistory(VColorSelect *history)
   m_curHSV = m_curRGB;
   pickCol(history->getColor());
   refreshColor();
+}
+
+void VortexColorPicker::saveColor(VColorSelect *saveCol, VColorSelect::SelectEvent sevent)
+{
+  switch (sevent) {
+  case VColorSelect::SelectEvent::SELECT_LEFT_CLICK:
+    break;
+  case VColorSelect::SelectEvent::SELECT_RIGHT_CLICK:
+    break;
+  }
 }
 
 void VortexColorPicker::selectS(uint32_t sat)

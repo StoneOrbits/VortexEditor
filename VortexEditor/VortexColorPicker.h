@@ -56,17 +56,34 @@ private:
   typedef COLORREF (*VFillCallback)(uint32_t x, uint32_t y);
 
   // callbacks for selecting sv and h
-  static void selectSVCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) { ((VortexColorPicker *)pthis)->selectSV(sevent, x, y); }
-  static void selectHCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectH(sevent, y); }
-  static void selectRCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectR(sevent, y); }
-  static void selectGCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectG(sevent, y); }
-  static void selectBCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)  { ((VortexColorPicker *)pthis)->selectB(sevent, y); }
-  static void fieldEditCallback(void *pthis, VWindow *window)       { ((VortexColorPicker *)pthis)->fieldEdit(window); }
-  static void hideGUICallback(void *pthis, VWindow *window)         { ((VortexColorPicker *)pthis)->hide(); }
+  static void selectSVCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexColorPicker *)pthis)->selectSV(sevent, x, y); 
+  }
+  static void selectHCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexColorPicker *)pthis)->selectH(sevent, y);
+  }
+  static void selectRCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexColorPicker *)pthis)->selectR(sevent, y);
+  }
+  static void selectGCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexColorPicker *)pthis)->selectG(sevent, y);
+  }
+  static void selectBCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexColorPicker *)pthis)->selectB(sevent, y);
+  }
+  static void fieldEditCallback(void *pthis, VWindow *window) {
+    ((VortexColorPicker *)pthis)->fieldEdit(window);
+  }
+  static void hideGUICallback(void *pthis, VWindow *window) {
+    ((VortexColorPicker *)pthis)->hide();
+  }
   static void historyCallback(void *pthis, VColorSelect *colSelect, VColorSelect::SelectEvent sevent)       { 
     if (sevent == VColorSelect::SelectEvent::SELECT_LEFT_CLICK) {
       ((VortexColorPicker *)pthis)->recallHistory(colSelect);
     }
+  }
+  static void saveColorCallback(void *pthis, VColorSelect *colSelect, VColorSelect::SelectEvent sevent)       { 
+    ((VortexColorPicker *)pthis)->saveColor(colSelect, sevent);
   }
 
   void selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uint32_t v);
@@ -85,6 +102,7 @@ private:
   HBITMAP genRGBBackground(uint32_t width, uint32_t height, int rmult, int gmult, int bmult);
   void pushHistory(uint32_t rawCol);
   void recallHistory(VColorSelect *history);
+  void saveColor(VColorSelect *saveCol, VColorSelect::SelectEvent sevent);
 
   void selectS(uint32_t sat);
   void selectV(uint32_t val);

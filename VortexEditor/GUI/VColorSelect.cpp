@@ -152,9 +152,6 @@ void VColorSelect::command(WPARAM wParam, LPARAM lParam)
 
 void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
 {
-  if (!m_callback) {
-    return;
-  }
   //CHOOSECOLOR col;
   //memset(&col, 0, sizeof(col));
   //ZeroMemory(&col, sizeof(col));
