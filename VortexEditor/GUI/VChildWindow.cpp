@@ -118,19 +118,12 @@ LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, 
   case WM_LBUTTONUP:
     pWindow->releaseButton(wParam, lParam);
     break;
-  //case WM_CTLCOLORSTATIC:
-    //SetTextColor((HDC)wParam, RGB(0xD0, 0xD0, 0xD0));
-    //SetBkColor((HDC)wParam, BACK_COL);
-    //return (INT_PTR)pWindow->m_wc.hbrBackground;
   case WM_CREATE:
     pWindow->create();
     break;
   case WM_PAINT:
     pWindow->paint();
     return 0;
-  //case WM_LBUTTONDOWN:
-    //g_pEditor->handleWindowClick(LOWORD(lParam), HIWORD(lParam));
-    //break;
   case WM_CTLCOLORSTATIC:
     // for static controls we pass the hwnd of the window itself
     return pWindow->controlColor(wParam, lParam);
@@ -155,9 +148,6 @@ LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, 
   case WM_QUIT:
   case WM_DESTROY:
     return 0;
-    // TODO: proper cleanup
-    //PostQuitMessage(0);
-    break;
   default:
     break;
   }
