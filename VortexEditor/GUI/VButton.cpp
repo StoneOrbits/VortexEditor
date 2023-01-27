@@ -83,7 +83,6 @@ void VButton::command(WPARAM wParam, LPARAM lParam)
 
 void VButton::pressButton(WPARAM wParam, LPARAM lParam)
 {
-  MessageBox(0, "", "", 0);
 }
 
 void VButton::releaseButton(WPARAM wParam, LPARAM lParam)
