@@ -485,6 +485,8 @@ void VortexColorPicker::saveColor(VColorSelect *saveCol, VColorSelect::SelectEve
 {
   switch (sevent) {
   case VColorSelect::SelectEvent::SELECT_LEFT_CLICK:
+  case VColorSelect::SelectEvent::SELECT_CTRL_LEFT_CLICK:
+  case VColorSelect::SelectEvent::SELECT_SHIFT_LEFT_CLICK:
     if (!saveCol->isSelected()) {
       break;
     }
