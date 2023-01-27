@@ -14,7 +14,8 @@ using namespace std;
 
 VTextBox::VTextBox() :
   VWindow(),
-  m_callback(nullptr)
+  m_callback(nullptr),
+  m_notifications(true)
 {
 }
 
@@ -40,7 +41,13 @@ void VTextBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   m_backColor = backcol;
   m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
-  parent.addChild(menuID, this);
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
+
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   // create the window
   m_hwnd = CreateWindow(WC_EDIT, title.c_str(),
@@ -70,6 +77,9 @@ void VTextBox::paint()
 
 void VTextBox::command(WPARAM wParam, LPARAM lParam)
 {
+  if (!m_notifications) {
+    return;
+  }
   int reason = HIWORD(wParam);
   if (!m_callback || reason != EN_CHANGE) {
     return;
@@ -77,17 +87,20 @@ void VTextBox::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VTextBox::pressButton()
+void VTextBox::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VTextBox::releaseButton()
+void VTextBox::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VTextBox::setText(std::string item)
+void VTextBox::setText(std::string item, bool notify)
 {
+  bool oldNotify = m_notifications;
+  enableChangeNotifications(notify);
   Edit_SetText(m_hwnd, item.c_str());
+  enableChangeNotifications(oldNotify);
 }
 
 void VTextBox::clearText()
@@ -109,4 +122,9 @@ uint8_t VTextBox::getValue() const
     val = UINT8_MAX;
   }
   return (uint8_t)val;
+}
+
+void VTextBox::enableChangeNotifications(bool enabled)
+{
+  m_notifications = enabled;
 }

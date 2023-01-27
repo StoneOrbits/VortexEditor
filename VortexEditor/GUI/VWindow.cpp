@@ -14,6 +14,7 @@
 using namespace std;
 
 WNDCLASS VWindow::m_wc = {0};
+uint32_t VWindow::nextMenuID = 70000;
 
 // This GUID is for all USB serial host PnP drivers
 GUID WceusbshGUID = { 0x25dbce51, 0x6c8f, 0x4a72,
@@ -130,7 +131,7 @@ void VWindow::command(WPARAM wParam, LPARAM lParam)
     return;
   }
   VWindow *child = getChild(menuID);
-  if (child){
+  if (child) {
     child->command(wParam, lParam);
     return;
   }
@@ -141,20 +142,26 @@ void VWindow::command(WPARAM wParam, LPARAM lParam)
   }
 }
 
-void VWindow::pressButton()
+void VWindow::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VWindow::releaseButton()
+void VWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-uint32_t VWindow::addChild(uintptr_t menuID, VWindow *child)
+bool VWindow::addChild(uintptr_t menuID, VWindow *child, uint32_t *out_id)
 {
+  if (m_children.find(menuID) != m_children.end()) {
+    return false;
+  }
   child->m_pParent = this;
   child->m_callbackArg = m_callbackArg;
   m_children.insert(make_pair(menuID, child));
-  return (uint32_t)(m_children.size() - 1);
+  if (out_id) {
+    *out_id = (uint32_t)(m_children.size() - 1);
+  }
+  return true;
 }
 
 VWindow *VWindow::getChild(uintptr_t id)
@@ -214,6 +221,14 @@ void VWindow::installDeviceCallback(VDeviceCallback callback)
 
   m_hDeviceNotify = RegisterDeviceNotification(m_hwnd,
     &NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE);
+}
+
+void VWindow::redraw()
+{
+  RECT wndRect;
+  GetClientRect(m_hwnd, &wndRect);
+  InvalidateRect(m_hwnd, &wndRect, true);
+  RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE);
 }
 
 void VWindow::setTooltip(string text)
@@ -311,10 +326,10 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pWindow->pressButton();
+    pWindow->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pWindow->releaseButton();
+    pWindow->releaseButton(wParam, lParam);
     break;
   case WM_CTLCOLORSTATIC:
   case WM_CTLCOLOREDIT:
@@ -326,9 +341,6 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_PAINT:
     pWindow->paint();
     return 0;
-  //case WM_LBUTTONDOWN:
-    //g_pEditor->handleWindowClick(LOWORD(lParam), HIWORD(lParam));
-    //break;
   case WM_COMMAND:
     pWindow->command(wParam, lParam);
     break;
@@ -343,7 +355,6 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     break;
   case WM_DESTROY:
     pWindow->cleanup();
-    // TODO: proper cleanup
     PostQuitMessage(0);
     break;
   default:

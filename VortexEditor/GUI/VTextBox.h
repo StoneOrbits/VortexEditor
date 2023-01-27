@@ -20,15 +20,18 @@ public:
   virtual void create() override;
   virtual void paint() override;
   virtual void command(WPARAM wParam, LPARAM lParam) override;
-  virtual void pressButton() override;
-  virtual void releaseButton() override;
+  virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
+  virtual void releaseButton(WPARAM wParam, LPARAM lParam) override;
 
   // item control
-  void setText(std::string item);
+  void setText(std::string item, bool notify = true);
   void clearText();
   std::string getText() const;
   uint8_t getValue() const;
 
+  void enableChangeNotifications(bool enabled);
+
 private:
   VWindowCallback m_callback;
+  bool m_notifications;
 };

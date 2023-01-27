@@ -20,8 +20,8 @@ public:
   virtual void create() override;
   virtual void paint() override;
   virtual void command(WPARAM wParam, LPARAM lParam) override;
-  virtual void pressButton() override;
-  virtual void releaseButton() override;
+  virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
+  virtual void releaseButton(WPARAM wParam, LPARAM lParam) override;
 
   void addItem(std::string item);
   int getSelection() const;

@@ -40,7 +40,13 @@ void VStatusBar::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   m_backColor = backcol;
   m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
-  parent.addChild(menuID, this);
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
+
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   // create the window
   m_hwnd = CreateWindow(WC_EDIT, title.c_str(),
@@ -77,11 +83,11 @@ void VStatusBar::command(WPARAM wParam, LPARAM lParam)
   m_callback(m_callbackArg, this);
 }
 
-void VStatusBar::pressButton()
+void VStatusBar::pressButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VStatusBar::releaseButton()
+void VStatusBar::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 

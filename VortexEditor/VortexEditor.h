@@ -12,7 +12,7 @@
 #include "GUI/VMultiListBox.h"
 #include "GUI/VColorSelect.h"
 #include "GUI/VChildwindow.h"
-#include "GUI/VColorRing.h"
+#include "GUI/VSelectBox.h"
 #include "GUI/VStatusBar.h"
 #include "GUI/VComboBox.h"
 #include "GUI/VListBox.h"
@@ -22,6 +22,7 @@
 #include "GUI/VLabel.h"
 
 // editor includes
+#include "VortexColorPicker.h"
 #include "ArduinoSerial.h"
 
 // stl includes
@@ -41,6 +42,7 @@ class Colorset;
 
 class VortexEditor
 {
+  friend class VortexColorPicker;
 public:
   VortexEditor();
   ~VortexEditor();
@@ -77,8 +79,9 @@ private:
   static void selectFingerCallback(void *editor, VWindow *window)  { ((VortexEditor *)editor)->selectFinger(window); }
   static void selectPatternCallback(void *editor, VWindow *window) { ((VortexEditor *)editor)->selectPattern(window); }
   static void copyToAllCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->copyToAll(window); }
-  static void selectColorCallback(void *editor, VWindow *window)   { ((VortexEditor *)editor)->selectColor(window); }
   static void paramEditCallback(void *editor, VWindow *window)     { ((VortexEditor *)editor)->paramEdit(window); }
+  
+  static void selectColorCallback(void *editor, VColorSelect *colSelect, VColorSelect::SelectEvent sevent)   { ((VortexEditor *)editor)->selectColor(colSelect, sevent); }
 
   // menu handler
   static void handleMenusCallback(void *editor, uintptr_t hMenu)   { ((VortexEditor *)editor)->handleMenus(hMenu); }
@@ -117,8 +120,12 @@ private:
   void selectFinger(VWindow *window);
   void selectPattern(VWindow *window);
   void copyToAll(VWindow *window);
-  void selectColor(VWindow *window);
   void paramEdit(VWindow *window);
+
+  void selectColor(VColorSelect *colSelect, VColorSelect::SelectEvent sevent);
+
+  // demo a color
+  void demoColor(uint32_t rawCol);
 
   // callback to handle menus
   void handleMenus(uintptr_t hMenu);
@@ -127,6 +134,8 @@ private:
   void deviceChange(DEV_BROADCAST_HDR *dbh, bool added);
 
   // helper for color changer menus
+  void updateSelectedColors(uint32_t rawCol);
+  void updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol);
   void applyColorset(const Colorset &set, const std::vector<int> &selections);
   void applyPattern(PatternID id, const std::vector<int> &selections);
   void applyColorsetToAll(const Colorset &set);
@@ -169,12 +178,17 @@ private:
 
   // main instance
   HINSTANCE m_hInstance;
+  // icon
+  HICON m_hIcon;
   // Console handle for debugging
   FILE *m_consoleHandle;
   // list of ports
   std::vector<std::pair<uint32_t, std::unique_ptr<VortexPort>>> m_portList;
   // accelerator table for hotkeys
   HACCEL m_accelTable;
+  // keeps track of the last colorset entry selected to support shift+click
+  // which needs to set prevIndex to curIndex upon shift clicking
+  uint32_t m_lastClickedColor;
 
   // ==================================
   //  GUI Members
@@ -203,6 +217,12 @@ private:
   VColorSelect m_colorSelects[8];
   // parameters text boxes, there's 8 params
   VTextBox m_paramTextBoxes[8];
+
+  // ==================================
+  //  Color picker GUI
+
+  // the vortex color picker window
+  VortexColorPicker m_colorPicker;
 };
 
 extern VortexEditor *g_pEditor;

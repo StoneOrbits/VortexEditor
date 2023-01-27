@@ -4,6 +4,8 @@
 #include "Serial/ByteStream.h"
 #include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
+#include "Modes/ModeBuilder.h"
+#include "Modes/Mode.h"
 
 // Editor includes
 #include "EngineWrapper.h"
@@ -75,6 +77,9 @@ VortexEditor::VortexEditor() :
 
 VortexEditor::~VortexEditor()
 {
+  if (m_hIcon) {
+    DestroyIcon(m_hIcon);
+  }
 }
 
 bool VortexEditor::init(HINSTANCE hInst)
@@ -177,9 +182,15 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.installUserCallback(WM_TEST_CONNECT, connectTestFrameworkCallback);
   m_window.installUserCallback(WM_TEST_DISCONNECT, disconnectTestFrameworkCallback);
 
+  // initialize the color picker window
+  m_colorPicker.init(hInst);
+  RECT pos;
+  GetWindowRect(m_window.hwnd(), &pos);
+  SetWindowPos(m_colorPicker.hwnd(), 0, pos.left - 400, pos.top-200, 0, 0, SWP_NOSIZE);
+
   // apply the icon
-  HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
-  SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+  m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+  SendMessage(m_window.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)m_hIcon);
 
   // create an accelerator table for dispatching hotkeys as WM_COMMANDS
   // for specific menu IDs
@@ -235,8 +246,10 @@ void VortexEditor::run()
   // main message loop
   MSG msg;
   while (GetMessage(&msg, NULL, 0, 0)) {
-    if (TranslateAccelerator(m_window.hwnd(), m_accelTable, &msg)) {
-      continue;
+    if (GetForegroundWindow() == m_window.hwnd()) {
+      if (TranslateAccelerator(m_window.hwnd(), m_accelTable, &msg)) {
+        continue;
+      }
     }
     // pass message to main window otherwise process it
     if (!m_window.process(msg)) {
@@ -328,6 +341,9 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_FILE_EXPORT:
     exportMode(nullptr);
+    return;
+  case ID_TOOLS_COLOR_PICKER:
+    m_colorPicker.show();
     return;
   default:
     break;
@@ -428,6 +444,50 @@ void VortexEditor::deviceChange(DEV_BROADCAST_HDR *dbh, bool added)
   } else {
     disconnectPort(portNum);
   }
+}
+
+void VortexEditor::updateSelectedColors(uint32_t rawCol)
+{
+  // get list of all selected colors
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (m_colorSelects[i].isSelected()) {
+      updateSelectedColor(m_colorSelects + i, rawCol);
+    }
+  }
+}
+
+void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol)
+{
+  int pos = m_ledsMultiListBox.getSelection();
+  if (pos < 0) {
+    return;
+  }
+  uint32_t colorIndex = (uint32_t)((uintptr_t)colSelect->menu() - SELECT_COLOR_ID);
+  colSelect->setColor(rawCol);
+  Colorset newSet;
+  VEngine::getColorset((LedPos)pos, newSet);
+  // if the color select was made inactive
+  if (!colSelect->isActive()) {
+    debug("Disabled color slot");
+    newSet.removeColor(colorIndex);
+  } else {
+    debug("Updating color slot");
+    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
+  }
+  vector<int> sels;
+  m_ledsMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    // this should never happen
+    return;
+  }
+  // set the colorset on all selected patterns
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    // only set the pattern on a single position
+    VEngine::setColorset((LedPos)sels[i], newSet);
+  }
+  refreshModeList();
+  // update the demo
+  demoCurMode();
 }
 
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
@@ -1120,43 +1180,6 @@ void VortexEditor::copyToAll(VWindow *window)
   demoCurMode();
 }
 
-void VortexEditor::selectColor(VWindow *window)
-{
-  if (!window) {
-    return;
-  }
-  VColorSelect *colSelect = (VColorSelect *)window;
-  int pos = m_ledsMultiListBox.getSelection();
-  if (pos < 0) {
-    return;
-  }
-  uint32_t colorIndex = (uint32_t)((uintptr_t)window->menu() - SELECT_COLOR_ID);
-  Colorset newSet;
-  VEngine::getColorset((LedPos)pos, newSet);
-  // if the color select was made inactive
-  if (!colSelect->isActive()) {
-    debug("Disabled color slot %u", colorIndex);
-    newSet.removeColor(colorIndex);
-  } else {
-    debug("Updating color slot %u", colorIndex);
-    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
-  }
-  vector<int> sels;
-  m_ledsMultiListBox.getSelections(sels);
-  if (!sels.size()) {
-    // this should never happen
-    return;
-  }
-  // set the colorset on all selected patterns
-  for (uint32_t i = 0; i < sels.size(); ++i) {
-    // only set the pattern on a single position
-    VEngine::setColorset((LedPos)sels[i], newSet);
-  }
-  refreshModeList();
-  // update the demo
-  demoCurMode();
-}
-
 void VortexEditor::paramEdit(VWindow *window)
 {
   if (!window || !window->isEnabled()) {
@@ -1196,6 +1219,115 @@ void VortexEditor::paramEdit(VWindow *window)
   }
   // update the demo
   demoCurMode();
+}
+
+void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEvent sevent)
+{
+  if (!colSelect) {
+    return;
+  }
+  uint32_t colorIndex = (uint32_t)((uintptr_t)colSelect->menu() - SELECT_COLOR_ID);
+  VColorSelect *target = m_colorSelects + colorIndex;
+  // if the target of the event is our currently selected colorselect 
+  // then unselect it because they right clicked a selected colorselect
+  // otherwise they right clicked an existing color we need to clear it
+  vector<int> sels;
+  m_ledsMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    colSelect->setSelected(false);
+    colSelect->setActive(false);
+    return;
+  }
+  Colorset newSet;
+  VEngine::getColorset((LedPos)sels[0], newSet);
+  // if the color select was made inactive
+  if (!target->isActive()) {
+    debug("Disabled color slot %u", colorIndex);
+    newSet.removeColor(colorIndex);
+  } else {
+    debug("Updating color slot %u", colorIndex);
+    newSet.set(colorIndex, colSelect->getColor()); // getRawColor?
+  }
+  // check whether the event is a left click or not, if left click only
+  // update the colorset if a new entry was added
+  if (sevent != VColorSelect::SelectEvent::SELECT_RIGHT_CLICK) {
+    // when ther user clicks and empty color that is further than
+    // the next available slot it will auto shift up, we need to
+    // unselect the target colorselect they picked in that case
+    if (newSet.numColors() <= colorIndex) {
+      target->setSelected(false);
+    }
+    if (sevent == VColorSelect::SelectEvent::SELECT_LEFT_CLICK) {
+      for (uint32_t i = 0; i < 8; ++i) {
+        if (i == colorIndex) {
+          continue;
+        }
+        if (m_colorSelects[i].isSelected()) {
+          m_colorSelects[i].setSelected(false);
+        }
+      }
+      m_colorSelects[colorIndex].setSelected(true);
+    }
+    if (sevent == VColorSelect::SelectEvent::SELECT_CTRL_LEFT_CLICK) {
+      // do nothing just select it
+    }
+    if (sevent == VColorSelect::SelectEvent::SELECT_SHIFT_LEFT_CLICK) {
+      // select all in between
+      if (m_colorSelects[m_lastClickedColor].isSelected()) {
+        int lower = (m_lastClickedColor < colorIndex) ? m_lastClickedColor : colorIndex;
+        int higher = (m_lastClickedColor >= colorIndex) ? m_lastClickedColor : colorIndex;
+        for (int i = lower; i <= higher; i++) {
+          m_colorSelects[i].setActive(true);
+          m_colorSelects[i].setSelected(true);
+          m_colorSelects[i].redraw();
+          if (i >= newSet.numColors()) {
+            newSet.set(i, colSelect->getColor()); // getRawColor?
+          }
+        }
+      }
+    }
+    if (!m_colorPicker.isOpen()) {
+      m_colorPicker.show();
+    }
+    uint32_t rawCol = m_colorSelects[colorIndex].getColor();
+    m_colorPicker.setColor(RGBColor(rawCol));
+    m_colorPicker.refreshColor();
+    m_colorPicker.pickCol();
+    m_lastClickedColor = colorIndex;
+  }
+  // set the colorset on all selected patterns
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    // only set the pattern on a single position
+    VEngine::setColorset((LedPos)sels[i], newSet);
+  }
+  refreshModeList();
+  // update the demo
+  demoCurMode();
+}
+
+void VortexEditor::demoColor(uint32_t rawCol)
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_DEMO_MODE);
+  // read data again
+  port->expectData(EDITOR_VERB_READY);
+  // now unserialize the stream of data that was read
+  ByteStream curMode;
+  PatternArgs args(1, 0, 0);
+  Colorset newSet(rawCol);
+  Mode *newMode = ModeBuilder::make(PATTERN_BASIC, &args, &newSet);
+  newMode->saveToBuffer(curMode);
+  // send, the, mode
+  port->writeData(curMode);
+  // wait for the done response
+  port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
+  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  // Set status? maybe soon
+  //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
 
 void VortexEditor::refreshAll()
@@ -1404,8 +1536,7 @@ void VortexEditor::refreshParams(bool recursive)
   uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
-    m_paramTextBoxes[i].setEnabled(false);
-    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str());
+    m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str(), false);
     m_paramTextBoxes[i].setEnabled(true);
     m_paramTextBoxes[i].setVisible(true);
     m_paramTextBoxes[i].setTooltip(tips[i]);

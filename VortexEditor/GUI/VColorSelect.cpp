@@ -21,13 +21,15 @@ VColorSelect::VColorSelect() :
   VWindow(),
   m_callback(nullptr),
   m_color(0),
-  m_active(false)
+  m_active(false),
+  m_selected(false),
+  m_selectable(true)
 {
 }
 
 VColorSelect::VColorSelect(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uintptr_t menuID, VWindowCallback callback) :
+  uintptr_t menuID, VColorSelectCallback callback) :
   VColorSelect()
 {
   init(hInstance, parent, title, backcol, width, height, x, y, menuID, callback);
@@ -40,7 +42,7 @@ VColorSelect::~VColorSelect()
 
 void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uintptr_t menuID, VWindowCallback callback)
+  uintptr_t menuID, VColorSelectCallback callback)
 {
   // store callback and menu id
   m_callback = callback;
@@ -50,7 +52,13 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
   // register window class if it hasn't been registered yet
   registerWindowClass(hInstance, backcol);
 
-  parent.addChild(menuID, this);
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
+
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   // create the window
   m_hwnd = CreateWindow(WC_COLOR_SELECT, title.c_str(),
@@ -65,7 +73,7 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
   // routine can access the object
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
-  m_colorLabel.init(hInstance, parent, "", backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
+  m_colorLabel.init(hInstance, parent, title, backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
 }
 
 void VColorSelect::cleanup()
@@ -94,31 +102,47 @@ void VColorSelect::paint()
   PAINTSTRUCT paintStruct;
   memset(&paintStruct, 0, sizeof(paintStruct));
   HDC hdc = BeginPaint(m_hwnd, &paintStruct);
+
   RECT rect;
   GetClientRect(m_hwnd, &rect);
-  COLORREF frontCol;
-  if (m_active) {
-    // the front color will be the actual color
-    frontCol = getColor();
-    if (frontCol != 0) {
-      // if the frontcol is not 0, use brighter white
-      FillRect(hdc, &rect, getBrushCol(0xAAAAAA));
-    } else {
-      // if the slot is empty use dark border
-      FillRect(hdc, &rect, getBrushCol(0x606060));
-    }
+
+  uint32_t width = rect.right - rect.left;
+  uint32_t height = rect.bottom - rect.top;
+
+  // create a backbuffer and select it
+  HDC backbuffDC = CreateCompatibleDC(hdc);
+  HBITMAP backbuffer = CreateCompatibleBitmap(hdc, width, height);
+  SelectObject(backbuffDC, backbuffer);
+
+  COLORREF frontCol = getColor();
+  COLORREF borderCol;
+
+  if (m_selected) {
+    borderCol = 0xFFFFFF; // white
   } else {
-    // the front color will be black
-    frontCol = 0;
-    // fill the back with red
-    FillRect(hdc, &rect, getBrushCol(0xFF0000));
+    if (m_active) {
+      // border is bright if a color is selected, or dark if 'blank' (black)
+      borderCol = frontCol ? 0xAAAAAA : 0x606060;
+    } else {
+      // force the frontcol to 0 if not active, and red border
+      borderCol = 0xFF0000;
+      frontCol = 0;
+    }
   }
+  FillRect(backbuffDC, &rect, getBrushCol(borderCol));
+
 #define BORDER_WIDTH 1
   rect.left += BORDER_WIDTH;
   rect.top += BORDER_WIDTH;
   rect.right -= BORDER_WIDTH;
   rect.bottom -= BORDER_WIDTH;
-  FillRect(hdc, &rect, getBrushCol(frontCol));
+  FillRect(backbuffDC, &rect, getBrushCol(frontCol));
+
+  BitBlt(hdc, 0, 0, width, height, backbuffDC, 0, 0, SRCCOPY);
+
+  DeleteObject(backbuffer);
+  DeleteDC(backbuffDC);
+
   EndPaint(m_hwnd, &paintStruct);
 }
 
@@ -126,40 +150,48 @@ void VColorSelect::command(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void VColorSelect::pressButton()
+void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
 {
-  if (!m_callback) {
-    return;
+  if (m_selectable) {
+    setSelected(!m_selected);
+    if (m_selected && !m_active) {
+      // if the box was inactive and just selected, activate it
+      setActive(true);
+      clear();
+    }
   }
-  CHOOSECOLOR col;
-  memset(&col, 0, sizeof(col));
-  ZeroMemory(&col, sizeof(col));
-  col.lStructSize = sizeof(col);
-  col.hwndOwner = m_hwnd;
-  static COLORREF acrCustClr[16]; // array of custom colors 
-  col.lpCustColors = (LPDWORD)acrCustClr;
-  // windows uses BGR
-  col.rgbResult = getFlippedColor();
-  col.Flags = CC_FULLOPEN | CC_RGBINIT;
-  ChooseColor(&col);
-  // flip the result back from BGR to RGB
-  setFlippedColor(col.rgbResult);
-  setActive(true);
-  m_callback(m_callbackArg, this);
+  SelectEvent sevent = SELECT_LEFT_CLICK;
+  if (wParam & MK_CONTROL) {
+    sevent = SELECT_CTRL_LEFT_CLICK;
+  }
+  if (wParam & MK_SHIFT) {
+    sevent = SELECT_SHIFT_LEFT_CLICK;
+  }
+  if (m_callback) {
+    m_callback(m_callbackArg, this, sevent);
+  }
 }
 
-void VColorSelect::releaseButton()
+void VColorSelect::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
 // window message for right button press, only exists here
 void VColorSelect::rightButtonPress()
 {
-  if (m_color == 0) {
-    setActive(false);
+  if (m_selectable) {
+    if (m_selected) {
+      setSelected(false);
+    } else {
+      if (m_color == 0) {
+        setActive(false);
+      }
+      clear();
+    }
   }
-  clear();
-  m_callback(m_callbackArg, this);
+  if (m_callback) {
+    m_callback(m_callbackArg, this, SELECT_RIGHT_CLICK);
+  }
 }
 
 void VColorSelect::clear()
@@ -171,7 +203,7 @@ void VColorSelect::setColor(uint32_t col)
 {
   m_color = col;
   m_colorLabel.setText(getColorName());
-  RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
+  redraw();
 }
 
 string VColorSelect::getColorName() const
@@ -191,11 +223,10 @@ void VColorSelect::setColor(std::string name)
     setColor(0);
     return;
   }
-  if (name[0] != '#') {
-    // ??
-    return;
-  }
-  setColor(strtoul(name.c_str() + 1, NULL, 16));
+  // either the start of string, or string + 1 if the first
+  // letter is a hashtag/pound character
+  const char *hexStr = name.c_str() + (name[0] == '#');
+  setColor(strtoul(hexStr, NULL, 16));
 }
 
 void VColorSelect::setFlippedColor(uint32_t col)
@@ -222,6 +253,38 @@ void VColorSelect::setActive(bool active)
 {
   m_active = active;
   m_colorLabel.setVisible(active);
+  if (!m_active) {
+    setSelected(false);
+  }
+}
+
+bool VColorSelect::isSelected() const
+{
+  return m_selected;
+}
+
+void VColorSelect::setSelected(bool selected)
+{
+  m_selected = selected;
+  if (m_selected) {
+    m_colorLabel.setForeColor(0xFFFFFF);
+  } else {
+    m_colorLabel.setForeColor(0xAAAAAA);
+  }
+}
+
+void VColorSelect::setLabelEnabled(bool enabled)
+{
+  m_colorLabel.setVisible(enabled);
+  m_colorLabel.setEnabled(enabled);
+}
+
+void VColorSelect::setSelectable(bool selectable)
+{
+  m_selectable = selectable;
+  if (!m_selectable) {
+    setSelected(false);
+  }
 }
 
 LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -234,13 +297,16 @@ LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, 
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pColorSelect->pressButton();
+    pColorSelect->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pColorSelect->releaseButton();
+    pColorSelect->releaseButton(wParam, lParam);
     break;
   case WM_RBUTTONUP:
     pColorSelect->rightButtonPress();
+    break;
+  case WM_KEYDOWN:
+    // TODO: implement key control of color select?
     break;
   case WM_CTLCOLORSTATIC:
     return (INT_PTR)pColorSelect->m_wc.hbrBackground;
@@ -250,16 +316,13 @@ LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, 
   case WM_PAINT:
     pColorSelect->paint();
     return 0;
-  //case WM_LBUTTONDOWN:
-    //g_pEditor->handleWindowClick(LOWORD(lParam), HIWORD(lParam));
-    //break;
+  case WM_ERASEBKGND:
+    return 1;
   case WM_COMMAND:
     pColorSelect->command(wParam, lParam);
     break;
   case WM_DESTROY:
     pColorSelect->cleanup();
-    // TODO: proper cleanup
-    PostQuitMessage(0);
     break;
   default:
     break;

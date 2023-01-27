@@ -368,8 +368,9 @@ vector<string> VEngine::getCustomParams(PatternID id)
     case PATTERN_WARPWORM:
     case PATTERN_SNOWBALL:
     case PATTERN_FILL:
-    case PATTERN_BOUNCE:
       return { "On Duration", "Off Duration", "Step Duration" };
+    case PATTERN_BOUNCE:
+      return { "On Duration", "Off Duration", "Step Duration", "Fade Amount" };
     //case PATTERN_CHASER:
     case PATTERN_DRIPMORPH:
       return { "On Duration", "Off Duration", "Speed" };

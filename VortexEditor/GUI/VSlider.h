@@ -2,14 +2,14 @@
 
 #include "VWindow.h"
 
-class VButton : public VWindow
+class VSlider : public VWindow
 {
 public:
-  VButton();
-  VButton(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
+  VSlider();
+  VSlider(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
     COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
     uintptr_t menuID, VWindowCallback callback);
-  virtual ~VButton();
+  virtual ~VSlider();
 
   virtual void init(HINSTANCE hinstance, VWindow &parent, const std::string &title, 
     COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
@@ -26,4 +26,3 @@ public:
 private:
   VWindowCallback m_callback;
 };
-

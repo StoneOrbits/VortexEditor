@@ -285,10 +285,19 @@
     <ClCompile Include="GUI\VChildWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\VColorRing.cpp">
+    <ClCompile Include="GUI\VSelectBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VortexPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\VSlider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VortexColorPicker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\PatternArgs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -587,10 +596,16 @@
     <ClInclude Include="GUI\VChildWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GUI\VColorRing.h">
+    <ClInclude Include="GUI\VSelectBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexPort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\VSlider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexColorPicker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

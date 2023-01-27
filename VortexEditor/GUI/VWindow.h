@@ -38,11 +38,11 @@ public:
   virtual void paint();
   virtual INT_PTR controlColor(WPARAM wParam, LPARAM lParam);
   virtual void command(WPARAM wParam, LPARAM lParam);
-  virtual void pressButton();
-  virtual void releaseButton();
+  virtual void pressButton(WPARAM wParam, LPARAM lParam);
+  virtual void releaseButton(WPARAM wParam, LPARAM lParam);
 
   // add/get a child
-  virtual uint32_t addChild(uintptr_t menuID, VWindow *child);
+  virtual bool addChild(uintptr_t menuID, VWindow *child, uint32_t *out_id = nullptr); 
   virtual VWindow *getChild(uintptr_t menuID);
   virtual VWindow *getChild(HWND hwnd);
 
@@ -56,21 +56,24 @@ public:
   // install a device change callback
   virtual void installDeviceCallback(VDeviceCallback callback);
 
-  void setTooltip(std::string text);
+  // redraw this window
+  virtual void redraw();
 
-  void setVisible(bool visible);
-  void setEnabled(bool enable);
+  virtual void setTooltip(std::string text);
 
-  void setBackColor(COLORREF backcol);
-  void setForeColor(COLORREF forecol);
+  virtual void setVisible(bool visible);
+  virtual void setEnabled(bool enable);
 
-  void setBackEnabled(bool enable);
-  void setForeEnabled(bool enable);
+  virtual void setBackColor(COLORREF backcol);
+  virtual void setForeColor(COLORREF forecol);
 
-  bool isVisible() const;
-  bool isEnabled() const;
-  bool isBackEnabled() const;
-  bool isForeEnabled() const;
+  virtual void setBackEnabled(bool enable);
+  virtual void setForeEnabled(bool enable);
+
+  virtual bool isVisible() const;
+  virtual bool isEnabled() const;
+  virtual bool isBackEnabled() const;
+  virtual bool isForeEnabled() const;
 
   HWND hwnd() const { return m_hwnd; }
   HMENU menu() const { return GetMenu(m_hwnd); }
@@ -107,6 +110,9 @@ protected:
   // enable background/foreground color
   bool m_backEnabled;
   bool m_foreEnabled;
+
+  // for counting menu ids
+  static uint32_t nextMenuID;
 
 private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
