@@ -64,7 +64,13 @@ void VSelectBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   // register window class if it hasn't been registered yet
   registerWindowClass(hInstance, backcol);
 
-  parent.addChild(menuID, this);
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
+
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   m_innerWidth = width;
   m_innerHeight = height;

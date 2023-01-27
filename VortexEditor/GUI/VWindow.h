@@ -42,7 +42,7 @@ public:
   virtual void releaseButton(WPARAM wParam, LPARAM lParam);
 
   // add/get a child
-  virtual uint32_t addChild(uintptr_t menuID, VWindow *child);
+  virtual bool addChild(uintptr_t menuID, VWindow *child, uint32_t *out_id = nullptr); 
   virtual VWindow *getChild(uintptr_t menuID);
   virtual VWindow *getChild(HWND hwnd);
 
@@ -110,6 +110,9 @@ protected:
   // enable background/foreground color
   bool m_backEnabled;
   bool m_foreEnabled;
+
+  // for counting menu ids
+  static uint32_t nextMenuID;
 
 private:
   static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

@@ -47,13 +47,19 @@ void VLabel::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   // label needs these
   m_backEnabled = true;
   m_foreEnabled = true;
+  
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
 
-  parent.addChild(menuID, this);
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   // create the window
   m_hwnd = CreateWindow(WC_STATIC, title.c_str(),
     WS_VISIBLE | WS_CHILD,
-    x, y, width, height, parent.hwnd(), 0, nullptr, nullptr);
+    x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
     throw exception("idk");
@@ -67,6 +73,26 @@ void VLabel::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 void VLabel::cleanup()
 {
 }
+
+static HBRUSH getBrushCol(DWORD rgbcol)
+{
+  static std::map<COLORREF, HBRUSH> m_brushmap;
+  HBRUSH br;
+  COLORREF col = RGB((rgbcol >> 16) & 0xFF, (rgbcol >> 8) & 0xFF, rgbcol & 0xFF);
+  if (m_brushmap.find(col) == m_brushmap.end()) {
+    br = CreateSolidBrush(col);
+    m_brushmap[col] = br;
+  }
+  br = m_brushmap[col];
+  return br;
+}
+
+//INT_PTR VLabel::controlColor(WPARAM wParam, LPARAM lParam)
+//{
+//  SetBkColor((HDC)wParam, m_backColor);
+//  SetTextColor((HDC)wParam, m_foreColor);
+//  return (INT_PTR)getBrushCol(m_backColor);
+//}
 
 void VLabel::create()
 {

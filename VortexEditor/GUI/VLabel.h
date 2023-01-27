@@ -16,6 +16,8 @@ public:
     uintptr_t menuID, VWindowCallback callback);
   virtual void cleanup();
 
+  //virtual INT_PTR controlColor(WPARAM wParam, LPARAM lParam) override;
+
   // windows message handlers
   virtual void create() override;
   virtual void paint() override;

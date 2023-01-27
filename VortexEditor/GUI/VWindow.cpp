@@ -14,6 +14,7 @@
 using namespace std;
 
 WNDCLASS VWindow::m_wc = {0};
+uint32_t VWindow::nextMenuID = 70000;
 
 // This GUID is for all USB serial host PnP drivers
 GUID WceusbshGUID = { 0x25dbce51, 0x6c8f, 0x4a72,
@@ -130,7 +131,7 @@ void VWindow::command(WPARAM wParam, LPARAM lParam)
     return;
   }
   VWindow *child = getChild(menuID);
-  if (child){
+  if (child) {
     child->command(wParam, lParam);
     return;
   }
@@ -149,12 +150,18 @@ void VWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
-uint32_t VWindow::addChild(uintptr_t menuID, VWindow *child)
+bool VWindow::addChild(uintptr_t menuID, VWindow *child, uint32_t *out_id)
 {
+  if (m_children.find(menuID) != m_children.end()) {
+    return false;
+  }
   child->m_pParent = this;
   child->m_callbackArg = m_callbackArg;
   m_children.insert(make_pair(menuID, child));
-  return (uint32_t)(m_children.size() - 1);
+  if (out_id) {
+    *out_id = (uint32_t)(m_children.size() - 1);
+  }
+  return true;
 }
 
 VWindow *VWindow::getChild(uintptr_t id)

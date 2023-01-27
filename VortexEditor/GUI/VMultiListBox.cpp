@@ -40,7 +40,13 @@ void VMultiListBox::init(HINSTANCE hInstance, VWindow &parent, const string &tit
   m_backColor = backcol;
   m_foreColor = RGB(0xD0, 0xD0, 0xD0);
 
-  parent.addChild(menuID, this);
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
+
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   // create the window
   m_hwnd = CreateWindow(WC_LISTBOX, title.c_str(),

@@ -52,7 +52,13 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
   // register window class if it hasn't been registered yet
   registerWindowClass(hInstance, backcol);
 
-  parent.addChild(menuID, this);
+  if (!menuID) {
+    menuID = nextMenuID++;
+  }
+
+  if (!parent.addChild(menuID, this)) {
+    return;
+  }
 
   // create the window
   m_hwnd = CreateWindow(WC_COLOR_SELECT, title.c_str(),
@@ -164,7 +170,7 @@ void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
   //setFlippedColor(col.rgbResult);
   //setActive(true);
   if (m_selectable) {
-    m_selected = !m_selected;
+    setSelected(!m_selected);
     if (m_selected && !m_active) {
       // if the box was inactive and just selected, activate it
       setActive(true);
@@ -192,7 +198,7 @@ void VColorSelect::rightButtonPress()
 {
   if (m_selectable) {
     if (m_selected) {
-      m_selected = false;
+      setSelected(false);
     } else {
       if (m_color == 0) {
         setActive(false);
@@ -234,11 +240,10 @@ void VColorSelect::setColor(std::string name)
     setColor(0);
     return;
   }
-  if (name[0] != '#') {
-    // ??
-    return;
-  }
-  setColor(strtoul(name.c_str() + 1, NULL, 16));
+  // either the start of string, or string + 1 if the first
+  // letter is a hashtag/pound character
+  const char *hexStr = name.c_str() + (name[0] == '#');
+  setColor(strtoul(hexStr, NULL, 16));
 }
 
 void VColorSelect::setFlippedColor(uint32_t col)
@@ -278,6 +283,11 @@ bool VColorSelect::isSelected() const
 void VColorSelect::setSelected(bool selected)
 {
   m_selected = selected;
+  if (m_selected) {
+    m_colorLabel.setForeColor(0xFFFFFF);
+  } else {
+    m_colorLabel.setForeColor(0xAAAAAA);
+  }
 }
 
 void VColorSelect::setLabelEnabled(bool enabled)

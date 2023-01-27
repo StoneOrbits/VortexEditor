@@ -184,6 +184,9 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   // initialize the color picker window
   m_colorPicker.init(hInst);
+  RECT pos;
+  GetWindowRect(m_window.hwnd(), &pos);
+  SetWindowPos(m_colorPicker.hwnd(), 0, pos.left - 400, pos.top-200, 0, 0, SWP_NOSIZE);
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -243,8 +246,10 @@ void VortexEditor::run()
   // main message loop
   MSG msg;
   while (GetMessage(&msg, NULL, 0, 0)) {
-    if (TranslateAccelerator(m_window.hwnd(), m_accelTable, &msg)) {
-      continue;
+    if (GetFocus() == m_window.hwnd()) {
+      if (TranslateAccelerator(m_window.hwnd(), m_accelTable, &msg)) {
+        continue;
+      }
     }
     // pass message to main window otherwise process it
     if (!m_window.process(msg)) {

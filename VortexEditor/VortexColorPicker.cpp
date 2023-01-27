@@ -19,6 +19,8 @@
 #define GREEN_SLIDER_ID     56004
 #define BLUE_SLIDER_ID      56005
 
+#define SAVE_COLOR_ID       57001
+
 using namespace std;
 
 VortexColorPicker::VortexColorPicker() :
@@ -157,7 +159,7 @@ bool VortexColorPicker::init(HINSTANCE hInst)
 
   // color picker history
   for (uint32_t i = 0; i < sizeof(m_colorHistory) / sizeof(m_colorHistory[0]); ++i) {
-    m_colorHistory[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 18, 18, 9 + (24 * i), 274, 0, historyCallback);
+    m_colorHistory[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 18, 18, 9 + (24 * i), 274, SAVE_COLOR_ID + i, historyCallback);
     m_colorHistory[i].setActive(true);
     m_colorHistory[i].setColor(0x000000);
     m_colorHistory[i].setSelectable(false);
@@ -167,6 +169,7 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_hueLabel.init(hInst, m_colorPickerWindow, "Hue:", BACK_COL, 32, 20, 131, 275, 0, nullptr);
   m_satLabel.init(hInst, m_colorPickerWindow, "Sat:", BACK_COL, 32, 20, 136, 301, 0, nullptr);
   m_valLabel.init(hInst, m_colorPickerWindow, "Val:", BACK_COL, 32, 20, 137, 325, 0, nullptr);
+  m_hueLabel.setBackColor(BACK_COL);
 
   // hsv text boxes
   m_hueTextbox.init(hInst, m_colorPickerWindow, to_string(m_curHSV.hue).c_str(), BACK_COL, 32, 20, 164, 274, FIELD_EDIT_ID + 0, fieldEditCallback);
@@ -209,7 +212,12 @@ bool VortexColorPicker::init(HINSTANCE hInst)
     m_savedColors[i].setSelectable(false);
   }
 
-  m_customColorsLabel.init(hInst, m_colorPickerWindow, "Saved", BACK_COL, 42, 16, 17, 302, 0, nullptr);
+  m_customColorsLabel.init(hInst, m_colorPickerWindow, "Saved Colors", 0x1D1D1D, 75, 15, 17, 302, 0, nullptr);
+
+  HFONT hFont = CreateFont(15, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, 
+    FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, 
+    DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+  SendMessage(m_customColorsLabel.hwnd(), WM_SETFONT, WPARAM(hFont), TRUE);
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -350,7 +358,7 @@ void VortexColorPicker::pickCol(const RGBColor &col)
     m_hexTextbox.setText(m_colorPreview.getColorName().c_str(), false);
   } else {
     // must set #000000 because colorSelect will return 'blank'
-    m_hexTextbox.setText("#000000");
+    m_hexTextbox.setText("#000000", false);
   }
   // redraw all of the textboxes
   m_hueTextbox.redraw();

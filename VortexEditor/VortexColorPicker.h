@@ -39,6 +39,8 @@ public:
   HSVColor getRGB() const { return m_curRGB; }
   RGBColor getHSV() const { return m_curHSV; }
 
+  HWND hwnd() const { return m_colorPickerWindow.hwnd(); }
+
 private:
   // loader thread
   static DWORD __stdcall loadThread(void *arg);
