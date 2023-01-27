@@ -341,9 +341,6 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_PAINT:
     pWindow->paint();
     return 0;
-  //case WM_LBUTTONDOWN:
-    //g_pEditor->handleWindowClick(LOWORD(lParam), HIWORD(lParam));
-    //break;
   case WM_COMMAND:
     pWindow->command(wParam, lParam);
     break;
@@ -358,7 +355,6 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     break;
   case WM_DESTROY:
     pWindow->cleanup();
-    // TODO: proper cleanup
     PostQuitMessage(0);
     break;
   default:

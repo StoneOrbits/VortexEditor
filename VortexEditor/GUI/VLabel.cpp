@@ -74,26 +74,6 @@ void VLabel::cleanup()
 {
 }
 
-static HBRUSH getBrushCol(DWORD rgbcol)
-{
-  static std::map<COLORREF, HBRUSH> m_brushmap;
-  HBRUSH br;
-  COLORREF col = RGB((rgbcol >> 16) & 0xFF, (rgbcol >> 8) & 0xFF, rgbcol & 0xFF);
-  if (m_brushmap.find(col) == m_brushmap.end()) {
-    br = CreateSolidBrush(col);
-    m_brushmap[col] = br;
-  }
-  br = m_brushmap[col];
-  return br;
-}
-
-//INT_PTR VLabel::controlColor(WPARAM wParam, LPARAM lParam)
-//{
-//  SetBkColor((HDC)wParam, m_backColor);
-//  SetTextColor((HDC)wParam, m_foreColor);
-//  return (INT_PTR)getBrushCol(m_backColor);
-//}
-
 void VLabel::create()
 {
 }

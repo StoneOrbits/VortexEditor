@@ -304,16 +304,11 @@ LRESULT CALLBACK VSelectBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
   case WM_PAINT:
     pColorSelect->paint();
     return 0;
-  //case WM_LBUTTONDOWN:
-    //g_pEditor->handleWindowClick(LOWORD(lParam), HIWORD(lParam));
-    //break;
   case WM_COMMAND:
     pColorSelect->command(wParam, lParam);
     break;
   case WM_DESTROY:
     pColorSelect->cleanup();
-    // TODO: proper cleanup
-    PostQuitMessage(0);
     break;
   default:
     break;
