@@ -62,7 +62,7 @@ void VColorSelect::init(HINSTANCE hInstance, VWindow &parent, const string &titl
 
   // create the window
   m_hwnd = CreateWindow(WC_COLOR_SELECT, title.c_str(),
-    WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP | CS_DBLCLKS,
+    WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP,
     x, y, width, height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
@@ -306,10 +306,7 @@ LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, 
     pColorSelect->rightButtonPress();
     break;
   case WM_KEYDOWN:
-    printf("Keydown\n");
-    break;
-  case WM_LBUTTONDBLCLK:
-    printf("DCLICK\n");
+    // TODO: implement key control of color select?
     break;
   case WM_CTLCOLORSTATIC:
     return (INT_PTR)pColorSelect->m_wc.hbrBackground;
@@ -321,16 +318,11 @@ LRESULT CALLBACK VColorSelect::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, 
     return 0;
   case WM_ERASEBKGND:
     return 1;
-  //case WM_LBUTTONDOWN:
-    //g_pEditor->handleWindowClick(LOWORD(lParam), HIWORD(lParam));
-    //break;
   case WM_COMMAND:
     pColorSelect->command(wParam, lParam);
     break;
   case WM_DESTROY:
     pColorSelect->cleanup();
-    // TODO: proper cleanup
-    PostQuitMessage(0);
     break;
   default:
     break;
