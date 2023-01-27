@@ -18,8 +18,10 @@
 #define RED_SLIDER_ID       56003
 #define GREEN_SLIDER_ID     56004
 #define BLUE_SLIDER_ID      56005
+#define PREVIEW_ID          56006
 
-#define SAVE_COLOR_ID       57001
+#define COLOR_HISTORY_ID    57001
+#define SAVE_COLOR_ID       58001
 
 using namespace std;
 
@@ -152,14 +154,14 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_blueSlider.setDrawVLine(false);
 
   // preview box for current color
-  m_colorPreview.init(hInst, m_colorPickerWindow, "", BACK_COL, 122, 96, 273, 274, 0, nullptr);
+  m_colorPreview.init(hInst, m_colorPickerWindow, "", BACK_COL, 122, 96, 273, 274, PREVIEW_ID, nullptr);
   m_colorPreview.setActive(true);
   m_colorPreview.setColor(0xFF0000);
   m_colorPreview.setSelectable(false);
 
   // color picker history
   for (uint32_t i = 0; i < sizeof(m_colorHistory) / sizeof(m_colorHistory[0]); ++i) {
-    m_colorHistory[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 18, 18, 9 + (24 * i), 274, SAVE_COLOR_ID + i, historyCallback);
+    m_colorHistory[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 18, 18, 9 + (24 * i), 274, COLOR_HISTORY_ID + i, historyCallback);
     m_colorHistory[i].setActive(true);
     m_colorHistory[i].setColor(0x000000);
     m_colorHistory[i].setSelectable(false);
@@ -201,12 +203,12 @@ bool VortexColorPicker::init(HINSTANCE hInst)
 
   m_savedColorsBox.init(hInst, m_colorPickerWindow, "", BACK_COL, 114, 70, 9, 300, 0, nullptr);
   m_savedColorsBox.setActive(true);
-  m_savedColorsBox.setEnabled(true);
+  m_savedColorsBox.setEnabled(false);
   m_savedColorsBox.setSelectable(false);
   m_savedColorsBox.setColor(0x1D1D1D);
 
   for (uint32_t i = 0; i < 8; ++i) {
-    m_savedColors[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 19, 19, 17 + (26 * (i % 4)), i < 4 ? 319 : 344, 0, nullptr);
+    m_savedColors[i].init(hInst, m_colorPickerWindow, "", BACK_COL, 19, 19, 17 + (26 * (i % 4)), i < 4 ? 319 : 344, SAVE_COLOR_ID + i, saveColorCallback);
     m_savedColors[i].setSelectable(true);
     m_savedColors[i].setActive(true);
     m_savedColors[i].setColor(0x000000);
@@ -308,8 +310,16 @@ void VortexColorPicker::fieldEdit(VWindow *window)
     // ???
     return;
   }
-  g_pEditor->updateSelectedColors(m_curRGB.raw());
-  pushHistory(m_curRGB.raw());
+  uint32_t rawCol = m_curRGB.raw();
+  g_pEditor->updateSelectedColors(rawCol);
+  pushHistory(rawCol);
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (m_savedColors[i].isSelected()) {
+      m_savedColors[i].setColor(rawCol);
+      m_savedColors[i].redraw();
+      break;
+    }
+  }
   refreshColor();
   //demoCurMode();
 }
@@ -368,8 +378,15 @@ void VortexColorPicker::pickCol(const RGBColor &col)
   m_grnTextbox.redraw();
   m_bluTextbox.redraw();
   m_hexTextbox.redraw();
-  g_pEditor->updateSelectedColors(col.raw());
-  pushHistory(col.raw());
+  g_pEditor->updateSelectedColors(rawCol);
+  pushHistory(rawCol);
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (m_savedColors[i].isSelected()) {
+      m_savedColors[i].setColor(rawCol);
+      m_savedColors[i].redraw();
+      break;
+    }
+  }
 }
 
 HBITMAP VortexColorPicker::genHueBackground(uint32_t width, uint32_t height)
@@ -441,6 +458,7 @@ void VortexColorPicker::hide()
   for (uint32_t i = 0; i < 8; ++i) {
     g_pEditor->m_colorSelects[i].setSelected(false);
     g_pEditor->m_colorSelects[i].redraw();
+    m_savedColors[i].setSelected(false);
   }
   m_isOpen = false;
 }
@@ -467,10 +485,34 @@ void VortexColorPicker::saveColor(VColorSelect *saveCol, VColorSelect::SelectEve
 {
   switch (sevent) {
   case VColorSelect::SelectEvent::SELECT_LEFT_CLICK:
+    if (!saveCol->isSelected()) {
+      break;
+    }
+    // go over all the saved colors and unselected the others
+    for (uint32_t i = 0; i < 8; ++i) {
+      if (m_savedColors + i == saveCol) {
+        continue;
+      }
+      if (m_savedColors[i].isSelected()) {
+        m_savedColors[i].setSelected(false);
+        m_savedColors[i].redraw();
+      }
+    }
+    // if the slot has a color saved then pull it into the color picker
+    if (saveCol->getColor()) {
+      setColor(RGBColor(saveCol->getColor()));
+      pickCol(m_curRGB);
+      refreshColor();
+    }
     break;
   case VColorSelect::SelectEvent::SELECT_RIGHT_CLICK:
+    // prevent the saved colors from going inactive (red border)
+    if (!saveCol->isActive()) {
+      saveCol->setActive(true);
+    }
     break;
   }
+  saveCol->redraw();
 }
 
 void VortexColorPicker::selectS(uint32_t sat)

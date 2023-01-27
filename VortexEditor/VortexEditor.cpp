@@ -246,7 +246,7 @@ void VortexEditor::run()
   // main message loop
   MSG msg;
   while (GetMessage(&msg, NULL, 0, 0)) {
-    if (GetFocus() == m_window.hwnd()) {
+    if (GetForegroundWindow() == m_window.hwnd()) {
       if (TranslateAccelerator(m_window.hwnd(), m_accelTable, &msg)) {
         continue;
       }
@@ -1262,7 +1262,9 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
         if (i == colorIndex) {
           continue;
         }
-        m_colorSelects[i].setSelected(false);
+        if (m_colorSelects[i].isSelected()) {
+          m_colorSelects[i].setSelected(false);
+        }
       }
       m_colorSelects[colorIndex].setSelected(true);
     }
