@@ -218,6 +218,7 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Multi\WarpWormPattern.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Multi\ZigzagPattern.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Pattern.cpp" />
+    <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\PatternArgs.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\PatternBuilder.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Single\AdvancedPattern.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Single\BasicPattern.cpp" />
