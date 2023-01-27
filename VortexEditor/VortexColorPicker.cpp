@@ -265,7 +265,7 @@ void VortexColorPicker::selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uin
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  pickCol(m_curRGB);
+  pickCol();
 }
 
 void VortexColorPicker::selectH(VSelectBox::SelectEvent sevent, uint32_t h)
@@ -274,7 +274,7 @@ void VortexColorPicker::selectH(VSelectBox::SelectEvent sevent, uint32_t h)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  pickCol(m_curRGB);
+  pickCol();
 }
 
 void VortexColorPicker::fieldEdit(VWindow *window)
@@ -330,7 +330,7 @@ void VortexColorPicker::selectR(VSelectBox::SelectEvent sevent, uint32_t r)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  pickCol(m_curRGB);
+  pickCol();
 }
 
 void VortexColorPicker::selectG(VSelectBox::SelectEvent sevent, uint32_t g)
@@ -339,7 +339,7 @@ void VortexColorPicker::selectG(VSelectBox::SelectEvent sevent, uint32_t g)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  pickCol(m_curRGB);
+  pickCol();
 }
 
 void VortexColorPicker::selectB(VSelectBox::SelectEvent sevent, uint32_t b)
@@ -348,10 +348,10 @@ void VortexColorPicker::selectB(VSelectBox::SelectEvent sevent, uint32_t b)
   if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
     return;
   }
-  pickCol(m_curRGB);
+  pickCol();
 }
 
-void VortexColorPicker::pickCol(const RGBColor &col)
+void VortexColorPicker::pickCol()
 {
   if (!g_pEditor) {
     return;
@@ -477,7 +477,7 @@ void VortexColorPicker::recallHistory(VColorSelect *history)
 {
   m_curRGB = history->getColor();
   m_curHSV = m_curRGB;
-  pickCol(history->getColor());
+  pickCol();
   refreshColor();
 }
 
@@ -503,7 +503,7 @@ void VortexColorPicker::saveColor(VColorSelect *saveCol, VColorSelect::SelectEve
     // if the slot has a color saved then pull it into the color picker
     if (saveCol->getColor()) {
       setColor(RGBColor(saveCol->getColor()));
-      pickCol(m_curRGB);
+      pickCol();
       refreshColor();
     }
     break;

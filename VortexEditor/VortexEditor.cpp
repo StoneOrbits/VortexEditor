@@ -1288,10 +1288,11 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
     }
     if (!m_colorPicker.isOpen()) {
       m_colorPicker.show();
-      uint32_t rawCol = m_colorSelects[colorIndex].getColor();
-      m_colorPicker.setColor(RGBColor(rawCol));
-      m_colorPicker.refreshColor();
     }
+    uint32_t rawCol = m_colorSelects[colorIndex].getColor();
+    m_colorPicker.setColor(RGBColor(rawCol));
+    m_colorPicker.refreshColor();
+    m_colorPicker.pickCol();
     m_lastClickedColor = colorIndex;
   }
   // set the colorset on all selected patterns

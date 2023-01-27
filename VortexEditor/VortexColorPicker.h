@@ -39,6 +39,8 @@ public:
   HSVColor getRGB() const { return m_curRGB; }
   RGBColor getHSV() const { return m_curHSV; }
 
+  void pickCol();
+
   HWND hwnd() const { return m_colorPickerWindow.hwnd(); }
 
 private:
@@ -93,8 +95,6 @@ private:
   void selectR(VSelectBox::SelectEvent sevent, uint32_t r);
   void selectG(VSelectBox::SelectEvent sevent, uint32_t g);
   void selectB(VSelectBox::SelectEvent sevent, uint32_t b);
-
-  void pickCol(const RGBColor &col);
 
   void genSVBackgrounds();
   HBITMAP genSVBackground(uint32_t hue);
