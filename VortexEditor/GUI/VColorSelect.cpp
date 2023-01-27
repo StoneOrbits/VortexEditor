@@ -152,20 +152,6 @@ void VColorSelect::command(WPARAM wParam, LPARAM lParam)
 
 void VColorSelect::pressButton(WPARAM wParam, LPARAM lParam)
 {
-  //CHOOSECOLOR col;
-  //memset(&col, 0, sizeof(col));
-  //ZeroMemory(&col, sizeof(col));
-  //col.lStructSize = sizeof(col);
-  //col.hwndOwner = m_hwnd;
-  //static COLORREF acrCustClr[16]; // array of custom colors 
-  //col.lpCustColors = (LPDWORD)acrCustClr;
-  //// windows uses BGR
-  //col.rgbResult = getFlippedColor();
-  //col.Flags = CC_FULLOPEN | CC_RGBINIT;
-  //ChooseColor(&col);
-  //// flip the result back from BGR to RGB
-  //setFlippedColor(col.rgbResult);
-  //setActive(true);
   if (m_selectable) {
     setSelected(!m_selected);
     if (m_selected && !m_active) {
