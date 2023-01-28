@@ -84,6 +84,15 @@ uint32_t VEngine::numModes()
   return Modes::numModes();
 }
 
+uint32_t VEngine::numLedsInMode()
+{
+  Mode *pMode = Modes::curMode();
+  if (!pMode) {
+    return false;
+  }
+  return pMode->getLedCount();
+}
+
 bool VEngine::addNewMode(bool save)
 {
   Colorset set;
@@ -179,7 +188,7 @@ string VEngine::getModeName()
   // about the pattern id being different
   bool all_same_id = true;
   PatternID first = pMode->getPatternID(LED_FIRST);
-  for (uint32_t i = LED_FIRST + 1; i < LED_COUNT; ++i) {
+  for (uint32_t i = LED_FIRST + 1; i < numLedsInMode(); ++i) {
     // if any don't match 0 then no good
     if (pMode->getPatternID((LedPos)i) != first) {
       all_same_id = false;
@@ -288,22 +297,18 @@ string VEngine::patternToString(PatternID id)
 // this shouldn't change much so this is fine
 string VEngine::ledToString(LedPos pos)
 {
-  if (pos >= LED_COUNT) {
-    return "led_none";
-  }
-  if (LED_COUNT == 10) {
-    static const char *ledNames[LED_COUNT] = {
-      // tips       tops
-      "pinkie tip", "pinkie top",
-      "ring tip",   "ring top",
-      "middle tip", "middle top",
-      "index tip",  "index top",
-      "thumb tip",  "thumb top",
-    };
-    return ledNames[pos];
-  } else {
+  if (numLedsInMode() != 10 || pos >= 10) {
     return "led " + to_string(pos);
   }
+  static const char *ledNames[10] = {
+    // tips       tops
+    "pinkie tip", "pinkie top",
+    "ring tip",   "ring top",
+    "middle tip", "middle top",
+    "index tip",  "index top",
+    "thumb tip",  "thumb top",
+  };
+  return ledNames[pos];
 }
 
 // the number of custom parameters for any given pattern id

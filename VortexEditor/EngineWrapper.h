@@ -31,6 +31,7 @@ public:
   // functions to operate on the current mode selection
   static uint32_t curMode();
   static uint32_t numModes();
+  static uint32_t numLedsInMode();
   static bool addNewMode(bool save = true);
   static bool addNewMode(ByteStream &stream, bool save = true);
   static bool setCurMode(uint32_t index, bool save = true);

@@ -512,7 +512,7 @@ void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 
 void VortexEditor::applyColorsetToAll(const Colorset &set)
 {
-  for (LedPos i = LED_FIRST; i < LED_COUNT; ++i) {
+  for (LedPos i = LED_FIRST; i < VEngine::numLedsInMode(); ++i) {
     VEngine::setColorset(i, set);
   }
   refreshColorSelect();
@@ -522,7 +522,7 @@ void VortexEditor::applyColorsetToAll(const Colorset &set)
 
 void VortexEditor::applyPatternToAll(PatternID id)
 {
-  for (LedPos i = LED_FIRST; i < LED_COUNT; ++i) {
+  for (LedPos i = LED_FIRST; i < VEngine::numLedsInMode(); ++i) {
     VEngine::setSinglePat(i, id);
   }
   refreshFingerList();
@@ -1169,7 +1169,7 @@ void VortexEditor::copyToAll(VWindow *window)
   VEngine::getPatternArgs((LedPos)pos, args);
   Colorset set;
   VEngine::getColorset((LedPos)pos, set);
-  for (LedPos i = LED_FIRST; i < LED_COUNT; ++i) {
+  for (LedPos i = LED_FIRST; i < VEngine::numLedsInMode(); ++i) {
     if (pos == i) {
       continue;
     }
@@ -1404,7 +1404,7 @@ void VortexEditor::refreshFingerList(bool recursive)
   vector<int> sels;
   m_ledsMultiListBox.getSelections(sels);
   m_ledsMultiListBox.clearItems();
-  for (LedPos pos = LED_FIRST; pos < LED_COUNT; ++pos) {
+  for (LedPos pos = LED_FIRST; pos < VEngine::numLedsInMode(); ++pos) {
     // if a finger is empty don't add it
     if (VEngine::getPatternID(pos) == PATTERN_NONE) {
       continue;
