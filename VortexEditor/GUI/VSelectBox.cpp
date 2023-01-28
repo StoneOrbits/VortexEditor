@@ -253,10 +253,10 @@ void VSelectBox::doCallback(SelectEvent sevent)
   POINT pos;
   GetCursorPos(&pos);
   ScreenToClient(m_hwnd, &pos);
-  if (pos.x < m_innerLeft) pos.x = m_innerLeft;
-  if (pos.x > m_innerRight) pos.x = m_innerRight;
-  if (pos.y < m_innerTop) pos.y = m_innerTop;
-  if (pos.y > m_innerBottom) pos.y = m_innerBottom;
+  if (pos.x < (LONG)m_innerLeft) pos.x = m_innerLeft;
+  if (pos.x > (LONG)m_innerRight) pos.x = m_innerRight;
+  if (pos.y < (LONG)m_innerTop) pos.y = m_innerTop;
+  if (pos.y > (LONG)m_innerBottom) pos.y = m_innerBottom;
   uint32_t innerX = pos.x - m_innerLeft;
   uint32_t innerY = pos.y - m_innerTop;
   setSelection(innerX, innerY);

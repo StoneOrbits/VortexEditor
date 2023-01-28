@@ -291,15 +291,19 @@ string VEngine::ledToString(LedPos pos)
   if (pos >= LED_COUNT) {
     return "led_none";
   }
-  static const char *ledNames[LED_COUNT] = {
-    // tips       tops
-    "pinkie tip", "pinkie top",
-    "ring tip",   "ring top",
-    "middle tip", "middle top",
-    "index tip",  "index top",
-    "thumb tip",  "thumb top",
-  };
-  return ledNames[pos];
+  if (LED_COUNT == 10) {
+    static const char *ledNames[LED_COUNT] = {
+      // tips       tops
+      "pinkie tip", "pinkie top",
+      "ring tip",   "ring top",
+      "middle tip", "middle top",
+      "index tip",  "index top",
+      "thumb tip",  "thumb top",
+    };
+    return ledNames[pos];
+  } else {
+    return "led " + to_string(pos);
+  }
 }
 
 // the number of custom parameters for any given pattern id

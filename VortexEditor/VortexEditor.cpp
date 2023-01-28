@@ -1274,9 +1274,9 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
     if (sevent == VColorSelect::SelectEvent::SELECT_SHIFT_LEFT_CLICK) {
       // select all in between
       if (m_colorSelects[m_lastClickedColor].isSelected()) {
-        int lower = (m_lastClickedColor < colorIndex) ? m_lastClickedColor : colorIndex;
-        int higher = (m_lastClickedColor >= colorIndex) ? m_lastClickedColor : colorIndex;
-        for (int i = lower; i <= higher; i++) {
+        uint32_t lower = (m_lastClickedColor < colorIndex) ? m_lastClickedColor : colorIndex;
+        uint32_t higher = (m_lastClickedColor >= colorIndex) ? m_lastClickedColor : colorIndex;
+        for (uint32_t i = lower; i <= higher; i++) {
           m_colorSelects[i].setActive(true);
           m_colorSelects[i].setSelected(true);
           m_colorSelects[i].redraw();
@@ -1607,7 +1607,7 @@ int VortexEditor::getPortListIndex() const
     return -1;
   }
   uint32_t id = getPortID();
-  for (int i = 0; i < m_portList.size(); ++i) {
+  for (uint32_t i = 0; i < m_portList.size(); ++i) {
     if (m_portList[i].first == id) {
       return i;
     }
