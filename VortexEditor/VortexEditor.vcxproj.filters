@@ -81,9 +81,6 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Modes\Mode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VortexEngine\VortexEngine\src\Modes\ModeBuilder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VortexEngine\VortexEngine\src\Modes\Modes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -369,9 +366,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexEngine\VortexEngine\src\Modes\Mode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VortexEngine\VortexEngine\src\Modes\ModeBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexEngine\VortexEngine\src\Modes\Modes.h">

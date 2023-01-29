@@ -184,7 +184,6 @@
     <ClCompile Include="VortexEngine\VortexEngine\src\Menus\Menus.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Modes\DefaultModes.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Modes\Mode.cpp" />
-    <ClCompile Include="VortexEngine\VortexEngine\src\Modes\ModeBuilder.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Modes\Modes.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Multi\BackStrobePattern.cpp" />
     <ClCompile Include="VortexEngine\VortexEngine\src\Patterns\Multi\BlinkStepPattern.cpp" />
@@ -286,7 +285,6 @@
     <ClInclude Include="VortexEngine\VortexEngine\src\Menus\Menus.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Modes\DefaultModes.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Modes\Mode.h" />
-    <ClInclude Include="VortexEngine\VortexEngine\src\Modes\ModeBuilder.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Modes\Modes.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Patterns\Multi\BackStrobePattern.h" />
     <ClInclude Include="VortexEngine\VortexEngine\src\Patterns\Multi\BlinkStepPattern.h" />
