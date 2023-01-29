@@ -228,7 +228,7 @@ void VWindow::redraw()
   RECT wndRect;
   GetClientRect(m_hwnd, &wndRect);
   InvalidateRect(m_hwnd, &wndRect, true);
-  RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE);
+  //RedrawWindow(m_hwnd, NULL, NULL, RDW_INVALIDATE);
 }
 
 void VWindow::setTooltip(string text)
