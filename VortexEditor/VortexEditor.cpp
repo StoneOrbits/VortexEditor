@@ -4,7 +4,6 @@
 #include "Serial/ByteStream.h"
 #include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
-#include "Modes/ModeBuilder.h"
 #include "Modes/Mode.h"
 
 // Editor includes
@@ -1319,8 +1318,9 @@ void VortexEditor::demoColor(uint32_t rawCol)
   ByteStream curMode;
   PatternArgs args(1, 0, 0);
   Colorset newSet(rawCol);
-  Mode *newMode = ModeBuilder::make(PATTERN_BASIC, &args, &newSet);
-  newMode->saveToBuffer(curMode);
+  Mode tmpMode(PATTERN_BASIC, &args, &newSet);
+  tmpMode.init();
+  tmpMode.saveToBuffer(curMode);
   // send, the, mode
   port->writeData(curMode);
   // wait for the done response

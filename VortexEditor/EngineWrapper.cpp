@@ -9,7 +9,6 @@
 #include "EditorConfig.h"
 #include "Modes/Modes.h"
 #include "Modes/Mode.h"
-#include "Modes/ModeBuilder.h"
 
 // for random()
 #include "Arduino.h"
