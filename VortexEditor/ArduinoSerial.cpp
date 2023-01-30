@@ -201,9 +201,10 @@ bool ArduinoSerial::writeData(const uint8_t *buffer, uint32_t nbChar)
 {
   DWORD bytesSent = 0;
 
-  // write one byte at a time, otherwise we could fill up the serial buffer
-  // with a single send of 64bytes and the arduino will never receive it because
-  // a bug in the arduino code seems to make blocksizes of data just show up as 0
+  // If the buffer size is a multiple of 64 then we will fill the arduino serial
+  // receive buffer in one send and that apparently kills the arduino and it never
+  // indicates that it has any data. So if we recurse and send a single byte first
+  // that will prevent a single 64byte chunk from sending and causing it to break
   //    https://github.com/arduino/ArduinoCore-avr/issues/112
   if (nbChar > 0 && (nbChar % 64) == 0) {
     if (!writeData(buffer, 1)) {
@@ -212,7 +213,6 @@ bool ArduinoSerial::writeData(const uint8_t *buffer, uint32_t nbChar)
     buffer++;
     nbChar--;
   }
-
 
   // Try to write the buffer on the Serial port
   if (!WriteFile(m_hFile, buffer, nbChar, &bytesSent, 0)) {
