@@ -35,7 +35,7 @@ public:
 
   // Writes data from a buffer through the Serial connection
   // return true on success.
-  bool writeData(const void *buffer, uint32_t nbChar);
+  bool writeData(const uint8_t *buffer, uint32_t nbChar);
 
   // Check if we are actually connected
   bool isConnected() const;

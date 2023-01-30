@@ -197,27 +197,32 @@ int ArduinoSerial::readData(void *buffer, uint32_t nbChar)
   return bytesRead;
 }
 
-bool ArduinoSerial::writeData(const void *buffer, uint32_t nbChar)
+bool ArduinoSerial::writeData(const uint8_t *buffer, uint32_t nbChar)
 {
-  DWORD bytesSend = 0;
+  DWORD bytesSent = 0;
 
   // write one byte at a time, otherwise we could fill up the serial buffer
   // with a single send of 64bytes and the arduino will never receive it because
   // a bug in the arduino code seems to make blocksizes of data just show up as 0
   //    https://github.com/arduino/ArduinoCore-avr/issues/112
-  for (uint32_t i = 0; i < nbChar; ++i) {
-    DWORD sent = 0;
-    // Try to write the buffer on the Serial port
-    if (!WriteFile(m_hFile, ((uint8_t *)buffer) + i, 1, &sent, 0)) {
-      if (m_isSerial) {
-        // In case it don't work get comm error and return false
-        ClearCommError(m_hFile, &m_errors, &m_status);
-      }
+  if (nbChar > 0 && (nbChar % 64) == 0) {
+    if (!writeData(buffer, 1)) {
       return false;
     }
-    bytesSend += sent;
+    buffer++;
+    nbChar--;
   }
-  if (bytesSend < nbChar) {
+
+
+  // Try to write the buffer on the Serial port
+  if (!WriteFile(m_hFile, buffer, nbChar, &bytesSent, 0)) {
+    if (m_isSerial) {
+      // In case it don't work get comm error and return false
+      ClearCommError(m_hFile, &m_errors, &m_status);
+    }
+    return false;
+  }
+  if (bytesSent < nbChar) {
     MessageBox(NULL, "Failed to full send", "", 0);
     return false;
   }

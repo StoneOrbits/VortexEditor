@@ -160,7 +160,7 @@ int VortexPort::writeData(const std::string &message)
 {
   debug_send("%u %x > Writing message: %s\n", g_counter++, GetCurrentThreadId(), message.c_str());
   // just print the buffer
-  int rv = m_serialPort.writeData(message.c_str(), message.size());
+  int rv = m_serialPort.writeData((uint8_t *)message.c_str(), message.size());
   debug_send("%u %x >> Wrote message: %s\n", g_counter++, GetCurrentThreadId(), message.c_str());
   return rv;
 }
