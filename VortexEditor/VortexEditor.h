@@ -135,7 +135,7 @@ private:
 
   // helper for color changer menus
   void updateSelectedColors(uint32_t rawCol);
-  void updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol);
+  void updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol, bool demo = true);
   void applyColorset(const Colorset &set, const std::vector<int> &selections);
   void applyPattern(PatternID id, const std::vector<int> &selections);
   void applyColorsetToAll(const Colorset &set);
