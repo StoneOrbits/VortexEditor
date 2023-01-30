@@ -453,6 +453,7 @@ void VortexEditor::updateSelectedColors(uint32_t rawCol)
       updateSelectedColor(m_colorSelects + i, rawCol);
     }
   }
+  demoCurMode();
 }
 
 void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol)

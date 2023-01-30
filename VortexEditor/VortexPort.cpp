@@ -6,6 +6,8 @@
 
 using namespace std;
 
+uint32_t g_counter = 0;
+
 VortexPort::VortexPort() :
   m_serialPort(),
   m_hThread(nullptr),
@@ -114,7 +116,9 @@ int VortexPort::readData(ByteStream &stream)
   if (!avail || !stream.extend(avail)) {
     return 0;
   }
+  printf("%u %x < Reading data %u\n", g_counter++, GetCurrentThreadId(), avail);
   uint32_t amt = m_serialPort.readData((void *)(stream.data() + stream.size()), avail);
+  printf("%u %x << Read data %u: %s\n", g_counter++, GetCurrentThreadId(), amt, stream.data() + stream.size());
   // hack to increase ByteStream size
   **(uint32_t **)&stream += amt;
   return amt;
@@ -125,10 +129,12 @@ int VortexPort::waitData(ByteStream &stream)
   int len = 0;
   DWORD bytesRead = 0;
   uint8_t byte = 0;
+  printf("%u %x < Waiting data\n", g_counter++, GetCurrentThreadId());
   // Try to read 1 byte so we block till data arrives
   if (!m_serialPort.rawRead(&byte, 1)) {
     return 0;
   }
+  printf("%u %x << Waited 1 byte data\n", g_counter++, GetCurrentThreadId());
   // insert the byte into the output stream
   stream.serialize(byte);
   // check how much more data is avail
@@ -137,17 +143,22 @@ int VortexPort::waitData(ByteStream &stream)
     // read the rest of the data into the stream
     readData(stream);
   }
+  printf("%u %x << Waited data: %s\n", g_counter++, GetCurrentThreadId(), stream.data());
   return stream.size();
 }
 
 int VortexPort::writeData(const std::string &message)
 {
+  printf("%u %x > Writing message: %s\n", g_counter++, GetCurrentThreadId(), message.c_str());
   // just print the buffer
-  return m_serialPort.writeData(message.c_str(), message.size());
+  int rv = m_serialPort.writeData(message.c_str(), message.size());
+  printf("%u %x >> Wrote message: %s\n", g_counter++, GetCurrentThreadId(), message.c_str());
+  return rv;
 }
 
 int VortexPort::writeData(ByteStream &stream)
 {
+  printf("%u %x > Writing buf: %u\n", g_counter++, GetCurrentThreadId(), stream.rawSize());
   // write the data into the serial port
   uint32_t size = stream.rawSize();
   // create a new ByteStream that will contain the size + full stream
@@ -161,28 +172,43 @@ int VortexPort::writeData(ByteStream &stream)
   // to only receive the size and not the buffer. It worked fine in the test
   // framework but not for arduino serial. So warning, always send in one chunk.
   // Even when I flushed the file buffers it didn't fix it.
-  m_serialPort.writeData(buf.data(), buf.size());
+  if (!m_serialPort.writeData(buf.data(), buf.size())) {
+    printf("BIG ERROR ~~~~~~~~~~~~~\n");
+    return 0;
+  }
+  printf("%u %x >> Written buf: %u\n", g_counter++, GetCurrentThreadId(), stream.rawSize());
+  printf("\t");
+  for (uint32_t i = 0; i < buf.size(); ++i) {
+    printf("%02x ", buf.data()[i]);
+    if ((i + 1) % 32 == 0) {
+      printf("\n\t");
+    }
+  }
+  printf("\n");
   return buf.size();
 }
 
 bool VortexPort::expectData(const std::string &data)
 {
+  printf("%u %x << Expecting data: %s\n", g_counter++, GetCurrentThreadId(), data.c_str());
   ByteStream stream;
   readInLoop(stream);
   if (stream.size() < data.size()) {
     return false;
   }
+  printf("%u %x < Got expected data: %s\n", g_counter++, GetCurrentThreadId(), stream.data());
   if (data != (char *)stream.data()) {
     return false;
   }
   return true;
 }
 
-void VortexPort::readInLoop(ByteStream &outStream)
+bool VortexPort::readInLoop(ByteStream &outStream, uint32_t timeoutMs)
 {
   outStream.clear();
-  // TODO: proper timeout lol
-  while (1) {
+  uint32_t start = GetTickCount();
+  printf("%u %x < Reading in loop\n", g_counter++, GetCurrentThreadId());
+  while (1) { //(start + timeoutMs) >= GetTickCount()) {
     if (!readData(outStream)) {
       // error?
       continue;
@@ -190,13 +216,16 @@ void VortexPort::readInLoop(ByteStream &outStream)
     if (!outStream.size()) {
       continue;
     }
-    break;
+    printf("%u %x << Read in loop: %s\n", g_counter++, GetCurrentThreadId(), outStream.data());
+    return true;
   }
+  return false;
 }
 
 bool VortexPort::parseHandshake(const ByteStream &handshake)
 {
   string handshakeStr = (char *)handshake.data();
+  printf("%u %x = Parsing handshake: [%s]\n", g_counter++, GetCurrentThreadId(), handshakeStr.c_str());
   // if there is a goodbye message then the gloveset just left the editor
   // menu and we cannot send it messages anymore
   if (handshakeStr.find(EDITOR_VERB_GOODBYE) == (handshakeStr.size() - (sizeof(EDITOR_VERB_GOODBYE) - 1))) {
@@ -206,24 +235,11 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
     if (isConnected()) {
       listen();
     }
+    printf("%u %x == Parsed handshake: Goodbye\n", g_counter++, GetCurrentThreadId());
     return false;
   }
-  // check the handshake for valid data
-  if (handshakeStr.size() < 10) {
-    // bad handshake
-    return false;
-  }
-  if (handshakeStr[0] != '=' || handshakeStr[1] != '=') {
-    // bad handshake
-    return false;
-  }
-  // TODO: improve handshake check
-  string handshakeStart = handshakeStr.substr(0, sizeof(EDITOR_VERB_GREETING_PREFIX) - 1);
-  if (handshakeStart != EDITOR_VERB_GREETING_PREFIX) {
-    // bad handshake
-    return false;
-  }
-  // looks good
+  printf("%u %x == Parsed handshake: Good\n", g_counter++, GetCurrentThreadId());
+  // check the handshake for valid datastart  // looks good
   return true;
 }
 
@@ -232,8 +248,10 @@ bool VortexPort::readModes(ByteStream &outModes)
   uint32_t size = 0;
   // first check how much is in the serial port
   int32_t amt = 0;
+  printf("%u %x < Reading modes\n", g_counter++, GetCurrentThreadId());
   // wait till amount available is enough
   while (m_serialPort.bytesAvailable() < sizeof(size));
+  printf("%u %x << Reading modes avail %u\n", g_counter++, GetCurrentThreadId(), m_serialPort.bytesAvailable());
   // read the size out of the serial port
   m_serialPort.readData((void *)&size, sizeof(size));
   if (!size || size > 4096) {
@@ -248,6 +266,7 @@ bool VortexPort::readModes(ByteStream &outModes)
     uint8_t *readPos = ((uint8_t *)outModes.rawData()) + amtRead;
     amtRead += m_serialPort.readData((void *)readPos, size);
   } while (amtRead < size);
+  printf("%u %x << Read modes %u\n", g_counter++, GetCurrentThreadId(), amtRead);
   return true;
 }
 

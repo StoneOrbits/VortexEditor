@@ -32,7 +32,7 @@ public:
   // wait for some data
   bool expectData(const std::string &data);
   // read data in a loop
-  void readInLoop(ByteStream &outStream);
+  bool readInLoop(ByteStream &outStream, uint32_t timeoutMs = 5000);
   // helper to validate a handshake message
   bool parseHandshake(const ByteStream &handshakewindow);
   // read out the full list of modes

@@ -125,7 +125,7 @@ void ArduinoSerial::disconnect()
   if (m_hFile) {
     if (!m_isSerial) {
       DisconnectNamedPipe(m_hFile);
-    } else {
+    } else { 
       // Close the serial handler
       CloseHandle(m_hFile);
     }
@@ -141,7 +141,9 @@ int ArduinoSerial::bytesAvailable()
     PeekNamedPipe(m_hFile, 0, 0, 0, (LPDWORD)&toRead, 0);
     return toRead;
   }
-  ClearCommError(m_hFile, &m_errors, &m_status);
+  printf("Clearing...\n");
+  bool rv = ClearCommError(m_hFile, &m_errors, &m_status);
+  printf("Clear %d error: %u status: %u\n", rv, m_errors, m_status.cbInQue);
   return m_status.cbInQue;
 }
 
@@ -214,7 +216,7 @@ bool ArduinoSerial::writeData(const void *buffer, uint32_t nbChar)
     return false;
   }
   // FILE_FLAG_NO_BUFFERING is enabled
-  //FlushFileBuffers(m_hSerial);
+  //FlushFileBuffers(m_hFile);
   return true;
 }
 

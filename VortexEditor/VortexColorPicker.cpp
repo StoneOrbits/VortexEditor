@@ -579,7 +579,7 @@ void VortexColorPicker::refreshColor()
   uint32_t rawCol = m_curRGB.raw();
   m_colorPreview.setColor(rawCol);
   if (m_lastCol != rawCol && now > m_lastRefresh) {
-    g_pEditor->demoColor(rawCol);
+    //g_pEditor->demoColor(rawCol);
     // if we want to carry through the updates to the colorset call this:
     //g_pEditor->updateSelectedColors(rawCol);
     // Could actually just update the mode here... However the gloveset is
