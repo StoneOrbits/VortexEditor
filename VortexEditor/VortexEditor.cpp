@@ -450,13 +450,15 @@ void VortexEditor::updateSelectedColors(uint32_t rawCol)
   // get list of all selected colors
   for (uint32_t i = 0; i < 8; ++i) {
     if (m_colorSelects[i].isSelected()) {
-      updateSelectedColor(m_colorSelects + i, rawCol);
+      updateSelectedColor(m_colorSelects + i, rawCol, false);
     }
   }
+  // refresh and update the demo
+  refreshModeList();
   demoCurMode();
 }
 
-void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol)
+void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol, bool demo)
 {
   int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
@@ -485,9 +487,11 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol)
     // only set the pattern on a single position
     VEngine::setColorset((LedPos)sels[i], newSet);
   }
-  refreshModeList();
-  // update the demo
-  demoCurMode();
+  if (demo) {
+    // refresh and update the demo
+    refreshModeList();
+    demoCurMode();
+  }
 }
 
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
