@@ -141,9 +141,7 @@ int ArduinoSerial::bytesAvailable()
     PeekNamedPipe(m_hFile, 0, 0, 0, (LPDWORD)&toRead, 0);
     return toRead;
   }
-  printf("Clearing...\n");
-  bool rv = ClearCommError(m_hFile, &m_errors, &m_status);
-  printf("Clear %d error: %u status: %u\n", rv, m_errors, m_status.cbInQue);
+  ClearCommError(m_hFile, &m_errors, &m_status);
   return m_status.cbInQue;
 }
 
