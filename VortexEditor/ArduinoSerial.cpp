@@ -125,7 +125,7 @@ void ArduinoSerial::disconnect()
   if (m_hFile) {
     if (!m_isSerial) {
       DisconnectNamedPipe(m_hFile);
-    } else { 
+    } else {
       // Close the serial handler
       CloseHandle(m_hFile);
     }
