@@ -201,22 +201,26 @@ int ArduinoSerial::readData(void *buffer, uint32_t nbChar)
 
 bool ArduinoSerial::writeData(const void *buffer, uint32_t nbChar)
 {
-  DWORD bytesSend;
+  DWORD bytesSend = 0;
 
-  // Try to write the buffer on the Serial port
-  if (!WriteFile(m_hFile, buffer, nbChar, &bytesSend, 0)) {
-    if (m_isSerial) {
-      // In case it don't work get comm error and return false
-      ClearCommError(m_hFile, &m_errors, &m_status);
+  // write one byte at a time, otherwise we could fill up the serial buffer
+  // with a single send of 64bytes
+  for (uint32_t i = 0; i < nbChar; ++i) {
+    DWORD sent = 0;
+    // Try to write the buffer on the Serial port
+    if (!WriteFile(m_hFile, ((uint8_t *)buffer) + i, 1, &sent, 0)) {
+      if (m_isSerial) {
+        // In case it don't work get comm error and return false
+        ClearCommError(m_hFile, &m_errors, &m_status);
+      }
+      return false;
     }
-    return false;
+    bytesSend += sent;
   }
   if (bytesSend < nbChar) {
     MessageBox(NULL, "Failed to full send", "", 0);
     return false;
   }
-  // FILE_FLAG_NO_BUFFERING is enabled
-  //FlushFileBuffers(m_hFile);
   return true;
 }
 
