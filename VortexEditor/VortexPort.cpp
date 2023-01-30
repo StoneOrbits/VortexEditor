@@ -219,7 +219,7 @@ bool VortexPort::readInLoop(ByteStream &outStream, uint32_t timeoutMs)
   outStream.clear();
   uint32_t start = GetTickCount();
   debug_send("%u %x < Reading in loop\n", g_counter++, GetCurrentThreadId());
-  while (1) { //(start + timeoutMs) >= GetTickCount()) {
+  while ((start + timeoutMs) >= GetTickCount()) {
     if (!readData(outStream)) {
       // error?
       continue;
@@ -230,6 +230,7 @@ bool VortexPort::readInLoop(ByteStream &outStream, uint32_t timeoutMs)
     debug_send("%u %x << Read in loop: %s\n", g_counter++, GetCurrentThreadId(), outStream.data());
     return true;
   }
+  debug_send("%u %x << Reading in loop failed\n", g_counter++, GetCurrentThreadId());
   return false;
 }
 
