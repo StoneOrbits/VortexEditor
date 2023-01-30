@@ -202,7 +202,9 @@ bool ArduinoSerial::writeData(const void *buffer, uint32_t nbChar)
   DWORD bytesSend = 0;
 
   // write one byte at a time, otherwise we could fill up the serial buffer
-  // with a single send of 64bytes
+  // with a single send of 64bytes and the arduino will never receive it because
+  // a bug in the arduino code seems to make blocksizes of data just show up as 0
+  //    https://github.com/arduino/ArduinoCore-avr/issues/112
   for (uint32_t i = 0; i < nbChar; ++i) {
     DWORD sent = 0;
     // Try to write the buffer on the Serial port
