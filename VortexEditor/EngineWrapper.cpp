@@ -365,8 +365,10 @@ vector<string> VEngine::getCustomParams(PatternID id)
     case PATTERN_HUESHIFT:
       return { "Speed", "Scale" };
     case PATTERN_THEATER_CHASE:
+      return { "On Duration", "Off Duration", "Step Duration" };
     case PATTERN_ZIGZAG:
     case PATTERN_ZIPFADE:
+      return { "On Duration", "Off Duration", "Step Duration", "Snake Size", "Fade Amount" };
     case PATTERN_DRIP:
     case PATTERN_CROSSDOPS:
     case PATTERN_DOUBLESTROBE:
