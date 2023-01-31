@@ -148,8 +148,10 @@ void VSelectBox::paint()
   if (m_drawHLine) {
     SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
     if (m_drawCircle) {
-      MoveToEx(backbuffDC, m_innerLeft, m_innerTop + m_ySelect, NULL);
-      LineTo(backbuffDC, m_innerLeft + (m_xSelect - selectorSize), m_innerTop + m_ySelect);
+      if (m_xSelect > selectorSize) {
+        MoveToEx(backbuffDC, m_innerLeft, m_innerTop + m_ySelect, NULL);
+        LineTo(backbuffDC, m_innerLeft + (m_xSelect - selectorSize), m_innerTop + m_ySelect);
+      }
       MoveToEx(backbuffDC, m_innerLeft + (m_xSelect + selectorSize), m_innerTop + m_ySelect, NULL);
       LineTo(backbuffDC, m_innerLeft + m_innerWidth, m_innerTop + m_ySelect);
     } else {
@@ -160,8 +162,10 @@ void VSelectBox::paint()
   if (m_drawVLine) {
     SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
     if (m_drawCircle) {
-      MoveToEx(backbuffDC, m_innerLeft + m_xSelect, m_innerTop, NULL);
-      LineTo(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect - selectorSize));
+      if (m_ySelect > selectorSize) {
+        MoveToEx(backbuffDC, m_innerLeft + m_xSelect, m_innerTop, NULL);
+        LineTo(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect - selectorSize));
+      }
       MoveToEx(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + (m_ySelect + selectorSize), NULL);
       LineTo(backbuffDC, m_innerLeft + m_xSelect, m_innerTop + m_innerHeight);
     } else {

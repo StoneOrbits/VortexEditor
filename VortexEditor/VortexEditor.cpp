@@ -298,10 +298,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     MessageBox(m_window.hwnd(), "Vortex Editor 1.0\nMade by Daniel Fraser and Shane Aronson", "About", 0);
     break;
   case ID_HELP_HELP:
-    if (MessageBox(m_window.hwnd(), "It seems you need help", "Help", 4) == IDYES) {
-      if (MessageBox(m_window.hwnd(), "Goodluck", "Help", 0)) {
-      }
-    }
+    ShellExecute(NULL, "open", "https://github.com/StoneOrbits/VortexEditor/wiki", NULL, NULL, SW_SHOWNORMAL);
     return;
   case ID_EDIT_COPY_COLORSET:
     copyColorset();
