@@ -144,7 +144,7 @@ void VSelectBox::paint()
   DeleteDC(bmpDC);
 
   // draw the lines and circle
-  int selectorSize = 5;
+  uint32_t selectorSize = 5;
   if (m_drawHLine) {
     SelectObject(backbuffDC, GetStockObject(WHITE_PEN));
     if (m_drawCircle) {

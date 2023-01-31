@@ -148,6 +148,10 @@ bool VortexEditor::init(HINSTANCE hInst)
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 693, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
+  m_storageProgress.init(hInst, m_statusBar, "", BACK_COL, 280, 16, 150, 3, 0, nullptr);
+  m_storageProgress.setDrawHLine(false);
+  m_storageProgress.setDrawCircle(false);
+
   // install callback for all menu IDs, these could be separate, idk
   m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
   m_window.addCallback(ID_COLORSET_RANDOM_MONOCHROMATIC, handleMenusCallback);
@@ -1361,6 +1365,7 @@ void VortexEditor::refreshPortList()
   }
   // hack: for now just refresh status here
   refreshStatus();
+  refreshStorageBar();
 }
 
 void VortexEditor::refreshStatus()
@@ -1375,6 +1380,18 @@ void VortexEditor::refreshStatus()
     return;
   }
   m_statusBar.setStatus(RGB(0, 255, 0), "Connected");
+}
+
+void VortexEditor::refreshStorageBar()
+{
+  uint32_t total = 0;
+  uint32_t used = 0;
+  VEngine::getStorageStats(&total, &used);
+  float percent = (float)used / (float)total;
+  // integer percent from 0 - 280
+  uint32_t intPct = (uint32_t)(percent * 280.0);
+  m_storageProgress.setSelection(intPct, 0);
+  m_storageProgress.redraw();
 }
 
 void VortexEditor::refreshModeList(bool recursive)
@@ -1399,6 +1416,7 @@ void VortexEditor::refreshModeList(bool recursive)
   }
   // hack: for now just refresh status here
   refreshStatus();
+  refreshStorageBar();
 }
 
 void VortexEditor::refreshFingerList(bool recursive)

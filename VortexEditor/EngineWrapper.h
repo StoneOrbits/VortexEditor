@@ -24,6 +24,9 @@ public:
   static void init();
   static void cleanup();
 
+  // get total/used storage space
+  static void getStorageStats(uint32_t *outTotal, uint32_t *outUsed);
+
   static bool getModes(ByteStream &outStream);
   static bool setModes(ByteStream &stream, bool save = true);
   static bool getCurMode(ByteStream &stream);

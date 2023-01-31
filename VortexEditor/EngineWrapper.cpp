@@ -30,7 +30,7 @@ void VEngine::init()
   // init the engine
   VortexEngine::init();
   // clear the modes
-  Modes::clearModes();
+  //Modes::clearModes();
   // save and set undo buffer
   doSave();
 
@@ -49,6 +49,16 @@ void VEngine::init()
 
 void VEngine::cleanup()
 {
+}
+
+void VEngine::getStorageStats(uint32_t *outTotal, uint32_t *outUsed)
+{
+  if (outTotal) {
+    *outTotal = VortexEngine::totalStorageSpace();
+  }
+  if (outUsed) {
+    *outUsed = VortexEngine::savefileSize();
+  }
 }
 
 bool VEngine::getModes(ByteStream &outStream)
