@@ -33,6 +33,18 @@ void VEngine::init()
   Modes::clearModes();
   // save and set undo buffer
   doSave();
+
+  // check all custom params
+  for (PatternID id = PATTERN_FIRST; id < PATTERN_COUNT; ++id) {
+    vector<string> params = VEngine::getCustomParams(id);
+    PatternArgs args = PatternBuilder::getDefaultArgs(id);
+    if (params.size() != args.numArgs) {
+      // TODO: Handle this more elegantly and just return false when
+      //       VEngine is used a wrapper for exposing Vortex in a dll
+      MessageBox(NULL, ("Update tooltips for pattern ID " + to_string(id)).c_str(), "FATAL ERROR", 0);
+      PostQuitMessage(0);
+    }
+  }
 }
 
 void VEngine::cleanup()
