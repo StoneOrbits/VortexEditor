@@ -95,6 +95,7 @@ bool VortexEditor::init(HINSTANCE hInst)
     AllocConsole();
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
   }
+  DeleteFile("VortexEditor.dat");
 #endif
 
   // initialize the system that wraps the vortex engine
