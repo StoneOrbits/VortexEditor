@@ -161,11 +161,7 @@ bool VEngine::shiftCurMode(int8_t offset, bool save)
   if (offset == 0) {
     return true;
   }
-  if (offset > 0) {
-    Modes::shiftCurModeDown(offset);
-  } else {
-    Modes::shiftCurModeUp((uint32_t)(-offset));
-  }
+  Modes::shiftCurMode(offset);
   return !save || doSave();
 }
 

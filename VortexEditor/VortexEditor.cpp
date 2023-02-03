@@ -1056,9 +1056,11 @@ void VortexEditor::clearDemo()
 
 void VortexEditor::addMode(VWindow *window)
 {
+#if MAX_MODES != 0
   if (VEngine::numModes() >= MAX_MODES) {
     return;
   }
+#endif
   debug("Adding mode %u", VEngine::numModes() + 1);
   VEngine::addNewMode();
   m_modeListBox.setSelection(VEngine::curMode());
