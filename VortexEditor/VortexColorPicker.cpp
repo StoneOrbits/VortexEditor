@@ -411,7 +411,7 @@ HBITMAP VortexColorPicker::genHueBackground(uint32_t width, uint32_t height)
 
 HBITMAP VortexColorPicker::genRGBBackground(uint32_t width, uint32_t height, int rmult, int gmult, int bmult)
 {
-  COLORREF *cols = new COLORREF[256 * 256];
+  COLORREF *cols = new COLORREF[width * height];
   if (!cols) {
     return nullptr;
   }

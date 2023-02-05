@@ -1395,6 +1395,42 @@ void VortexEditor::refreshStorageBar()
   uint32_t intPct = (uint32_t)(percent * 280.0);
   m_storageProgress.setSelection(intPct, 0);
   m_storageProgress.redraw();
+  static HBITMAP bitty = nullptr;
+  if (bitty) {
+    DeleteObject(bitty);
+  }
+  bitty = genProgressBack(280, 16, percent);
+  m_storageProgress.setBackground(bitty);
+}
+
+HBITMAP genProgressBack(uint32_t width, uint32_t height, float progress)
+{
+  COLORREF *cols = new COLORREF[width * height];
+  if (!cols) {
+    return nullptr;
+  }
+  uint32_t threshold = (uint32_t)(width * progress);
+  // the real x and y are the internal coords inside the border where as
+  // m_width and m_height contain the border size in them
+  for (uint32_t x = 0; x < width; ++x) {
+    RGBColor rgbCol;
+    COLORREF col = 0;
+    if (x < threshold) {
+      uint32_t r = (uint32_t)(progress * 255);
+      // scale green to 512 to make it stay green longer
+      uint32_t g = (uint32_t)((1.0f - progress) * 512);
+      if (g > 255) {
+        g = 255;
+      }
+      col = (r << 16) | (g << 8);
+    }
+    for (uint32_t y = 0; y < height; ++y) {
+      cols[(y * width) + x] = col;
+    }
+  }
+  HBITMAP bitmap = CreateBitmap(width, height, 1, 32, cols);
+  delete[] cols;
+  return bitmap;
 }
 
 void VortexEditor::refreshModeList(bool recursive)

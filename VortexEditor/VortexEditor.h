@@ -174,6 +174,9 @@ private:
   // helper to split strings
   void splitString(const std::string &str, std::vector<std::string> &splits, char letter);
 
+  // generate the progress bar background for storage space
+  HBITMAP genProgressBack(uint32_t width, uint32_t height, float progress);
+
   // ==================================
   //  Member data
 
