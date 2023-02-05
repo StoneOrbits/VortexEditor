@@ -5,9 +5,9 @@
 #include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
 #include "Modes/Mode.h"
+#include "VortexEngine/VortexEngine/VortexLib/EngineWrapper.h"
 
 // Editor includes
-#include "EngineWrapper.h"
 #include "ArduinoSerial.h"
 #include "EditorConfig.h"
 #include "GUI/VWindow.h"
@@ -1403,7 +1403,7 @@ void VortexEditor::refreshStorageBar()
   m_storageProgress.setBackground(bitty);
 }
 
-HBITMAP genProgressBack(uint32_t width, uint32_t height, float progress)
+HBITMAP VortexEditor::genProgressBack(uint32_t width, uint32_t height, float progress)
 {
   COLORREF *cols = new COLORREF[width * height];
   if (!cols) {

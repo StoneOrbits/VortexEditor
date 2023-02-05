@@ -5,8 +5,6 @@
 #include "Colors/Colorset.h"
 #include "Colors/Colortypes.h"
 
-#include "EngineWrapper.h"
-
 #include "resource.h"
 
 #include "Serial/Compression.h"
