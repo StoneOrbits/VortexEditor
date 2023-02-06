@@ -5,7 +5,7 @@
 #include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
 #include "Modes/Mode.h"
-#include "VortexEngine/VortexEngine/VortexLib/EngineWrapper.h"
+#include "VortexLib.h"
 
 // Editor includes
 #include "ArduinoSerial.h"
