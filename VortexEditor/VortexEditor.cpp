@@ -81,6 +81,36 @@ VortexEditor::~VortexEditor()
   }
 }
 
+class VortexEditorCallbacks : public VortexCallbacks
+{
+public:
+  VortexEditorCallbacks() {}
+  virtual ~VortexEditorCallbacks() {}
+  // called when engine reads digital pins, use this to feed button presses to the engine
+  virtual long checkPinHook(uint32_t pin) { return 1; }
+  // called when engine writes to ir, use this to read data from the vortex engine
+  // the data received will be in timings of milliseconds
+  // NOTE: to send data to IR use Vortex::IRDeliver at any time
+  virtual void infraredWrite(bool mark, uint32_t amount) { }
+  // called when engine checks for Serial, use this to indicate serial is connected
+  virtual bool serialCheck() { return false; }
+  // called when engine begins serial, use this to do any initialization of the connection
+  virtual void serialBegin(uint32_t baud) { }
+  // called when engine checks for data on serial, use this to tell the engine data is ready
+  virtual int32_t serialAvail() { return 0; }
+  // called when engine reads from serial, use this to deliver data to the vortex engine
+  // TODO: buffer this in libengine and add a deliver api like IR
+  virtual size_t serialRead(char *buf, size_t amt) { return 0; }
+  // called when engine writes to serial, use this to read data from the vortex engine
+  virtual uint32_t serialWrite(const uint8_t *buf, size_t amt) { return 0; }
+  // called when the LED strip is initialized
+  virtual void ledsInit(void *cl, int count) { }
+  // called when the brightness is changed
+  virtual void ledsBrightness(int brightness) { }
+  // called when the leds are shown
+  virtual void ledsShow() { }
+};
+
 bool VortexEditor::init(HINSTANCE hInst)
 {
   if (g_pEditor) {
@@ -99,7 +129,7 @@ bool VortexEditor::init(HINSTANCE hInst)
 #endif
 
   // initialize the system that wraps the vortex engine
-  Vortex::init();
+  Vortex::init<VortexEditorCallbacks>();
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
@@ -149,9 +179,10 @@ bool VortexEditor::init(HINSTANCE hInst)
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 693, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
 
-  m_storageProgress.init(hInst, m_statusBar, "", BACK_COL, 280, 16, 150, 3, 0, nullptr);
+  m_storageProgress.init(hInst, m_window, "", BACK_COL, EDITOR_WIDTH, 2, 0, 0, 0, nullptr);
   m_storageProgress.setDrawHLine(false);
   m_storageProgress.setDrawCircle(false);
+  m_storageProgress.setTooltip("Storage Space");
 
   // install callback for all menu IDs, these could be separate, idk
   m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
@@ -1401,6 +1432,12 @@ void VortexEditor::refreshStorageBar()
   }
   bitty = genProgressBack(280, 16, percent);
   m_storageProgress.setBackground(bitty);
+  string space = "Storage Space (";
+  space += to_string(used);
+  space += " / ";
+  space += to_string(total);
+  space += ")";
+  m_storageProgress.setTooltip(space);
 }
 
 HBITMAP VortexEditor::genProgressBack(uint32_t width, uint32_t height, float progress)
