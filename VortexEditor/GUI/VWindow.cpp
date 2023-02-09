@@ -1,11 +1,5 @@
 #include "VWindow.h"
 
-// Vortex Engine includes
-#include "EditorConfig.h"
-
-// Editor includes
-#include "VortexEditor.h"
-
 #include <CommCtrl.h>
 #include <Dbt.h>
 
@@ -241,7 +235,7 @@ void VWindow::setTooltip(string text)
   m_tooltipHwnd = CreateWindow(TOOLTIPS_CLASS, NULL,
     WS_POPUP | TTS_ALWAYSTIP,
     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-    m_hwnd, NULL, g_pEditor->hInst(), NULL);
+    m_hwnd, NULL, VWindow::m_wc.hInstance, NULL);
   if (!m_tooltipHwnd) {
     return;
   }
