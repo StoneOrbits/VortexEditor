@@ -54,9 +54,11 @@ VortexEditor *g_pEditor = nullptr;
 
 VortexEditor::VortexEditor() :
   m_hInstance(NULL),
+  m_hIcon(NULL),
   m_consoleHandle(nullptr),
   m_portList(),
   m_accelTable(),
+  m_lastClickedColor(0),
   m_window(),
   m_portSelection(),
   m_pushButton(),
@@ -80,36 +82,6 @@ VortexEditor::~VortexEditor()
     DestroyIcon(m_hIcon);
   }
 }
-
-class VortexEditorCallbacks : public VortexCallbacks
-{
-public:
-  VortexEditorCallbacks() {}
-  virtual ~VortexEditorCallbacks() {}
-  // called when engine reads digital pins, use this to feed button presses to the engine
-  virtual long checkPinHook(uint32_t pin) { return 1; }
-  // called when engine writes to ir, use this to read data from the vortex engine
-  // the data received will be in timings of milliseconds
-  // NOTE: to send data to IR use Vortex::IRDeliver at any time
-  virtual void infraredWrite(bool mark, uint32_t amount) { }
-  // called when engine checks for Serial, use this to indicate serial is connected
-  virtual bool serialCheck() { return false; }
-  // called when engine begins serial, use this to do any initialization of the connection
-  virtual void serialBegin(uint32_t baud) { }
-  // called when engine checks for data on serial, use this to tell the engine data is ready
-  virtual int32_t serialAvail() { return 0; }
-  // called when engine reads from serial, use this to deliver data to the vortex engine
-  // TODO: buffer this in libengine and add a deliver api like IR
-  virtual size_t serialRead(char *buf, size_t amt) { return 0; }
-  // called when engine writes to serial, use this to read data from the vortex engine
-  virtual uint32_t serialWrite(const uint8_t *buf, size_t amt) { return 0; }
-  // called when the LED strip is initialized
-  virtual void ledsInit(void *cl, int count) { }
-  // called when the brightness is changed
-  virtual void ledsBrightness(int brightness) { }
-  // called when the leds are shown
-  virtual void ledsShow() { }
-};
 
 bool VortexEditor::init(HINSTANCE hInst)
 {

@@ -58,6 +58,14 @@ public:
   HINSTANCE hInst() const { return m_hInstance; }
 
 private:
+  class VortexEditorCallbacks : public VortexCallbacks
+  {
+  public:
+    VortexEditorCallbacks() {}
+    virtual ~VortexEditorCallbacks() {}
+    // Editor does not utilize any engine callbacks at this time
+  };
+
   // print to the log
   static void printlog(const char *file, const char *func, int line, const char *msg, ...);
 
