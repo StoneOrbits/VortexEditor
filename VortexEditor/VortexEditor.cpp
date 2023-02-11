@@ -5,9 +5,9 @@
 #include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
 #include "Modes/Mode.h"
+#include "VortexLib.h"
 
 // Editor includes
-#include "EngineWrapper.h"
 #include "ArduinoSerial.h"
 #include "EditorConfig.h"
 #include "GUI/VWindow.h"
@@ -81,6 +81,36 @@ VortexEditor::~VortexEditor()
   }
 }
 
+class VortexEditorCallbacks : public VortexCallbacks
+{
+public:
+  VortexEditorCallbacks() {}
+  virtual ~VortexEditorCallbacks() {}
+  // called when engine reads digital pins, use this to feed button presses to the engine
+  virtual long checkPinHook(uint32_t pin) { return 1; }
+  // called when engine writes to ir, use this to read data from the vortex engine
+  // the data received will be in timings of milliseconds
+  // NOTE: to send data to IR use Vortex::IRDeliver at any time
+  virtual void infraredWrite(bool mark, uint32_t amount) { }
+  // called when engine checks for Serial, use this to indicate serial is connected
+  virtual bool serialCheck() { return false; }
+  // called when engine begins serial, use this to do any initialization of the connection
+  virtual void serialBegin(uint32_t baud) { }
+  // called when engine checks for data on serial, use this to tell the engine data is ready
+  virtual int32_t serialAvail() { return 0; }
+  // called when engine reads from serial, use this to deliver data to the vortex engine
+  // TODO: buffer this in libengine and add a deliver api like IR
+  virtual size_t serialRead(char *buf, size_t amt) { return 0; }
+  // called when engine writes to serial, use this to read data from the vortex engine
+  virtual uint32_t serialWrite(const uint8_t *buf, size_t amt) { return 0; }
+  // called when the LED strip is initialized
+  virtual void ledsInit(void *cl, int count) { }
+  // called when the brightness is changed
+  virtual void ledsBrightness(int brightness) { }
+  // called when the leds are shown
+  virtual void ledsShow() { }
+};
+
 bool VortexEditor::init(HINSTANCE hInst)
 {
   if (g_pEditor) {
@@ -95,10 +125,11 @@ bool VortexEditor::init(HINSTANCE hInst)
     AllocConsole();
     freopen_s(&m_consoleHandle, "CONOUT$", "w", stdout);
   }
+  DeleteFile("VortexEditor.dat");
 #endif
 
   // initialize the system that wraps the vortex engine
-  VEngine::init();
+  Vortex::init<VortexEditorCallbacks>();
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
@@ -147,6 +178,11 @@ bool VortexEditor::init(HINSTANCE hInst)
   for (uint32_t i = 0; i < 8; ++i) {
     m_paramTextBoxes[i].init(hInst, m_window, "", BACK_COL, buttonWidth, 24, 693, 54 + (32 * i), PARAM_EDIT_ID + i, paramEditCallback);
   }
+
+  m_storageProgress.init(hInst, m_window, "", BACK_COL, EDITOR_WIDTH, 2, 0, 0, 0, nullptr);
+  m_storageProgress.setDrawHLine(false);
+  m_storageProgress.setDrawCircle(false);
+  m_storageProgress.setTooltip("Storage Space");
 
   // install callback for all menu IDs, these could be separate, idk
   m_window.addCallback(ID_COLORSET_RANDOM_COMPLIMENTARY, handleMenusCallback);
@@ -313,11 +349,11 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     pasteLED();
     return;
   case ID_EDIT_UNDO:
-    VEngine::undo();
+    Vortex::undo();
     refreshModeList();
     return;
   case ID_EDIT_REDO:
-    VEngine::redo();
+    Vortex::redo();
     refreshModeList();
     return;
   case ID_FILE_PULL:
@@ -385,18 +421,18 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     // when applying a single led pattern we must use the 'setPattern' api
     // to properly convert the mode to all-same-single if it's a multi to
     // begin with, otherwise we can just apply the single to whichever we select
-    if (isMultiLedPatternID(VEngine::getPatternID())) {
-      VEngine::setPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT));
+    if (isMultiLedPatternID(Vortex::getPatternID())) {
+      Vortex::setPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT));
     } else {
       for (uint32_t i = 0; i < sels.size(); ++i) {
-        VEngine::setSinglePat((LedPos)sels[i], (PatternID)(rand() % PATTERN_SINGLE_COUNT));
+        Vortex::setSinglePat((LedPos)sels[i], (PatternID)(rand() % PATTERN_SINGLE_COUNT));
       }
     }
     refreshModeList();
     demoCurMode();
     break;
   case ID_PATTERN_RANDOM_MULTI_LED_PATTERN:
-    VEngine::setPattern((PatternID)((rand() % PATTERN_MULTI_COUNT) + PATTERN_MULTI_FIRST));
+    Vortex::setPattern((PatternID)((rand() % PATTERN_MULTI_COUNT) + PATTERN_MULTI_FIRST));
     refreshModeList();
     demoCurMode();
     break;
@@ -410,14 +446,14 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     if (sels.size() != 1) {
       break;
     }
-    VEngine::getColorset((LedPos)sels[0], newSet);
+    Vortex::getColorset((LedPos)sels[0], newSet);
     applyColorsetToAll(newSet);
     break;
   case ID_EDIT_COPY_PATTERN_TO_ALL:
     if (sels.size() != 1) {
       break;
     }
-    applyPatternToAll(VEngine::getPatternID((LedPos)sels[0]));
+    applyPatternToAll(Vortex::getPatternID((LedPos)sels[0]));
     break;
 #endif
   }
@@ -464,7 +500,7 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol,
   uint32_t colorIndex = (uint32_t)((uintptr_t)colSelect->menu() - SELECT_COLOR_ID);
   colSelect->setColor(rawCol);
   Colorset newSet;
-  VEngine::getColorset((LedPos)pos, newSet);
+  Vortex::getColorset((LedPos)pos, newSet);
   // if the color select was made inactive
   if (!colSelect->isActive()) {
     debug("Disabled color slot");
@@ -482,7 +518,7 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol,
   // set the colorset on all selected patterns
   for (uint32_t i = 0; i < sels.size(); ++i) {
     // only set the pattern on a single position
-    VEngine::setColorset((LedPos)sels[i], newSet);
+    Vortex::setColorset((LedPos)sels[i], newSet);
   }
   if (demo) {
     // refresh and update the demo
@@ -494,7 +530,7 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol,
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
 {
   for (uint32_t i = 0; i < selections.size(); ++i) {
-    VEngine::setColorset((LedPos)selections[i], set);
+    Vortex::setColorset((LedPos)selections[i], set);
   }
   refreshModeList();
   // update the demo
@@ -504,7 +540,7 @@ void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selecti
 void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 {
   for (uint32_t i = 0; i < selections.size(); ++i) {
-    VEngine::setSinglePat((LedPos)selections[i], id);
+    Vortex::setSinglePat((LedPos)selections[i], id);
   }
   refreshModeList();
   // update the demo
@@ -513,8 +549,8 @@ void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 
 void VortexEditor::applyColorsetToAll(const Colorset &set)
 {
-  for (LedPos i = LED_FIRST; i < VEngine::numLedsInMode(); ++i) {
-    VEngine::setColorset(i, set);
+  for (LedPos i = LED_FIRST; i < Vortex::numLedsInMode(); ++i) {
+    Vortex::setColorset(i, set);
   }
   refreshColorSelect();
   // update the demo
@@ -523,8 +559,8 @@ void VortexEditor::applyColorsetToAll(const Colorset &set)
 
 void VortexEditor::applyPatternToAll(PatternID id)
 {
-  for (LedPos i = LED_FIRST; i < VEngine::numLedsInMode(); ++i) {
-    VEngine::setSinglePat(i, id);
+  for (LedPos i = LED_FIRST; i < Vortex::numLedsInMode(); ++i) {
+    Vortex::setSinglePat(i, id);
   }
   refreshFingerList();
   // update the demo
@@ -571,7 +607,7 @@ void VortexEditor::pasteColorset()
     }
   }
   for (uint32_t i = 0; i < sels.size(); ++i) {
-    VEngine::setColorset((LedPos)sels[i], newSet);
+    Vortex::setColorset((LedPos)sels[i], newSet);
   }
   refreshColorSelect();
   demoCurMode();
@@ -588,7 +624,7 @@ void VortexEditor::copyLED()
   int pat = m_patternSelectComboBox.getSelection();
   led += to_string(pat) + ";";
   PatternArgs args;
-  VEngine::getPatternArgs((LedPos)pos, args);
+  Vortex::getPatternArgs((LedPos)pos, args);
   led += to_string(args.arg1) + ",";
   led += to_string(args.arg2) + ",";
   led += to_string(args.arg3) + ",";
@@ -666,13 +702,13 @@ void VortexEditor::pasteLED()
     }
   }
   // if applying multi-led, or changing multi-to single
-  if (isMultiLedPatternID(id) || isMultiLedPatternID(VEngine::getPatternID())) {
+  if (isMultiLedPatternID(id) || isMultiLedPatternID(Vortex::getPatternID())) {
     // then just set-all
-    VEngine::setPattern(id, &args, &newSet);
+    Vortex::setPattern(id, &args, &newSet);
   } else {
     // otherwise set single
     for (uint32_t i = 0; i < sels.size(); ++i) {
-      VEngine::setSinglePat((LedPos)sels[i], id, &args, &newSet);
+      Vortex::setSinglePat((LedPos)sels[i], id, &args, &newSet);
     }
   }
   refreshModeList();
@@ -796,7 +832,7 @@ void VortexEditor::push(VWindow *window)
   port->expectData(EDITOR_VERB_READY);
   // now unserialize the stream of data that was read
   ByteStream modes;
-  VEngine::getModes(modes);
+  Vortex::getModes(modes);
   // send the modes
   port->writeData(modes);
   // wait for the done response
@@ -817,13 +853,13 @@ void VortexEditor::pull(VWindow *window)
     debug("Couldn't read anything");
     return;
   }
-  VEngine::setModes(stream);
+  Vortex::setModes(stream);
   // now send the done message
   port->writeData(EDITOR_VERB_PULL_MODES_DONE);
   // wait for the ack from the gloves
   port->expectData(EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
-  debug("Unserialized %u modes", VEngine::numModes());
+  debug("Unserialized %u modes", Vortex::numModes());
   // refresh the mode list
   refreshModeList();
   // demo the current mode
@@ -859,7 +895,7 @@ void VortexEditor::load(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  VEngine::setModes(stream);
+  Vortex::setModes(stream);
   debug("Loaded from [%s]", szFile);
   refreshModeList();
   demoCurMode();
@@ -897,7 +933,7 @@ void VortexEditor::save(VWindow *window)
   }
   DWORD written = 0;
   ByteStream stream;
-  VEngine::getModes(stream);
+  Vortex::getModes(stream);
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
@@ -935,7 +971,7 @@ void VortexEditor::importMode(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  if (!VEngine::addNewMode(stream)) {
+  if (!Vortex::addNewMode(stream)) {
     // error
   }
   debug("Loaded from [%s]", szFile);
@@ -945,14 +981,14 @@ void VortexEditor::importMode(VWindow *window)
 
 void VortexEditor::exportMode(VWindow *window)
 {
-  if (!VEngine::numModes()) {
+  if (!Vortex::numModes()) {
     return;
   }
   OPENFILENAME ofn;
   memset(&ofn, 0, sizeof(ofn));
   ofn.lStructSize = sizeof(ofn);
   ofn.hwndOwner = NULL;
-  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  string modeName = "Mode_" + to_string(Vortex::curMode()) + "_" + Vortex::getModeName();
   replace(modeName.begin(), modeName.end(), ' ', '_');
   modeName += VORTEX_MODE_EXTENSION;
   char szFile[MAX_PATH] = {0};
@@ -982,7 +1018,7 @@ void VortexEditor::exportMode(VWindow *window)
   }
   DWORD written = 0;
   ByteStream stream;
-  VEngine::getCurMode(stream);
+  Vortex::getCurMode(stream);
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
@@ -993,7 +1029,7 @@ void VortexEditor::exportMode(VWindow *window)
 void VortexEditor::selectMode(VWindow *window)
 {
   int sel = m_modeListBox.getSelection();
-  if (sel == VEngine::curMode()) {
+  if (sel == Vortex::curMode()) {
     // trigger demo again w/e
     demoCurMode();
     return;
@@ -1001,7 +1037,7 @@ void VortexEditor::selectMode(VWindow *window)
   if (sel < 0) {
     return;
   }
-  VEngine::setCurMode(sel);
+  Vortex::setCurMode(sel);
   // reselect first finger
   m_ledsMultiListBox.clearSelections();
   m_ledsMultiListBox.setSelection(0);
@@ -1025,7 +1061,7 @@ void VortexEditor::demoCurMode()
   port->expectData(EDITOR_VERB_READY);
   // now unserialize the stream of data that was read
   ByteStream curMode;
-  if (!VEngine::getCurMode(curMode) || !curMode.size()) {
+  if (!Vortex::getCurMode(curMode) || !curMode.size()) {
     // error!
     // TODO: abort
   }
@@ -1033,7 +1069,7 @@ void VortexEditor::demoCurMode()
   port->writeData(curMode);
   // wait for the done response
   port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
-  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  string modeName = "Mode_" + to_string(Vortex::curMode()) + "_" + Vortex::getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
@@ -1052,14 +1088,16 @@ void VortexEditor::clearDemo()
 
 void VortexEditor::addMode(VWindow *window)
 {
-  if (VEngine::numModes() >= MAX_MODES) {
+#if MAX_MODES != 0
+  if (Vortex::numModes() >= MAX_MODES) {
     return;
   }
-  debug("Adding mode %u", VEngine::numModes() + 1);
-  VEngine::addNewMode();
-  m_modeListBox.setSelection(VEngine::curMode());
+#endif
+  debug("Adding mode %u", Vortex::numModes() + 1);
+  Vortex::addNewMode();
+  m_modeListBox.setSelection(Vortex::curMode());
   refreshModeList();
-  if (VEngine::numModes() == 1) {
+  if (Vortex::numModes() == 1) {
     m_ledsMultiListBox.setSelection(0);
     refreshModeList();
     demoCurMode();
@@ -1068,11 +1106,11 @@ void VortexEditor::addMode(VWindow *window)
 
 void VortexEditor::delMode(VWindow *window)
 {
-  debug("Deleting mode %u", VEngine::curMode());
-  uint32_t cur = VEngine::curMode();
-  VEngine::delCurMode();
+  debug("Deleting mode %u", Vortex::curMode());
+  uint32_t cur = Vortex::curMode();
+  Vortex::delCurMode();
   refreshModeList();
-  if (!VEngine::numModes()) {
+  if (!Vortex::numModes()) {
     clearDemo();
   } else {
     demoCurMode();
@@ -1081,29 +1119,29 @@ void VortexEditor::delMode(VWindow *window)
 
 void VortexEditor::copyMode(VWindow *window)
 {
-  if (!VEngine::numModes()) {
+  if (!Vortex::numModes()) {
     return;
   }
   int sel = m_modeListBox.getSelection();
   if (sel < 0) {
     return;
   }
-  debug("Copying mode %u", VEngine::curMode());
+  debug("Copying mode %u", Vortex::curMode());
   ByteStream stream;
-  VEngine::getCurMode(stream);
-  VEngine::addNewMode(stream);
+  Vortex::getCurMode(stream);
+  Vortex::addNewMode(stream);
   refreshModeList();
 }
 
 void VortexEditor::moveModeUp(VWindow *window)
 {
-  VEngine::shiftCurMode(-1);
+  Vortex::shiftCurMode(-1);
   refreshModeList();
 }
 
 void VortexEditor::moveModeDown(VWindow *window)
 {
-  VEngine::shiftCurMode(1);
+  Vortex::shiftCurMode(1);
   refreshModeList();
 }
 
@@ -1128,19 +1166,19 @@ void VortexEditor::selectPattern(VWindow *window)
   // if we ONLY selected the first led
   if (sels.size() == 1 && sels[0] == 0) {
     // and if we are switching from a multi-led or to a multi-led
-    if (isMultiLedPatternID(VEngine::getPatternID()) ||
+    if (isMultiLedPatternID(Vortex::getPatternID()) ||
         isMultiLedPatternID((PatternID)pat)) {
       // then set the pattern on the entire mode
-      VEngine::setPattern((PatternID)pat);
+      Vortex::setPattern((PatternID)pat);
     } else {
       // otherwise we are switching from single to single to just
       // apply the pattern change to this slot
-      VEngine::setSinglePat(LED_FIRST, (PatternID)pat);
+      Vortex::setSinglePat(LED_FIRST, (PatternID)pat);
     }
   } else {
     for (uint32_t i = 0; i < sels.size(); ++i) {
       // only set the pattern on a single position
-      VEngine::setSinglePat((LedPos)sels[i], (PatternID)pat);
+      Vortex::setSinglePat((LedPos)sels[i], (PatternID)pat);
     }
   }
   refreshModeList();
@@ -1167,14 +1205,14 @@ void VortexEditor::copyToAll(VWindow *window)
     return;
   }
   PatternArgs args;
-  VEngine::getPatternArgs((LedPos)pos, args);
+  Vortex::getPatternArgs((LedPos)pos, args);
   Colorset set;
-  VEngine::getColorset((LedPos)pos, set);
-  for (LedPos i = LED_FIRST; i < VEngine::numLedsInMode(); ++i) {
+  Vortex::getColorset((LedPos)pos, set);
+  for (LedPos i = LED_FIRST; i < Vortex::numLedsInMode(); ++i) {
     if (pos == i) {
       continue;
     }
-    VEngine::setSinglePat(i, (PatternID)pat, &args, &set);
+    Vortex::setSinglePat(i, (PatternID)pat, &args, &set);
   }
   refreshModeList();
   // update the demo
@@ -1196,9 +1234,9 @@ void VortexEditor::paramEdit(VWindow *window)
   }
   uint32_t paramIndex = (uint32_t)((uintptr_t)window->menu() - PARAM_EDIT_ID);
   PatternArgs args;
-  VEngine::getPatternArgs((LedPos)pos, args);
+  Vortex::getPatternArgs((LedPos)pos, args);
   // get the number of params for the current pattern selection
-  uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
+  uint32_t numParams = Vortex::numCustomParams((PatternID)sel);
   // store the target param
   args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
   vector<int> sels;
@@ -1208,13 +1246,13 @@ void VortexEditor::paramEdit(VWindow *window)
     return;
   }
   if (sels.size() == 1) {
-    VEngine::setPatternArgs((LedPos)sels[0], args);
+    Vortex::setPatternArgs((LedPos)sels[0], args);
   } else {
     // set the param on all patterns, which may require changing the pattern id
     for (uint32_t i = 0; i < sels.size(); ++i) {
       // only set the pattern on a single position
-      VEngine::setSinglePat((LedPos)sels[i], VEngine::getPatternID((LedPos)pos));
-      VEngine::setPatternArgs((LedPos)sels[i], args);
+      Vortex::setSinglePat((LedPos)sels[i], Vortex::getPatternID((LedPos)pos));
+      Vortex::setPatternArgs((LedPos)sels[i], args);
     }
     refreshFingerList(false);
   }
@@ -1240,7 +1278,7 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
     return;
   }
   Colorset newSet;
-  VEngine::getColorset((LedPos)sels[0], newSet);
+  Vortex::getColorset((LedPos)sels[0], newSet);
   // if the color select was made inactive
   if (!target->isActive()) {
     debug("Disabled color slot %u", colorIndex);
@@ -1299,7 +1337,7 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
   // set the colorset on all selected patterns
   for (uint32_t i = 0; i < sels.size(); ++i) {
     // only set the pattern on a single position
-    VEngine::setColorset((LedPos)sels[i], newSet);
+    Vortex::setColorset((LedPos)sels[i], newSet);
   }
   refreshModeList();
   // update the demo
@@ -1327,7 +1365,7 @@ void VortexEditor::demoColor(uint32_t rawCol)
   port->writeData(curMode);
   // wait for the done response
   port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
-  string modeName = "Mode_" + to_string(VEngine::curMode()) + "_" + VEngine::getModeName();
+  string modeName = "Mode_" + to_string(Vortex::curMode()) + "_" + Vortex::getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
@@ -1361,6 +1399,7 @@ void VortexEditor::refreshPortList()
   }
   // hack: for now just refresh status here
   refreshStatus();
+  refreshStorageBar();
 }
 
 void VortexEditor::refreshStatus()
@@ -1377,28 +1416,83 @@ void VortexEditor::refreshStatus()
   m_statusBar.setStatus(RGB(0, 255, 0), "Connected");
 }
 
+void VortexEditor::refreshStorageBar()
+{
+  uint32_t total = 0;
+  uint32_t used = 0;
+  Vortex::getStorageStats(&total, &used);
+  float percent = (float)used / (float)total;
+  // integer percent from 0 - 280
+  uint32_t intPct = (uint32_t)(percent * 280.0);
+  m_storageProgress.setSelection(intPct, 0);
+  m_storageProgress.redraw();
+  static HBITMAP bitty = nullptr;
+  if (bitty) {
+    DeleteObject(bitty);
+  }
+  bitty = genProgressBack(280, 16, percent);
+  m_storageProgress.setBackground(bitty);
+  string space = "Storage Space (";
+  space += to_string(used);
+  space += " / ";
+  space += to_string(total);
+  space += ")";
+  m_storageProgress.setTooltip(space);
+}
+
+HBITMAP VortexEditor::genProgressBack(uint32_t width, uint32_t height, float progress)
+{
+  COLORREF *cols = new COLORREF[width * height];
+  if (!cols) {
+    return nullptr;
+  }
+  uint32_t threshold = (uint32_t)(width * progress);
+  // the real x and y are the internal coords inside the border where as
+  // m_width and m_height contain the border size in them
+  for (uint32_t x = 0; x < width; ++x) {
+    RGBColor rgbCol;
+    COLORREF col = 0;
+    if (x < threshold) {
+      uint32_t r = (uint32_t)(progress * 255);
+      // scale green to 512 to make it stay green longer
+      uint32_t g = (uint32_t)((1.0f - progress) * 512);
+      if (g > 255) {
+        g = 255;
+      }
+      col = (r << 16) | (g << 8);
+    }
+    for (uint32_t y = 0; y < height; ++y) {
+      cols[(y * width) + x] = col;
+    }
+  }
+  HBITMAP bitmap = CreateBitmap(width, height, 1, 32, cols);
+  delete[] cols;
+  return bitmap;
+}
+
 void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
-  int curSel = VEngine::curMode();
-  // We have to actually iterate the modes with nextmode because VEngine can't just
+  int curSel = Vortex::curMode();
+  // We have to actually iterate the modes with nextmode because Vortex can't just
   // instantiate one and return it which is kinda dumb but just how it works for now
-  VEngine::setCurMode(0, false);
-  for (uint32_t i = 0; i < VEngine::numModes(); ++i) {
+  Vortex::setCurMode(0, false);
+  for (uint32_t i = 0; i < Vortex::numModes(); ++i) {
     // just use the pattern name from the first pattern
-    string modeName = "Mode " + to_string(i) + " (" + VEngine::getModeName() + ")";
+    string modeName = "Mode " + to_string(i) + " (" + Vortex::getModeName() + ")";
     m_modeListBox.addItem(modeName);
     // go to next mode
-    VEngine::nextMode(false);
+    Vortex::nextMode(false);
   }
   // restore the selection
   m_modeListBox.setSelection(curSel);
-  VEngine::setCurMode(curSel, false);
+  Vortex::setCurMode(curSel, false);
   if (recursive) {
     refreshFingerList(recursive);
   }
   // hack: for now just refresh status here
   refreshStatus();
+  refreshStorageBar();
 }
 
 void VortexEditor::refreshFingerList(bool recursive)
@@ -1406,12 +1500,12 @@ void VortexEditor::refreshFingerList(bool recursive)
   vector<int> sels;
   m_ledsMultiListBox.getSelections(sels);
   m_ledsMultiListBox.clearItems();
-  for (LedPos pos = LED_FIRST; pos < VEngine::numLedsInMode(); ++pos) {
+  for (LedPos pos = LED_FIRST; pos < Vortex::numLedsInMode(); ++pos) {
     // if a finger is empty don't add it
-    if (VEngine::getPatternID(pos) == PATTERN_NONE) {
+    if (Vortex::getPatternID(pos) == PATTERN_NONE) {
       continue;
     }
-    string fingerName = VEngine::ledToString(pos) + " (" + VEngine::getPatternName(pos) + ")";
+    string fingerName = Vortex::ledToString(pos) + " (" + Vortex::getPatternName(pos) + ")";
     m_ledsMultiListBox.addItem(fingerName);
   }
   // restore the selection
@@ -1444,12 +1538,12 @@ void VortexEditor::refreshPatternSelect(bool recursive)
     if (!allow_multi && isMulti) {
       continue;
     }
-    string patternName = VEngine::patternToString(id);
+    string patternName = Vortex::patternToString(id);
     if (isMulti) {
       patternName += " *";
     }
     m_patternSelectComboBox.addItem(patternName);
-    if (id == VEngine::getPatternID((LedPos)sel)) {
+    if (id == Vortex::getPatternID((LedPos)sel)) {
       m_patternSelectComboBox.setSelection(id);
     }
   }
@@ -1475,7 +1569,7 @@ void VortexEditor::refreshColorSelect(bool recursive)
   }
   // get the colorset
   Colorset set;
-  VEngine::getColorset((LedPos)pos, set);
+  Vortex::getColorset((LedPos)pos, set);
   // iterate all active colors and set them
   for (uint32_t i = 0; i < set.numColors(); ++i) {
     m_colorSelects[i].setColor(set.get(i).raw());
@@ -1513,12 +1607,12 @@ void VortexEditor::refreshParams(bool recursive)
     }
     return;
   }
-  vector<string> tips = VEngine::getCustomParams((PatternID)sel);
+  vector<string> tips = Vortex::getCustomParams((PatternID)sel);
   if (sels.size() > 1) {
     bool all_same = true;
-    PatternID base = VEngine::getPatternID((LedPos)sels[0]);
+    PatternID base = Vortex::getPatternID((LedPos)sels[0]);
     for (uint32_t i = 1; i < sels.size(); ++i) {
-      if (VEngine::getPatternID((LedPos)sels[i]) != base) {
+      if (Vortex::getPatternID((LedPos)sels[i]) != base) {
         all_same = false;
       }
     }
@@ -1532,10 +1626,10 @@ void VortexEditor::refreshParams(bool recursive)
     }
   }
   PatternArgs args;
-  VEngine::getPatternArgs((LedPos)pos, args);
+  Vortex::getPatternArgs((LedPos)pos, args);
   uint8_t *pArgs = (uint8_t *)&args.arg1;
   // get the number of params for the current pattern selection
-  uint32_t numParams = VEngine::numCustomParams((PatternID)sel);
+  uint32_t numParams = Vortex::numCustomParams((PatternID)sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
     m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str(), false);

@@ -154,6 +154,7 @@ private:
   // port list and status are separate ui elements
   void refreshPortList();
   void refreshStatus();
+  void refreshStorageBar();
   // but the mode list, finger list, etc are all considered a heirarchy so
   // there is an option to recursively refresh all children elements
   void refreshModeList(bool recursive = true);
@@ -172,6 +173,9 @@ private:
 
   // helper to split strings
   void splitString(const std::string &str, std::vector<std::string> &splits, char letter);
+
+  // generate the progress bar background for storage space
+  HBITMAP genProgressBack(uint32_t width, uint32_t height, float progress);
 
   // ==================================
   //  Member data
@@ -217,6 +221,8 @@ private:
   VColorSelect m_colorSelects[8];
   // parameters text boxes, there's 8 params
   VTextBox m_paramTextBoxes[8];
+  // progress bar for storage
+  VSelectBox m_storageProgress;
 
   // ==================================
   //  Color picker GUI

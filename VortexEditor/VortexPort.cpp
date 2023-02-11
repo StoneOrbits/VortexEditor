@@ -250,6 +250,7 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
     debug_send("%u %x == Parsed handshake: Goodbye\n", g_counter++, GetCurrentThreadId());
     return false;
   }
+  // TODO: Parse the device info out of handshake
   debug_send("%u %x == Parsed handshake: Good\n", g_counter++, GetCurrentThreadId());
   // check the handshake for valid datastart  // looks good
   return true;

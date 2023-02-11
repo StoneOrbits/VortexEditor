@@ -5,8 +5,6 @@
 #include "Colors/Colorset.h"
 #include "Colors/Colortypes.h"
 
-#include "EngineWrapper.h"
-
 #include "resource.h"
 
 #include "Serial/Compression.h"
@@ -411,7 +409,7 @@ HBITMAP VortexColorPicker::genHueBackground(uint32_t width, uint32_t height)
 
 HBITMAP VortexColorPicker::genRGBBackground(uint32_t width, uint32_t height, int rmult, int gmult, int bmult)
 {
-  COLORREF *cols = new COLORREF[256 * 256];
+  COLORREF *cols = new COLORREF[width * height];
   if (!cols) {
     return nullptr;
   }
