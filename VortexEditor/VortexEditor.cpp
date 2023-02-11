@@ -54,9 +54,11 @@ VortexEditor *g_pEditor = nullptr;
 
 VortexEditor::VortexEditor() :
   m_hInstance(NULL),
+  m_hIcon(NULL),
   m_consoleHandle(nullptr),
   m_portList(),
   m_accelTable(),
+  m_lastClickedColor(0),
   m_window(),
   m_portSelection(),
   m_pushButton(),

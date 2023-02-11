@@ -1,11 +1,5 @@
 #include "VWindow.h"
 
-// Vortex Engine includes
-#include "EditorConfig.h"
-
-// Editor includes
-#include "VortexEditor.h"
-
 #include <CommCtrl.h>
 #include <Dbt.h>
 
@@ -241,7 +235,7 @@ void VWindow::setTooltip(string text)
   m_tooltipHwnd = CreateWindow(TOOLTIPS_CLASS, NULL,
     WS_POPUP | TTS_ALWAYSTIP,
     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-    m_hwnd, NULL, g_pEditor->hInst(), NULL);
+    m_hwnd, NULL, VWindow::m_wc.hInstance, NULL);
   if (!m_tooltipHwnd) {
     return;
   }
@@ -345,6 +339,9 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     pWindow->command(wParam, lParam);
     break;
   case WM_DEVICECHANGE:
+    if (!pWindow->m_deviceCallback) {
+      break;
+    }
     // Output some messages to the window.
     if (wParam == DBT_DEVICEARRIVAL) {
       pWindow->m_deviceCallback(pWindow->m_callbackArg, (DEV_BROADCAST_HDR *)lParam, true);

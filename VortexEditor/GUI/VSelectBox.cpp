@@ -90,7 +90,7 @@ void VSelectBox::init(HINSTANCE hInstance, VWindow &parent, const string &title,
 
   // create the window
   m_hwnd = CreateWindow(WC_HUE_SAT_BOX, title.c_str(),
-    WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP | WS_CLIPCHILDREN ,
+    WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP | WS_CLIPCHILDREN,
     x, y, m_width, m_height, parent.hwnd(), (HMENU)menuID, nullptr, nullptr);
   if (!m_hwnd) {
     MessageBox(nullptr, "Failed to open window", "Error", 0);
