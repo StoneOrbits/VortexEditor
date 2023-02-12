@@ -21,6 +21,9 @@
 #include "GUI/VButton.h"
 #include "GUI/VLabel.h"
 
+// engine includes
+#include "VortexLib.h"
+
 // editor includes
 #include "VortexColorPicker.h"
 #include "ArduinoSerial.h"
