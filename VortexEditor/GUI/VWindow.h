@@ -40,6 +40,7 @@ public:
   virtual void command(WPARAM wParam, LPARAM lParam);
   virtual void pressButton(WPARAM wParam, LPARAM lParam);
   virtual void releaseButton(WPARAM wParam, LPARAM lParam);
+  virtual void loseFocus(WPARAM wParam, LPARAM lParam);
 
   // add/get a child
   virtual bool addChild(uintptr_t menuID, VWindow *child, uint32_t *out_id = nullptr); 
@@ -55,6 +56,9 @@ public:
 
   // install a device change callback
   virtual void installDeviceCallback(VDeviceCallback callback);
+
+  // set a lose focus callback
+  virtual void installLoseFocusCallback(VWindowCallback callback);
 
   // redraw this window
   virtual void redraw();
@@ -110,6 +114,9 @@ protected:
   // enable background/foreground color
   bool m_backEnabled;
   bool m_foreEnabled;
+
+  // lose focus callback
+  VWindowCallback m_loseFocusCallback;
 
   // for counting menu ids
   static uint32_t nextMenuID;

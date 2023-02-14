@@ -144,6 +144,18 @@ void VWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
+void VWindow::loseFocus(WPARAM wParam, LPARAM lParam)
+{
+  VWindow *child = getChild((HWND)wParam);
+  if (child){
+    child->loseFocus(wParam, lParam);
+    return;
+  }
+  if (m_loseFocusCallback) {
+    m_loseFocusCallback(m_callbackArg, this);
+  }
+}
+
 bool VWindow::addChild(uintptr_t menuID, VWindow *child, uint32_t *out_id)
 {
   if (m_children.find(menuID) != m_children.end()) {
@@ -215,6 +227,14 @@ void VWindow::installDeviceCallback(VDeviceCallback callback)
 
   m_hDeviceNotify = RegisterDeviceNotification(m_hwnd,
     &NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE);
+}
+
+void VWindow::installLoseFocusCallback(VWindowCallback callback)
+{
+  if (m_loseFocusCallback) {
+    return;
+  }
+  m_loseFocusCallback = callback;
 }
 
 void VWindow::redraw()
@@ -335,6 +355,9 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_PAINT:
     pWindow->paint();
     return 0;
+  case WM_KILLFOCUS:
+    pWindow->loseFocus(wParam, lParam);
+    break;
   case WM_COMMAND:
     pWindow->command(wParam, lParam);
     break;

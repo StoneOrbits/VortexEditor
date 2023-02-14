@@ -122,6 +122,7 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_colorPickerWindow.init(hInst, "Vortex Color Picker", BACK_COL, 420, 420, this);
   m_colorPickerWindow.setVisible(false);
   m_colorPickerWindow.setCloseCallback(hideGUICallback);
+  m_colorPickerWindow.installLoseFocusCallback(loseFocusCallback);
 
   // the sat/val box
   m_satValBox.init(hInst, m_colorPickerWindow, "Saturation and Value", BACK_COL, 256, 256, 9, 10, SATVAL_BOX_ID, selectSVCallback);
@@ -152,7 +153,7 @@ bool VortexColorPicker::init(HINSTANCE hInst)
   m_blueSlider.setDrawVLine(false);
 
   // preview box for current color
-  m_colorPreview.init(hInst, m_colorPickerWindow, "", BACK_COL, 122, 96, 273, 274, PREVIEW_ID, nullptr);
+  m_colorPreview.init(hInst, m_colorPickerWindow, "", BACK_COL, 122, 96, 273, 274, PREVIEW_ID, clickCurColorCallback);
   m_colorPreview.setActive(true);
   m_colorPreview.setColor(0xFF0000);
   m_colorPreview.setSelectable(false);
@@ -322,6 +323,18 @@ void VortexColorPicker::fieldEdit(VWindow *window)
   //demoCurMode();
 }
 
+void VortexColorPicker::clickCurColor()
+{
+  uint32_t rawCol = m_curRGB.raw();
+  for (uint32_t i = 0; i < 8; ++i) {
+    if (m_savedColors[i].isSelected()) {
+      m_savedColors[i].setColor(rawCol);
+      m_savedColors[i].redraw();
+      break;
+    }
+  }
+}
+
 void VortexColorPicker::selectR(VSelectBox::SelectEvent sevent, uint32_t r)
 {
   selectR(255 - r);
@@ -459,6 +472,15 @@ void VortexColorPicker::hide()
     m_savedColors[i].setSelected(false);
   }
   m_isOpen = false;
+}
+
+void VortexColorPicker::loseFocus()
+{
+  // unselect any saved color selects that were selected
+  for (uint32_t i = 0; i < 8; ++i) {
+    m_savedColors[i].setSelected(false);
+    m_savedColors[i].redraw();
+  }
 }
 
 // push a color into the history

@@ -121,6 +121,9 @@ LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, 
   case WM_CREATE:
     pWindow->create();
     break;
+  case WM_KILLFOCUS:
+    pWindow->loseFocus(wParam, lParam);
+    break;
   case WM_PAINT:
     pWindow->paint();
     return 0;

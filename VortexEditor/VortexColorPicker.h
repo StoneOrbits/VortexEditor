@@ -28,6 +28,7 @@ public:
   // show/hide the color picker window
   void show();
   void hide();
+  void loseFocus();
 
   // send the refresh message to the window
   void refreshColor();
@@ -73,11 +74,19 @@ private:
   static void selectBCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
     ((VortexColorPicker *)pthis)->selectB(sevent, y);
   }
+  static void clickCurColorCallback(void *pthis, VColorSelect *colSelect, VColorSelect::SelectEvent sevent) {
+    if (sevent == VColorSelect::SelectEvent::SELECT_LEFT_CLICK) {
+      ((VortexColorPicker *)pthis)->clickCurColor();
+    }
+  }
   static void fieldEditCallback(void *pthis, VWindow *window) {
     ((VortexColorPicker *)pthis)->fieldEdit(window);
   }
   static void hideGUICallback(void *pthis, VWindow *window) {
     ((VortexColorPicker *)pthis)->hide();
+  }
+  static void loseFocusCallback(void *pthis, VWindow *window) {
+    ((VortexColorPicker *)pthis)->loseFocus();
   }
   static void historyCallback(void *pthis, VColorSelect *colSelect, VColorSelect::SelectEvent sevent)       { 
     if (sevent == VColorSelect::SelectEvent::SELECT_LEFT_CLICK) {
@@ -91,6 +100,8 @@ private:
   void selectSV(VSelectBox::SelectEvent sevent, uint32_t s, uint32_t v);
   void selectH(VSelectBox::SelectEvent sevent, uint32_t h);
   void fieldEdit(VWindow *window);
+
+  void clickCurColor();
 
   void selectR(VSelectBox::SelectEvent sevent, uint32_t r);
   void selectG(VSelectBox::SelectEvent sevent, uint32_t g);
