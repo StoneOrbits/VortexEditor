@@ -134,7 +134,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   Vortex::init<VortexEditorCallbacks>();
 
   // initialize the window accordingly
-  m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor);
+  m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor, "VortexEditor");
 
   m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 72, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
 
