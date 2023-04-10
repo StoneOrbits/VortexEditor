@@ -2,8 +2,9 @@
 
 // VortexEngine includes
 #include "Serial/ByteStream.h"
-#include "Colors/Colorset.h"
 #include "Patterns/Pattern.h"
+#include "Colors/Colorset.h"
+#include "Random/Random.h"
 #include "Modes/Mode.h"
 #include "VortexLib.h"
 
@@ -393,30 +394,31 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     // this should never happen
     return;
   }
+  Random ctx;
   Colorset newSet;
   switch (menu) {
   case ID_COLORSET_RANDOM_COMPLIMENTARY:
-    newSet.randomizeComplimentary();
+    newSet.randomizeComplimentary(ctx);
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_MONOCHROMATIC:
-    newSet.randomizeMonochromatic();
+    newSet.randomizeMonochromatic(ctx);
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_TRIADIC:
-    newSet.randomizeTriadic();
+    newSet.randomizeTriadic(ctx);
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_SQUARE:
-    newSet.randomizeSquare();
+    newSet.randomizeSquare(ctx);
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_PENTADIC:
-    newSet.randomizePentadic();
+    newSet.randomizePentadic(ctx);
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_RAINBOW:
-    newSet.randomizeRainbow();
+    newSet.randomizeRainbow(ctx);
     applyColorset(newSet, sels);
     break;
   case ID_PATTERN_RANDOM_SINGLE_LED_PATTERN:
@@ -424,17 +426,17 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     // to properly convert the mode to all-same-single if it's a multi to
     // begin with, otherwise we can just apply the single to whichever we select
     if (isMultiLedPatternID(Vortex::getPatternID())) {
-      Vortex::setPattern((PatternID)(rand() % PATTERN_SINGLE_COUNT));
+      Vortex::setPattern((PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
     } else {
       for (uint32_t i = 0; i < sels.size(); ++i) {
-        Vortex::setSinglePat((LedPos)sels[i], (PatternID)(rand() % PATTERN_SINGLE_COUNT));
+        Vortex::setSinglePat((LedPos)sels[i], (PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
       }
     }
     refreshModeList();
     demoCurMode();
     break;
   case ID_PATTERN_RANDOM_MULTI_LED_PATTERN:
-    Vortex::setPattern((PatternID)((rand() % PATTERN_MULTI_COUNT) + PATTERN_MULTI_FIRST));
+    Vortex::setPattern((PatternID)ctx.next(PATTERN_MULTI_FIRST, PATTERN_MULTI_LAST));
     refreshModeList();
     demoCurMode();
     break;
