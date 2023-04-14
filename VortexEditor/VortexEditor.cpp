@@ -992,7 +992,7 @@ void VortexEditor::exportMode(VWindow *window)
   memset(&ofn, 0, sizeof(ofn));
   ofn.lStructSize = sizeof(ofn);
   ofn.hwndOwner = NULL;
-  string modeName = "Mode_" + to_string(Vortex::curMode()) + "_" + Vortex::getModeName();
+  string modeName = "Mode_" + to_string(Vortex::curModeIndex()) + "_" + Vortex::getModeName();
   replace(modeName.begin(), modeName.end(), ' ', '_');
   modeName += VORTEX_MODE_EXTENSION;
   char szFile[MAX_PATH] = {0};
@@ -1033,7 +1033,7 @@ void VortexEditor::exportMode(VWindow *window)
 void VortexEditor::selectMode(VWindow *window)
 {
   int sel = m_modeListBox.getSelection();
-  if (sel == Vortex::curMode()) {
+  if (sel == Vortex::curModeIndex()) {
     // trigger demo again w/e
     demoCurMode();
     return;
@@ -1073,7 +1073,7 @@ void VortexEditor::demoCurMode()
   port->writeData(curMode);
   // wait for the done response
   port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
-  string modeName = "Mode_" + to_string(Vortex::curMode()) + "_" + Vortex::getModeName();
+  string modeName = "Mode_" + to_string(Vortex::curModeIndex()) + "_" + Vortex::getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
@@ -1099,7 +1099,7 @@ void VortexEditor::addMode(VWindow *window)
 #endif
   debug("Adding mode %u", Vortex::numModes() + 1);
   Vortex::addNewMode();
-  m_modeListBox.setSelection(Vortex::curMode());
+  m_modeListBox.setSelection(Vortex::curModeIndex());
   refreshModeList();
   if (Vortex::numModes() == 1) {
     m_ledsMultiListBox.setSelection(0);
@@ -1110,8 +1110,8 @@ void VortexEditor::addMode(VWindow *window)
 
 void VortexEditor::delMode(VWindow *window)
 {
-  debug("Deleting mode %u", Vortex::curMode());
-  uint32_t cur = Vortex::curMode();
+  debug("Deleting mode %u", Vortex::curModeIndex());
+  uint32_t cur = Vortex::curModeIndex();
   Vortex::delCurMode();
   refreshModeList();
   if (!Vortex::numModes()) {
@@ -1130,7 +1130,7 @@ void VortexEditor::copyMode(VWindow *window)
   if (sel < 0) {
     return;
   }
-  debug("Copying mode %u", Vortex::curMode());
+  debug("Copying mode %u", Vortex::curModeIndex());
   ByteStream stream;
   Vortex::getCurMode(stream);
   Vortex::addNewMode(stream);
@@ -1369,7 +1369,7 @@ void VortexEditor::demoColor(uint32_t rawCol)
   port->writeData(curMode);
   // wait for the done response
   port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
-  string modeName = "Mode_" + to_string(Vortex::curMode()) + "_" + Vortex::getModeName();
+  string modeName = "Mode_" + to_string(Vortex::curModeIndex()) + "_" + Vortex::getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
@@ -1477,7 +1477,7 @@ HBITMAP VortexEditor::genProgressBack(uint32_t width, uint32_t height, float pro
 void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
-  int curSel = Vortex::curMode();
+  int curSel = (int)Vortex::curModeIndex();
   // We have to actually iterate the modes with nextmode because Vortex can't just
   // instantiate one and return it which is kinda dumb but just how it works for now
   Vortex::setCurMode(0, false);
