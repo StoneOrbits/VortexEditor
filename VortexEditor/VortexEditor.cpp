@@ -429,7 +429,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
       Vortex::setPattern((PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
     } else {
       for (uint32_t i = 0; i < sels.size(); ++i) {
-        Vortex::setSinglePat((LedPos)sels[i], (PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
+        Vortex::setPatternAt((LedPos)sels[i], (PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
       }
     }
     refreshModeList();
@@ -544,7 +544,7 @@ void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selecti
 void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 {
   for (uint32_t i = 0; i < selections.size(); ++i) {
-    Vortex::setSinglePat((LedPos)selections[i], id);
+    Vortex::setPatternAt((LedPos)selections[i], id);
   }
   refreshModeList();
   // update the demo
@@ -564,7 +564,7 @@ void VortexEditor::applyColorsetToAll(const Colorset &set)
 void VortexEditor::applyPatternToAll(PatternID id)
 {
   for (LedPos i = LED_FIRST; i < Vortex::numLedsInMode(); ++i) {
-    Vortex::setSinglePat(i, id);
+    Vortex::setPatternAt(i, id);
   }
   refreshFingerList();
   // update the demo
@@ -712,7 +712,7 @@ void VortexEditor::pasteLED()
   } else {
     // otherwise set single
     for (uint32_t i = 0; i < sels.size(); ++i) {
-      Vortex::setSinglePat((LedPos)sels[i], id, &args, &newSet);
+      Vortex::setPatternAt((LedPos)sels[i], id, &args, &newSet);
     }
   }
   refreshModeList();
@@ -1177,12 +1177,12 @@ void VortexEditor::selectPattern(VWindow *window)
     } else {
       // otherwise we are switching from single to single to just
       // apply the pattern change to this slot
-      Vortex::setSinglePat(LED_FIRST, (PatternID)pat);
+      Vortex::setPatternAt(LED_FIRST, (PatternID)pat);
     }
   } else {
     for (uint32_t i = 0; i < sels.size(); ++i) {
       // only set the pattern on a single position
-      Vortex::setSinglePat((LedPos)sels[i], (PatternID)pat);
+      Vortex::setPatternAt((LedPos)sels[i], (PatternID)pat);
     }
   }
   refreshModeList();
@@ -1216,7 +1216,7 @@ void VortexEditor::copyToAll(VWindow *window)
     if (pos == i) {
       continue;
     }
-    Vortex::setSinglePat(i, (PatternID)pat, &args, &set);
+    Vortex::setPatternAt(i, (PatternID)pat, &args, &set);
   }
   refreshModeList();
   // update the demo
@@ -1255,7 +1255,7 @@ void VortexEditor::paramEdit(VWindow *window)
     // set the param on all patterns, which may require changing the pattern id
     for (uint32_t i = 0; i < sels.size(); ++i) {
       // only set the pattern on a single position
-      Vortex::setSinglePat((LedPos)sels[i], Vortex::getPatternID((LedPos)pos));
+      Vortex::setPatternAt((LedPos)sels[i], Vortex::getPatternID((LedPos)pos));
       Vortex::setPatternArgs((LedPos)sels[i], args);
     }
     refreshFingerList(false);
