@@ -166,10 +166,10 @@ private:
   void refreshPortList();
   void refreshStatus();
   void refreshStorageBar();
-  // but the mode list, finger list, etc are all considered a heirarchy so
+  // but the mode list, led list, etc are all considered a heirarchy so
   // there is an option to recursively refresh all children elements
   void refreshModeList(bool recursive = true);
-  void refreshFingerList(bool recursive = true);
+  void refreshLedList(bool recursive = true);
   void refreshPatternSelect(bool recursive = true);
   void refreshColorSelect(bool recursive = true);
   void refreshParams(bool recursive = true);
@@ -224,7 +224,7 @@ private:
   VButton m_copyModeButton;
   VButton m_moveModeUpButton;
   VButton m_moveModeDownButton;
-  // the list of fingers is a multi select
+  // the list of leds is a multi select
   VMultiListBox m_ledsMultiListBox;
   // the pattern selection
   VComboBox m_patternSelectComboBox;
