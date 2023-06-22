@@ -299,7 +299,7 @@ void VortexEditor::run()
 
 void VortexEditor::triggerRefresh()
 {
-  //PostMessage(m_window.hwnd(), WM_USER, 0, 0);
+  PostMessage(m_window.hwnd(), WM_USER, 0, 0);
 }
 
 void VortexEditor::printlog(const char *file, const char *func, int line, const char *msg, ...)
