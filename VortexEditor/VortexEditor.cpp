@@ -2,6 +2,7 @@
 
 // VortexEngine includes
 #include "Serial/ByteStream.h"
+#include "Patterns/Patterns.h"
 #include "Patterns/Pattern.h"
 #include "Colors/Colorset.h"
 #include "Random/Random.h"
@@ -1406,7 +1407,7 @@ void VortexEditor::demoColor(uint32_t rawCol)
   ByteStream curMode;
   PatternArgs args(1, 0, 0);
   Colorset newSet(rawCol);
-  Mode tmpMode(PATTERN_BASIC, &args, &newSet);
+  Mode tmpMode(PATTERN_STROBE, &args, &newSet);
   tmpMode.init();
   tmpMode.saveToBuffer(curMode);
   // send, the, mode
