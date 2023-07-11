@@ -263,8 +263,8 @@ bool VortexEditor::init(HINSTANCE hInst)
     { FCONTROL | FSHIFT | FVIRTKEY, 'S', ID_FILE_EXPORT },
     // ctrl + shift + o  open
     { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_FILE_IMPORT },
-    // del
-    { FVIRTKEY, VK_DELETE, ID_EDIT_CLEAR_PATTERN },
+    // ctrl + d
+    { FCONTROL | FVIRTKEY, 'D', ID_EDIT_CLEAR_PATTERN },
   };
   m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
   if (!m_accelTable) {

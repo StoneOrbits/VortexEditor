@@ -73,7 +73,7 @@ BEGIN
         MENUITEM "Copy LED\tctrl+c",            ID_EDIT_COPY_LED
         MENUITEM "Paste LED\tctrl+v",           ID_EDIT_PASTE_LED
         MENUITEM SEPARATOR
-        MENUITEM "Clear Pattern\tdel",          ID_EDIT_CLEAR_PATTERN
+        MENUITEM "Clear Pattern\tctrl+d",       ID_EDIT_CLEAR_PATTERN
         MENUITEM "Clear Colorset\tctrl+shift+d", ID_EDIT_CLEAR_COLORSET
         MENUITEM "Copy Colorset\tctrl+shift+c", ID_EDIT_COPY_COLORSET
         MENUITEM "Paste Colorset\tctrl+shift+v", ID_EDIT_PASTE_COLORSET
