@@ -264,7 +264,7 @@ bool VortexEditor::init(HINSTANCE hInst)
     // ctrl + shift + o  open
     { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_FILE_IMPORT },
     // del
-    { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_EDIT_CLEAR_PATTERN },
+    { FVIRTKEY, VK_DELETE, ID_EDIT_CLEAR_PATTERN },
   };
   m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
   if (!m_accelTable) {
@@ -1620,7 +1620,7 @@ void VortexEditor::refreshPatternSelect(bool recursive)
     m_patternSelectComboBox.addItem(patternName);
     // TODO: put multi-led in a separate position in UI so this is more elegant
     if (id == Vortex::getPatternID((LedPos)sel)) {
-      m_patternSelectComboBox.setSelection(id);
+      m_patternSelectComboBox.setSelection(id + 1);
     }
   }
 }
