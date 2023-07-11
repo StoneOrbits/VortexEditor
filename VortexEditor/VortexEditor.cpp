@@ -206,6 +206,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_HELP_HELP, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
+  m_window.addCallback(ID_EDIT_CLEAR_PATTERN, handleMenusCallback);
   m_window.addCallback(ID_EDIT_UNDO, handleMenusCallback);
   m_window.addCallback(ID_EDIT_REDO, handleMenusCallback);
   m_window.addCallback(ID_FILE_PULL, handleMenusCallback);
@@ -262,6 +263,8 @@ bool VortexEditor::init(HINSTANCE hInst)
     { FCONTROL | FSHIFT | FVIRTKEY, 'S', ID_FILE_EXPORT },
     // ctrl + shift + o  open
     { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_FILE_IMPORT },
+    // del
+    { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_EDIT_CLEAR_PATTERN },
   };
   m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
   if (!m_accelTable) {
@@ -351,6 +354,9 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_EDIT_PASTE_LED:
     pasteLED();
+    return;
+  case ID_EDIT_CLEAR_PATTERN:
+    clearLED();
     return;
   case ID_EDIT_UNDO:
     Vortex::undo();
@@ -741,6 +747,21 @@ void VortexEditor::pasteLED()
     for (uint32_t i = 0; i < sels.size(); ++i) {
       Vortex::setPatternAt((LedPos)sels[i], id, &args, &newSet);
     }
+  }
+  refreshModeList();
+  demoCurMode();
+}
+
+void VortexEditor::clearLED()
+{
+  vector<int> sels;
+  m_ledsMultiListBox.getSelections(sels);
+  if (!sels.size()) {
+    return;
+  }
+  // clear pattern at each position
+  for (uint32_t i = 0; i < sels.size(); ++i) {
+    Vortex::setPatternAt((LedPos)sels[i], PATTERN_NONE);
   }
   refreshModeList();
   demoCurMode();
@@ -1185,10 +1206,7 @@ void VortexEditor::selectFinger(VWindow *window)
 
 void VortexEditor::selectPattern(VWindow *window)
 {
-  PatternID pat = (PatternID)m_patternSelectComboBox.getSelection();
-  if ((int)pat < 0) {
-    return;
-  }
+  PatternID pat = patternSelection();
   vector<int> sels;
   m_ledsMultiListBox.getSelections(sels);
   if (!sels.size()) {
@@ -1218,10 +1236,7 @@ void VortexEditor::selectPattern(VWindow *window)
 
 void VortexEditor::copyToAll(VWindow *window)
 {
-  int pat = m_patternSelectComboBox.getSelection();
-  if (pat < 0) {
-    return;
-  }
+  PatternID pat = patternSelection();
   vector<int> sels;
   m_ledsMultiListBox.getSelections(sels);
   if (sels.size() > 1) {
@@ -1231,7 +1246,7 @@ void VortexEditor::copyToAll(VWindow *window)
   if (pos < 0) {
     return;
   }
-  if (isMultiLedPatternID((PatternID)pat)) {
+  if (isMultiLedPatternID(pat)) {
     return;
   }
   PatternArgs args;
@@ -1246,7 +1261,7 @@ void VortexEditor::copyToAll(VWindow *window)
     if (pos == i) {
       continue;
     }
-    Vortex::setPatternAt(i, (PatternID)pat, &args, &set);
+    Vortex::setPatternAt(i, pat, &args, &set);
   }
   refreshModeList();
   // update the demo
@@ -1257,10 +1272,6 @@ void VortexEditor::paramEdit(VWindow *window)
 {
   if (!window || !window->isEnabled()) {
     return;
-  }
-  int sel = m_patternSelectComboBox.getSelection();
-  if (sel < 0) {
-    sel = 0;
   }
   int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
@@ -1274,7 +1285,7 @@ void VortexEditor::paramEdit(VWindow *window)
   }
   Vortex::getPatternArgs((LedPos)pos, args);
   // get the number of params for the current pattern selection
-  uint32_t numParams = Vortex::numCustomParams((PatternID)sel);
+  uint32_t numParams = Vortex::numCustomParams(patternSelection());
   // store the target param
   args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
   vector<int> sels;
@@ -1519,6 +1530,12 @@ HBITMAP VortexEditor::genProgressBack(uint32_t width, uint32_t height, float pro
   return bitmap;
 }
 
+  // get the current pattern selection from the pattern dropdown
+PatternID VortexEditor::patternSelection() const
+{
+  return (PatternID)(m_patternSelectComboBox.getSelection() - 1);
+}
+
 void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
@@ -1549,15 +1566,12 @@ void VortexEditor::refreshLedList(bool recursive)
   vector<int> sels;
   m_ledsMultiListBox.getSelections(sels);
   m_ledsMultiListBox.clearItems();
-  for (LedPos pos = LED_FIRST; pos < Vortex::numLedsInMode(); ++pos) {
-    // if a led is empty don't add it
-    if (Vortex::getPatternID(pos) == PATTERN_NONE) {
-      continue;
+  if (Vortex::getPatternID(LED_MULTI) == PATTERN_NONE) {
+    for (LedPos pos = LED_FIRST; pos < Vortex::numLedsInMode(); ++pos) {
+      string ledName = Vortex::ledToString(pos) + " (" + Vortex::getPatternName(pos) + ")";
+      m_ledsMultiListBox.addItem(ledName);
     }
-    string ledName = Vortex::ledToString(pos) + " (" + Vortex::getPatternName(pos) + ")";
-    m_ledsMultiListBox.addItem(ledName);
-  }
-  if (Vortex::getPatternID(LED_MULTI) != PATTERN_NONE) {
+  } else {
     string ledName = "Multi led (" + Vortex::getPatternName(LED_MULTI) + ")";
     m_ledsMultiListBox.addItem(ledName);
     // TODO: support both rendering multi and single at same time... not for now
@@ -1581,6 +1595,7 @@ void VortexEditor::refreshPatternSelect(bool recursive)
   m_patternSelectComboBox.setEnabled(true);
   int sel = m_ledsMultiListBox.getSelection();
   if (sel < 0) {
+    // still necessary?
     m_patternSelectComboBox.setSelection(PATTERN_NONE);
     return;
   }
@@ -1593,7 +1608,7 @@ void VortexEditor::refreshPatternSelect(bool recursive)
     sel = LED_MULTI;
   }
   // get the pattern
-  for (PatternID id = PATTERN_FIRST; id < PATTERN_COUNT; ++id) {
+  for (PatternID id = PATTERN_NONE; id < PATTERN_COUNT; ++id) {
     bool isMulti = isMultiLedPatternID(id);
     if (!allow_multi && isMulti) {
       continue;
@@ -1649,10 +1664,7 @@ void VortexEditor::refreshColorSelect(bool recursive)
 
 void VortexEditor::refreshParams(bool recursive)
 {
-  int sel = m_patternSelectComboBox.getSelection();
-  if (sel < 0) {
-    sel = 0;
-  }
+  PatternID sel = patternSelection();
   int pos = m_ledsMultiListBox.getSelection();
   if (pos < 0) {
     for (uint32_t i = 0; i < 8; ++i) {
@@ -1672,7 +1684,7 @@ void VortexEditor::refreshParams(bool recursive)
     }
     return;
   }
-  vector<string> tips = Vortex::getCustomParams((PatternID)sel);
+  vector<string> tips = Vortex::getCustomParams(sel);
   if (sels.size() > 1) {
     bool all_same = true;
     PatternID base = Vortex::getPatternID((LedPos)sels[0]);
@@ -1698,7 +1710,7 @@ void VortexEditor::refreshParams(bool recursive)
   Vortex::getPatternArgs((LedPos)pos, args);
   uint8_t *pArgs = (uint8_t *)&args.arg1;
   // get the number of params for the current pattern selection
-  uint32_t numParams = Vortex::numCustomParams((PatternID)sel);
+  uint32_t numParams = Vortex::numCustomParams(sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
     m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str(), false);

@@ -155,6 +155,7 @@ private:
   void pasteColorset();
   void copyLED();
   void pasteLED();
+  void clearLED();
 
   // helper for clipboard
   void getClipboard(std::string &clipData);
@@ -187,6 +188,9 @@ private:
 
   // generate the progress bar background for storage space
   HBITMAP genProgressBack(uint32_t width, uint32_t height, float progress);
+
+  // get the current pattern selection from the pattern dropdown
+  PatternID patternSelection() const;
 
   // ==================================
   //  Member data
