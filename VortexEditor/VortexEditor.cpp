@@ -401,7 +401,8 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     // this should never happen
     return;
   }
-  Random ctx;
+  // TODO seed me properly?
+  Random ctx(time(NULL));
   Colorset newSet;
   switch (menu) {
   case ID_COLORSET_RANDOM_COMPLIMENTARY:
@@ -654,8 +655,7 @@ void VortexEditor::copyLED()
   }
   // TODO: led/colorset to/from json
   string led = LED_CLIPBOARD_MARKER;
-  int pat = m_patternSelectComboBox.getSelection();
-  led += to_string(pat) + ";";
+  led += to_string(patternSelection()) + ";";
   PatternArgs args;
   // TODO: put multi-led in a separate position in UI so this is more elegant
   if (Vortex::isCurModeMulti()) {
