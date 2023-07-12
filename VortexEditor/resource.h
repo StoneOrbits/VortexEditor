@@ -41,13 +41,14 @@
 #define ID_EDIT_UNDO                    40049
 #define ID_EDIT_REDO                    40050
 #define ID_TOOLS_COLOR_PICKER           40051
+#define ID_EDIT_CLEAR_PATTERN           40052
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
-#define _APS_NEXT_COMMAND_VALUE         40052
+#define _APS_NEXT_COMMAND_VALUE         40053
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
