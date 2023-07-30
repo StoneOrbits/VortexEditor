@@ -1089,7 +1089,10 @@ void VortexEditor::selectMode(VWindow *window)
   if (sel < 0) {
     return;
   }
-  Vortex::setCurMode(sel);
+  if (!Vortex::setCurMode(sel)) {
+    // error!
+    return;
+  }
   // reselect first led
   m_ledsMultiListBox.clearSelections();
   m_ledsMultiListBox.setSelection(0);
@@ -1107,16 +1110,17 @@ void VortexEditor::demoCurMode()
   if (sel < 0 || !isConnected()) {
     return;
   }
+  // now unserialize the stream of data that was read
+  ByteStream curMode;
+  if (!Vortex::getCurMode(curMode) || curMode.size() <= 4) {
+    // error!
+    // TODO: abort
+    return;
+  }
   // now immediately tell it what to do
   port->writeData(EDITOR_VERB_DEMO_MODE);
   // read data again
   port->expectData(EDITOR_VERB_READY);
-  // now unserialize the stream of data that was read
-  ByteStream curMode;
-  if (!Vortex::getCurMode(curMode) || !curMode.size()) {
-    // error!
-    // TODO: abort
-  }
   // send, the, mode
   port->writeData(curMode);
   // wait for the done response
