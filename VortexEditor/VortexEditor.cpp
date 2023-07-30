@@ -434,17 +434,17 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     // to properly convert the mode to all-same-single if it's a multi to
     // begin with, otherwise we can just apply the single to whichever we select
     if (isMultiLedPatternID(Vortex::getPatternID())) {
-      Vortex::setPattern((PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
+      Vortex::setPattern((PatternID)ctx.next16(PATTERN_FIRST, PATTERN_SINGLE_LAST));
     } else {
       for (uint32_t i = 0; i < sels.size(); ++i) {
-        Vortex::setPatternAt((LedPos)sels[i], (PatternID)ctx.next(PATTERN_FIRST, PATTERN_SINGLE_LAST));
+        Vortex::setPatternAt((LedPos)sels[i], (PatternID)ctx.next16(PATTERN_FIRST, PATTERN_SINGLE_LAST));
       }
     }
     refreshModeList();
     demoCurMode();
     break;
   case ID_PATTERN_RANDOM_MULTI_LED_PATTERN:
-    Vortex::setPattern((PatternID)ctx.next(PATTERN_MULTI_FIRST, PATTERN_MULTI_LAST));
+    Vortex::setPattern((PatternID)ctx.next16(PATTERN_MULTI_FIRST, PATTERN_MULTI_LAST));
     refreshModeList();
     demoCurMode();
     break;
