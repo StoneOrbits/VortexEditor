@@ -402,7 +402,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   }
   // TODO seed me properly?
-  Random ctx(time(NULL));
+  Random ctx((uint32_t)time(NULL));
   Colorset newSet;
   switch (menu) {
   case ID_COLORSET_RANDOM_COMPLIMENTARY:
@@ -410,7 +410,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_MONOCHROMATIC:
-    newSet.randomizeMonochromatic(ctx);
+    newSet.randomizeColors(ctx, 0, Colorset::ColorMode::MONOCHROMATIC);
     applyColorset(newSet, sels);
     break;
   case ID_COLORSET_RANDOM_TRIADIC:
@@ -905,6 +905,7 @@ void VortexEditor::pull(VWindow *window)
     debug("Couldn't read anything");
     return;
   }
+  Vortex::matchLedCount(stream);
   Vortex::setModes(stream);
   // now send the done message
   port->writeData(EDITOR_VERB_PULL_MODES_DONE);
