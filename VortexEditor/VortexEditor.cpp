@@ -55,6 +55,8 @@ using namespace std;
 VortexEditor *g_pEditor = nullptr;
 
 VortexEditor::VortexEditor() :
+  m_vortex(),
+  m_engine(m_vortex.engine()),
   m_hInstance(NULL),
   m_hIcon(NULL),
   m_consoleHandle(nullptr),
@@ -88,13 +90,13 @@ VortexEditor::~VortexEditor()
 class VortexEditorCallbacks : public VortexCallbacks
 {
 public:
-  VortexEditorCallbacks() {}
+  VortexEditorCallbacks(Vortex &vortex) : VortexCallbacks(vortex) {}
   virtual ~VortexEditorCallbacks() {}
   // called when engine reads digital pins, use this to feed button presses to the engine
   virtual long checkPinHook(uint32_t pin) { return 1; }
   // called when engine writes to ir, use this to read data from the vortex engine
   // the data received will be in timings of milliseconds
-  // NOTE: to send data to IR use Vortex::IRDeliver at any time
+  // NOTE: to send data to IR use m_vortex.IRDeliver at any time
   virtual void infraredWrite(bool mark, uint32_t amount) { }
   // called when engine checks for Serial, use this to indicate serial is connected
   virtual bool serialCheck() { return false; }
@@ -133,7 +135,7 @@ bool VortexEditor::init(HINSTANCE hInst)
 #endif
 
   // initialize the system that wraps the vortex engine
-  Vortex::init<VortexEditorCallbacks>();
+  m_vortex.initEx<VortexEditorCallbacks>();
 
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor, "VortexEditor");
@@ -359,11 +361,11 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     clearLED();
     return;
   case ID_EDIT_UNDO:
-    Vortex::undo();
+    m_vortex.undo();
     refreshModeList();
     return;
   case ID_EDIT_REDO:
-    Vortex::redo();
+    m_vortex.redo();
     refreshModeList();
     return;
   case ID_FILE_PULL:
@@ -433,18 +435,18 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     // when applying a single led pattern we must use the 'setPattern' api
     // to properly convert the mode to all-same-single if it's a multi to
     // begin with, otherwise we can just apply the single to whichever we select
-    if (isMultiLedPatternID(Vortex::getPatternID())) {
-      Vortex::setPattern((PatternID)ctx.next16(PATTERN_FIRST, PATTERN_SINGLE_LAST));
+    if (isMultiLedPatternID(m_vortex.getPatternID(LED_ANY))) {
+      m_vortex.setPattern((PatternID)ctx.next16(PATTERN_FIRST, PATTERN_SINGLE_LAST));
     } else {
       for (uint32_t i = 0; i < sels.size(); ++i) {
-        Vortex::setPatternAt((LedPos)sels[i], (PatternID)ctx.next16(PATTERN_FIRST, PATTERN_SINGLE_LAST));
+        m_vortex.setPatternAt((LedPos)sels[i], (PatternID)ctx.next16(PATTERN_FIRST, PATTERN_SINGLE_LAST));
       }
     }
     refreshModeList();
     demoCurMode();
     break;
   case ID_PATTERN_RANDOM_MULTI_LED_PATTERN:
-    Vortex::setPattern((PatternID)ctx.next16(PATTERN_MULTI_FIRST, PATTERN_MULTI_LAST));
+    m_vortex.setPattern((PatternID)ctx.next16(PATTERN_MULTI_FIRST, PATTERN_MULTI_LAST));
     refreshModeList();
     demoCurMode();
     break;
@@ -458,14 +460,14 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     if (sels.size() != 1) {
       break;
     }
-    Vortex::getColorset((LedPos)sels[0], newSet);
+    m_vortex.getColorset((LedPos)sels[0], newSet);
     applyColorsetToAll(newSet);
     break;
   case ID_EDIT_COPY_PATTERN_TO_ALL:
     if (sels.size() != 1) {
       break;
     }
-    applyPatternToAll(Vortex::getPatternID((LedPos)sels[0]));
+    applyPatternToAll(m_vortex.getPatternID((LedPos)sels[0]));
     break;
 #endif
   }
@@ -513,10 +515,10 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol,
   colSelect->setColor(rawCol);
   Colorset newSet;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     pos = LED_MULTI;
   }
-  Vortex::getColorset((LedPos)pos, newSet);
+  m_vortex.getColorset((LedPos)pos, newSet);
   // if the color select was made inactive
   if (!colSelect->isActive()) {
     debug("Disabled color slot");
@@ -532,11 +534,11 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol,
     return;
   }
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::setColorset(LED_MULTI, newSet);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.setColorset(LED_MULTI, newSet);
   } else {
     for (uint32_t i = 0; i < sels.size(); ++i) {
-      Vortex::setColorset((LedPos)sels[i], newSet);
+      m_vortex.setColorset((LedPos)sels[i], newSet);
     }
   }
   if (demo) {
@@ -549,11 +551,11 @@ void VortexEditor::updateSelectedColor(VColorSelect *colSelect, uint32_t rawCol,
 void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selections)
 {
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::setColorset(LED_MULTI, set);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.setColorset(LED_MULTI, set);
   } else {
     for (uint32_t i = 0; i < selections.size(); ++i) {
-      Vortex::setColorset((LedPos)selections[i], set);
+      m_vortex.setColorset((LedPos)selections[i], set);
     }
   }
   refreshModeList();
@@ -564,7 +566,7 @@ void VortexEditor::applyColorset(const Colorset &set, const vector<int> &selecti
 void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 {
   for (uint32_t i = 0; i < selections.size(); ++i) {
-    Vortex::setPatternAt((LedPos)selections[i], id);
+    m_vortex.setPatternAt((LedPos)selections[i], id);
   }
   refreshModeList();
   // update the demo
@@ -574,11 +576,11 @@ void VortexEditor::applyPattern(PatternID id, const vector<int> &selections)
 void VortexEditor::applyColorsetToAll(const Colorset &set)
 {
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::setColorset(LED_MULTI, set);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.setColorset(LED_MULTI, set);
   } else {
-    for (uint32_t i = 0; i < Vortex::numLedsInMode(); ++i) {
-      Vortex::setColorset((LedPos)i, set);
+    for (uint32_t i = 0; i < m_vortex.numLedsInMode(); ++i) {
+      m_vortex.setColorset((LedPos)i, set);
     }
   }
   refreshColorSelect();
@@ -588,8 +590,8 @@ void VortexEditor::applyColorsetToAll(const Colorset &set)
 
 void VortexEditor::applyPatternToAll(PatternID id)
 {
-  for (LedPos i = LED_FIRST; i < Vortex::numLedsInMode(); ++i) {
-    Vortex::setPatternAt(i, id);
+  for (LedPos i = LED_FIRST; i < m_vortex.numLedsInMode(); ++i) {
+    m_vortex.setPatternAt(i, id);
   }
   refreshLedList();
   // update the demo
@@ -636,11 +638,11 @@ void VortexEditor::pasteColorset()
     }
   }
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::setColorset(LED_MULTI, newSet);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.setColorset(LED_MULTI, newSet);
   } else {
     for (uint32_t i = 0; i < sels.size(); ++i) {
-      Vortex::setColorset((LedPos)sels[i], newSet);
+      m_vortex.setColorset((LedPos)sels[i], newSet);
     }
   }
   refreshColorSelect();
@@ -658,10 +660,10 @@ void VortexEditor::copyLED()
   led += to_string(patternSelection()) + ";";
   PatternArgs args;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     pos = LED_MULTI;
   }
-  Vortex::getPatternArgs((LedPos)pos, args);
+  m_vortex.getPatternArgs((LedPos)pos, args);
   led += to_string(args.arg1) + ",";
   led += to_string(args.arg2) + ",";
   led += to_string(args.arg3) + ",";
@@ -739,13 +741,13 @@ void VortexEditor::pasteLED()
     }
   }
   // if applying multi-led, or changing multi-to single
-  if (isMultiLedPatternID(id) || isMultiLedPatternID(Vortex::getPatternID())) {
+  if (isMultiLedPatternID(id) || isMultiLedPatternID(m_vortex.getPatternID(LED_ANY))) {
     // then just set-all
-    Vortex::setPattern(id, &args, &newSet);
+    m_vortex.setPattern(id, &args, &newSet);
   } else {
     // otherwise set single
     for (uint32_t i = 0; i < sels.size(); ++i) {
-      Vortex::setPatternAt((LedPos)sels[i], id, &args, &newSet);
+      m_vortex.setPatternAt((LedPos)sels[i], id, &args, &newSet);
     }
   }
   refreshModeList();
@@ -761,7 +763,7 @@ void VortexEditor::clearLED()
   }
   // clear pattern at each position
   for (uint32_t i = 0; i < sels.size(); ++i) {
-    Vortex::setPatternAt((LedPos)sels[i], PATTERN_NONE);
+    m_vortex.setPatternAt((LedPos)sels[i], PATTERN_NONE);
   }
   refreshModeList();
   demoCurMode();
@@ -884,7 +886,7 @@ void VortexEditor::push(VWindow *window)
   port->expectData(EDITOR_VERB_READY);
   // now unserialize the stream of data that was read
   ByteStream modes;
-  Vortex::getModes(modes);
+  m_vortex.getModes(modes);
   // send the modes
   port->writeData(modes);
   // wait for the done response
@@ -905,14 +907,14 @@ void VortexEditor::pull(VWindow *window)
     debug("Couldn't read anything");
     return;
   }
-  Vortex::matchLedCount(stream);
-  Vortex::setModes(stream);
+  m_vortex.matchLedCount(stream, false);
+  m_vortex.setModes(stream);
   // now send the done message
   port->writeData(EDITOR_VERB_PULL_MODES_DONE);
   // wait for the ack from the gloves
   port->expectData(EDITOR_VERB_PULL_MODES_ACK);
   // unserialized all our modes
-  debug("Unserialized %u modes", Vortex::numModes());
+  debug("Unserialized %u modes", m_vortex.numModes());
   // refresh the mode list
   refreshModeList();
   // demo the current mode
@@ -948,7 +950,7 @@ void VortexEditor::load(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  Vortex::setModes(stream);
+  m_vortex.setModes(stream);
   debug("Loaded from [%s]", szFile);
   refreshModeList();
   demoCurMode();
@@ -986,7 +988,7 @@ void VortexEditor::save(VWindow *window)
   }
   DWORD written = 0;
   ByteStream stream;
-  Vortex::getModes(stream);
+  m_vortex.getModes(stream);
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
@@ -1024,7 +1026,7 @@ void VortexEditor::importMode(VWindow *window)
     // error
   }
   CloseHandle(hFile);
-  if (!Vortex::addNewMode(stream)) {
+  if (!m_vortex.addNewMode(stream)) {
     // error
   }
   debug("Loaded from [%s]", szFile);
@@ -1034,14 +1036,14 @@ void VortexEditor::importMode(VWindow *window)
 
 void VortexEditor::exportMode(VWindow *window)
 {
-  if (!Vortex::numModes()) {
+  if (!m_vortex.numModes()) {
     return;
   }
   OPENFILENAME ofn;
   memset(&ofn, 0, sizeof(ofn));
   ofn.lStructSize = sizeof(ofn);
   ofn.hwndOwner = NULL;
-  string modeName = "Mode_" + to_string(Vortex::curModeIndex()) + "_" + Vortex::getModeName();
+  string modeName = "Mode_" + to_string(m_vortex.curModeIndex()) + "_" + m_vortex.getModeName();
   replace(modeName.begin(), modeName.end(), ' ', '_');
   modeName += VORTEX_MODE_EXTENSION;
   char szFile[MAX_PATH] = {0};
@@ -1071,7 +1073,7 @@ void VortexEditor::exportMode(VWindow *window)
   }
   DWORD written = 0;
   ByteStream stream;
-  Vortex::getCurMode(stream);
+  m_vortex.getCurMode(stream);
   if (!WriteFile(hFile, stream.rawData(), stream.rawSize(), &written, NULL)) {
     // error
   }
@@ -1082,7 +1084,7 @@ void VortexEditor::exportMode(VWindow *window)
 void VortexEditor::selectMode(VWindow *window)
 {
   int sel = m_modeListBox.getSelection();
-  if (sel == Vortex::curModeIndex()) {
+  if (sel == m_vortex.curModeIndex()) {
     // trigger demo again w/e
     demoCurMode();
     return;
@@ -1090,7 +1092,7 @@ void VortexEditor::selectMode(VWindow *window)
   if (sel < 0) {
     return;
   }
-  if (!Vortex::setCurMode(sel)) {
+  if (!m_vortex.setCurMode(sel)) {
     // error!
     return;
   }
@@ -1113,7 +1115,7 @@ void VortexEditor::demoCurMode()
   }
   // now unserialize the stream of data that was read
   ByteStream curMode;
-  if (!Vortex::getCurMode(curMode) || curMode.size() <= 4) {
+  if (!m_vortex.getCurMode(curMode) || curMode.size() <= 4) {
     // error!
     // TODO: abort
     return;
@@ -1126,7 +1128,7 @@ void VortexEditor::demoCurMode()
   port->writeData(curMode);
   // wait for the done response
   port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
-  string modeName = "Mode_" + to_string(Vortex::curModeIndex()) + "_" + Vortex::getModeName();
+  string modeName = "Mode_" + to_string(m_vortex.curModeIndex()) + "_" + m_vortex.getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
@@ -1146,15 +1148,15 @@ void VortexEditor::clearDemo()
 void VortexEditor::addMode(VWindow *window)
 {
 #if MAX_MODES != 0
-  if (Vortex::numModes() >= MAX_MODES) {
+  if (m_vortex.numModes() >= MAX_MODES) {
     return;
   }
 #endif
-  debug("Adding mode %u", Vortex::numModes() + 1);
-  Vortex::addNewMode();
-  m_modeListBox.setSelection(Vortex::curModeIndex());
+  debug("Adding mode %u", m_vortex.numModes() + 1);
+  m_vortex.addNewMode();
+  m_modeListBox.setSelection(m_vortex.curModeIndex());
   refreshModeList();
-  if (Vortex::numModes() == 1) {
+  if (m_vortex.numModes() == 1) {
     m_ledsMultiListBox.setSelection(0);
     refreshModeList();
     demoCurMode();
@@ -1163,11 +1165,11 @@ void VortexEditor::addMode(VWindow *window)
 
 void VortexEditor::delMode(VWindow *window)
 {
-  debug("Deleting mode %u", Vortex::curModeIndex());
-  uint32_t cur = Vortex::curModeIndex();
-  Vortex::delCurMode();
+  debug("Deleting mode %u", m_vortex.curModeIndex());
+  uint32_t cur = m_vortex.curModeIndex();
+  m_vortex.delCurMode();
   refreshModeList();
-  if (!Vortex::numModes()) {
+  if (!m_vortex.numModes()) {
     clearDemo();
   } else {
     demoCurMode();
@@ -1176,29 +1178,29 @@ void VortexEditor::delMode(VWindow *window)
 
 void VortexEditor::copyMode(VWindow *window)
 {
-  if (!Vortex::numModes()) {
+  if (!m_vortex.numModes()) {
     return;
   }
   int sel = m_modeListBox.getSelection();
   if (sel < 0) {
     return;
   }
-  debug("Copying mode %u", Vortex::curModeIndex());
+  debug("Copying mode %u", m_vortex.curModeIndex());
   ByteStream stream;
-  Vortex::getCurMode(stream);
-  Vortex::addNewMode(stream);
+  m_vortex.getCurMode(stream);
+  m_vortex.addNewMode(stream);
   refreshModeList();
 }
 
 void VortexEditor::moveModeUp(VWindow *window)
 {
-  Vortex::shiftCurMode(-1);
+  m_vortex.shiftCurMode(-1);
   refreshModeList();
 }
 
 void VortexEditor::moveModeDown(VWindow *window)
 {
-  Vortex::shiftCurMode(1);
+  m_vortex.shiftCurMode(1);
   refreshModeList();
 }
 
@@ -1220,18 +1222,18 @@ void VortexEditor::selectPattern(VWindow *window)
   // if we ONLY selected the first led
   if (sels.size() == 1 && sels[0] == 0) {
     // and if we are switching from a multi-led or to a multi-led
-    if (Vortex::isCurModeMulti() || isMultiLedPatternID(pat)) {
+    if (m_vortex.isCurModeMulti() || isMultiLedPatternID(pat)) {
       // then set the pattern on the entire mode
-      Vortex::setPattern(pat);
+      m_vortex.setPattern(pat);
     } else {
       // otherwise we are switching from single to single to just
       // apply the pattern change to this slot
-      Vortex::setPatternAt(LED_FIRST, pat);
+      m_vortex.setPatternAt(LED_FIRST, pat);
     }
   } else {
     for (uint32_t i = 0; i < sels.size(); ++i) {
       // only set the pattern on a single position
-      Vortex::setPatternAt((LedPos)sels[i], pat);
+      m_vortex.setPatternAt((LedPos)sels[i], pat);
     }
   }
   refreshModeList();
@@ -1256,17 +1258,17 @@ void VortexEditor::copyToAll(VWindow *window)
   }
   PatternArgs args;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     pos = LED_MULTI;
   }
-  Vortex::getPatternArgs((LedPos)pos, args);
+  m_vortex.getPatternArgs((LedPos)pos, args);
   Colorset set;
-  Vortex::getColorset((LedPos)pos, set);
-  for (LedPos i = LED_FIRST; i < Vortex::numLedsInMode(); ++i) {
+  m_vortex.getColorset((LedPos)pos, set);
+  for (LedPos i = LED_FIRST; i < m_vortex.numLedsInMode(); ++i) {
     if (pos == i) {
       continue;
     }
-    Vortex::setPatternAt(i, pat, &args, &set);
+    m_vortex.setPatternAt(i, pat, &args, &set);
   }
   refreshModeList();
   // update the demo
@@ -1285,12 +1287,12 @@ void VortexEditor::paramEdit(VWindow *window)
   uint32_t paramIndex = (uint32_t)((uintptr_t)window->menu() - PARAM_EDIT_ID);
   PatternArgs args;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     pos = LED_MULTI;
   }
-  Vortex::getPatternArgs((LedPos)pos, args);
+  m_vortex.getPatternArgs((LedPos)pos, args);
   // get the number of params for the current pattern selection
-  uint32_t numParams = Vortex::numCustomParams(patternSelection());
+  uint32_t numParams = m_vortex.numCustomParams(patternSelection());
   // store the target param
   args.args[paramIndex] = m_paramTextBoxes[paramIndex].getValue();
   vector<int> sels;
@@ -1300,15 +1302,15 @@ void VortexEditor::paramEdit(VWindow *window)
     return;
   }
     // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::setPatternArgs(LED_MULTI, args);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.setPatternArgs(LED_MULTI, args);
   } else {
     if (sels.size() == 1) {
-      Vortex::setPatternArgs((LedPos)sels[0], args);
+      m_vortex.setPatternArgs((LedPos)sels[0], args);
     } else {
       // set the param on all patterns, which may require changing the pattern id
       for (uint32_t i = 0; i < sels.size(); ++i) {
-        Vortex::setPatternAt((LedPos)sels[i], Vortex::getPatternID((LedPos)pos), &args);
+        m_vortex.setPatternAt((LedPos)sels[i], m_vortex.getPatternID((LedPos)pos), &args);
       }
       refreshLedList(false);
     }
@@ -1336,10 +1338,10 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
   }
   Colorset newSet;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::getColorset(LED_MULTI, newSet);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.getColorset(LED_MULTI, newSet);
   } else {
-    Vortex::getColorset((LedPos)sels[0], newSet);
+    m_vortex.getColorset((LedPos)sels[0], newSet);
   }
   // if the color select was made inactive
   if (!target->isActive()) {
@@ -1397,11 +1399,11 @@ void VortexEditor::selectColor(VColorSelect *colSelect, VColorSelect::SelectEven
     m_lastClickedColor = colorIndex;
   }
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
-    Vortex::setColorset(LED_MULTI, newSet);
+  if (m_vortex.isCurModeMulti()) {
+    m_vortex.setColorset(LED_MULTI, newSet);
   } else {
     for (uint32_t i = 0; i < sels.size(); ++i) {
-      Vortex::setColorset((LedPos)sels[i], newSet);
+      m_vortex.setColorset((LedPos)sels[i], newSet);
     }
   }
   refreshModeList();
@@ -1423,14 +1425,14 @@ void VortexEditor::demoColor(uint32_t rawCol)
   ByteStream curMode;
   PatternArgs args(1, 0, 0);
   Colorset newSet(rawCol);
-  Mode tmpMode(PATTERN_STROBE, &args, &newSet);
+  Mode tmpMode(m_engine, PATTERN_STROBE, &args, &newSet);
   tmpMode.init();
   tmpMode.saveToBuffer(curMode);
   // send, the, mode
   port->writeData(curMode);
   // wait for the done response
   port->expectData(EDITOR_VERB_DEMO_MODE_ACK);
-  string modeName = "Mode_" + to_string(Vortex::curModeIndex()) + "_" + Vortex::getModeName();
+  string modeName = "Mode_" + to_string(m_vortex.curModeIndex()) + "_" + m_vortex.getModeName();
   // Set status? maybe soon
   //m_statusBar.setStatus(RGB(0, 255, 255), ("Demoing " + modeName).c_str());
 }
@@ -1485,7 +1487,7 @@ void VortexEditor::refreshStorageBar()
 {
   uint32_t total = 0;
   uint32_t used = 0;
-  Vortex::getStorageStats(&total, &used);
+  m_vortex.getStorageStats(&total, &used);
   float percent = (float)used / (float)total;
   // integer percent from 0 - 280
   uint32_t intPct = (uint32_t)(percent * 280.0);
@@ -1544,20 +1546,20 @@ PatternID VortexEditor::patternSelection() const
 void VortexEditor::refreshModeList(bool recursive)
 {
   m_modeListBox.clearItems();
-  int curSel = (int)Vortex::curModeIndex();
+  int curSel = (int)m_vortex.curModeIndex();
   // We have to actually iterate the modes with nextmode because Vortex can't just
   // instantiate one and return it which is kinda dumb but just how it works for now
-  Vortex::setCurMode(0, false);
-  for (uint32_t i = 0; i < Vortex::numModes(); ++i) {
+  m_vortex.setCurMode(0, false);
+  for (uint32_t i = 0; i < m_vortex.numModes(); ++i) {
     // just use the pattern name from the first pattern
-    string modeName = "Mode " + to_string(i) + " (" + Vortex::getModeName() + ")";
+    string modeName = "Mode " + to_string(i) + " (" + m_vortex.getModeName() + ")";
     m_modeListBox.addItem(modeName);
     // go to next mode
-    Vortex::nextMode(false);
+    m_vortex.nextMode(false);
   }
   // restore the selection
   m_modeListBox.setSelection(curSel);
-  Vortex::setCurMode(curSel, false);
+  m_vortex.setCurMode(curSel, false);
   if (recursive) {
     refreshLedList(recursive);
   }
@@ -1571,13 +1573,13 @@ void VortexEditor::refreshLedList(bool recursive)
   vector<int> sels;
   m_ledsMultiListBox.getSelections(sels);
   m_ledsMultiListBox.clearItems();
-  if (Vortex::getPatternID(LED_MULTI) == PATTERN_NONE) {
-    for (LedPos pos = LED_FIRST; pos < Vortex::numLedsInMode(); ++pos) {
-      string ledName = Vortex::ledToString(pos) + " (" + Vortex::getPatternName(pos) + ")";
+  if (m_vortex.getPatternID(LED_MULTI) == PATTERN_NONE) {
+    for (LedPos pos = LED_FIRST; pos < m_vortex.numLedsInMode(); ++pos) {
+      string ledName = m_vortex.ledToString(pos) + " (" + m_vortex.getPatternName(pos) + ")";
       m_ledsMultiListBox.addItem(ledName);
     }
   } else {
-    string ledName = "Multi led (" + Vortex::getPatternName(LED_MULTI) + ")";
+    string ledName = "Multi led (" + m_vortex.getPatternName(LED_MULTI) + ")";
     m_ledsMultiListBox.addItem(ledName);
     // TODO: support both rendering multi and single at same time... not for now
   }
@@ -1608,7 +1610,7 @@ void VortexEditor::refreshPatternSelect(bool recursive)
   // whether to allow multi-led patterns to appear in the dropdown
   bool allow_multi = (sel == 0);
   // whether we are currently selecting a multi
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     // so that we can use getPatternID(sel)
     sel = LED_MULTI;
   }
@@ -1618,13 +1620,13 @@ void VortexEditor::refreshPatternSelect(bool recursive)
     if (!allow_multi && isMulti) {
       continue;
     }
-    string patternName = Vortex::patternToString(id);
+    string patternName = m_vortex.patternToString(id);
     if (isMulti) {
       patternName += " *";
     }
     m_patternSelectComboBox.addItem(patternName);
     // TODO: put multi-led in a separate position in UI so this is more elegant
-    if (id == Vortex::getPatternID((LedPos)sel)) {
+    if (id == m_vortex.getPatternID((LedPos)sel)) {
       m_patternSelectComboBox.setSelection(id + 1);
     }
   }
@@ -1651,10 +1653,10 @@ void VortexEditor::refreshColorSelect(bool recursive)
   // get the colorset
   Colorset set;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     pos = LED_MULTI;
   }
-  Vortex::getColorset((LedPos)pos, set);
+  m_vortex.getColorset((LedPos)pos, set);
   // iterate all active colors and set them
   for (uint32_t i = 0; i < set.numColors(); ++i) {
     m_colorSelects[i].setColor(set.get(i).raw());
@@ -1689,12 +1691,12 @@ void VortexEditor::refreshParams(bool recursive)
     }
     return;
   }
-  vector<string> tips = Vortex::getCustomParams(sel);
+  vector<string> tips = m_vortex.getCustomParams(sel);
   if (sels.size() > 1) {
     bool all_same = true;
-    PatternID base = Vortex::getPatternID((LedPos)sels[0]);
+    PatternID base = m_vortex.getPatternID((LedPos)sels[0]);
     for (uint32_t i = 1; i < sels.size(); ++i) {
-      if (Vortex::getPatternID((LedPos)sels[i]) != base) {
+      if (m_vortex.getPatternID((LedPos)sels[i]) != base) {
         all_same = false;
       }
     }
@@ -1709,13 +1711,13 @@ void VortexEditor::refreshParams(bool recursive)
   }
   PatternArgs args;
   // TODO: put multi-led in a separate position in UI so this is more elegant
-  if (Vortex::isCurModeMulti()) {
+  if (m_vortex.isCurModeMulti()) {
     pos = LED_MULTI;
   }
-  Vortex::getPatternArgs((LedPos)pos, args);
+  m_vortex.getPatternArgs((LedPos)pos, args);
   uint8_t *pArgs = (uint8_t *)&args.arg1;
   // get the number of params for the current pattern selection
-  uint32_t numParams = Vortex::numCustomParams(sel);
+  uint32_t numParams = m_vortex.numCustomParams(sel);
   // iterate all active params and activate
   for (uint32_t i = 0; i < numParams; ++i) {
     m_paramTextBoxes[i].setText(to_string(pArgs[i]).c_str(), false);
