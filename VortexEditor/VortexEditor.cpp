@@ -849,10 +849,7 @@ void VortexEditor::disconnectPort(uint32_t portNum)
     }
     // are we deleting the one we have selected?
     int sel = getPortListIndex();
-    if (sel < 0) {
-      continue;
-    }
-    if ((uint32_t)sel >= i) {
+    if (sel != -1 && (uint32_t)sel >= i) {
       m_portSelection.setSelection(sel - 1);
     }
     m_portList.erase(m_portList.begin() + i);
