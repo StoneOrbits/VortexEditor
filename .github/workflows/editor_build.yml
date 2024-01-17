@@ -85,7 +85,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ env.NEW_TAG }}
-        release_name: Vortex Editor Release ${{ env.NEW_TAG }} # Updated release name
+        release_name: Vortex Editor Release ${{ env.NEW_TAG }}
         draft: false
         prerelease: false
 
