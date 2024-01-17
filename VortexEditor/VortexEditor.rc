@@ -97,6 +97,11 @@ BEGIN
     BEGIN
         MENUITEM "Color Picker",                ID_TOOLS_COLOR_PICKER
     END
+    POPUP "Options"
+    BEGIN
+        MENUITEM "Transmit to Duo\tctrl+u",     ID_OPTIONS_TRANSMIT_DUO
+        MENUITEM "Transmit Infrared\tctrl+i",   ID_OPTIONS_TRANSMIT_INFRARED
+    END
     POPUP "Help"
     BEGIN
         MENUITEM "About",                       ID_HELP_ABOUT

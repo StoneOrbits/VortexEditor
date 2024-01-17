@@ -61,14 +61,6 @@ public:
   HINSTANCE hInst() const { return m_hInstance; }
 
 private:
-  class VortexEditorCallbacks : public VortexCallbacks
-  {
-  public:
-    VortexEditorCallbacks() {}
-    virtual ~VortexEditorCallbacks() {}
-    // Editor does not utilize any engine callbacks at this time
-  };
-
   // print to the log
   static void printlog(const char *file, const char *func, int line, const char *msg, ...);
 
@@ -120,6 +112,8 @@ private:
   void save(VWindow *window);
   void importMode(VWindow *window);
   void exportMode(VWindow *window);
+  void transmitVL(VWindow *window);
+  void transmitIR(VWindow *window);
   void selectMode(VWindow *window);
   void demoCurMode();
   void clearDemo();
@@ -194,6 +188,11 @@ private:
 
   // ==================================
   //  Member data
+
+  // vortex lib
+  Vortex m_vortex;
+  // engine reference for LED_ constants
+  VortexEngine &m_engine;
 
   // main instance
   HINSTANCE m_hInstance;
