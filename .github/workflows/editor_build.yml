@@ -37,6 +37,7 @@ jobs:
         fetch-depth: 0 # Important: fetch all history so we can get all tags
     - name: Calculate new version
       id: versioning
+      shell: bash
       run: |
         # Fetch tags
         git fetch --tags
@@ -58,6 +59,7 @@ jobs:
         echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
 
     - name: Create and push new tag
+      shell: bash
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
