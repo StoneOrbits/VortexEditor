@@ -1,4 +1,4 @@
-name: Editor Build
+name: Editor Build and Release
 
 on:
   push:
@@ -29,4 +29,34 @@ jobs:
         name: Binaries
         path: x64/Release/VortexEditor.exe
 
+  create-release:
+    runs-on: windows-latest
+    needs: build-editor
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: Binaries
+        path: x64/Release/
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./x64/Release/VortexEditor.exe
+        asset_name: VortexEditor.exe
+        asset_content_type: application/octet-stream
 
