@@ -137,6 +137,9 @@ bool VortexEditor::init(HINSTANCE hInst)
   // initialize the system that wraps the vortex engine
   m_vortex.initEx<VortexEditorCallbacks>();
 
+  // idk why not
+  m_vortex.setLedCount(1);
+
   // initialize the window accordingly
   m_window.init(hInst, EDITOR_TITLE, BACK_COL, EDITOR_WIDTH, EDITOR_HEIGHT, g_pEditor, "VortexEditor");
 
