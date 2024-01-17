@@ -49,19 +49,19 @@ jobs:
 
         # Check if there are any tags
         if git describe --tags `git rev-list --tags --max-count=1` &>/dev/null; then
-        # Get latest tag, assuming the tag is in the format v[MAJOR].[MINOR], e.g., v1.0
-        latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-        echo "Latest tag: $latest_tag"
+          # Get latest tag, assuming the tag is in the format v[MAJOR].[MINOR], e.g., v1.0
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "Latest tag: $latest_tag"
 
-        # Increment the minor version
-        if [[ $latest_tag =~ ^(v[0-9]+)\.([0-9]+)$ ]]; then
-          major=${BASH_REMATCH[1]}
-          minor=${BASH_REMATCH[2]}
-          new_tag="$major.$((minor+1))"
-        else
-          # Fallback if the tag doesn't match the expected format
-          new_tag="v1.0"
-        fi
+          # Increment the minor version
+          if [[ $latest_tag =~ ^(v[0-9]+)\.([0-9]+)$ ]]; then
+            major=${BASH_REMATCH[1]}
+            minor=${BASH_REMATCH[2]}
+            new_tag="$major.$((minor+1))"
+          else
+            # Fallback if the tag doesn't match the expected format
+            new_tag="v1.0"
+          fi
         else
           # Start from v1.0 if no tags found
           new_tag="v1.0"
@@ -85,7 +85,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ env.NEW_TAG }}
-        release_name: Release ${{ env.NEW_TAG }}
+        release_name: Vortex Editor Release ${{ env.NEW_TAG }} # Updated release name
         draft: false
         prerelease: false
 
