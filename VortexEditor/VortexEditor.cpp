@@ -209,6 +209,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_CLEAR_PATTERN, handleMenusCallback);
+  m_window.addCallback(ID_OPTIONS_TRANSMIT_DUO, handleMenusCallback);
+  m_window.addCallback(ID_OPTIONS_TRANSMIT_INFRARED, handleMenusCallback);
   m_window.addCallback(ID_EDIT_UNDO, handleMenusCallback);
   m_window.addCallback(ID_EDIT_REDO, handleMenusCallback);
   m_window.addCallback(ID_FILE_PULL, handleMenusCallback);
@@ -247,11 +249,11 @@ bool VortexEditor::init(HINSTANCE hInst)
     { FCONTROL | FVIRTKEY, 'C', ID_EDIT_COPY_LED },
     // ctrl + v   paste led
     { FCONTROL | FVIRTKEY, 'V', ID_EDIT_PASTE_LED },
-    // ctrl + shift + c   clear colorset
+    // ctrl + shift + D   clear colorset
     { FCONTROL | FSHIFT | FVIRTKEY, 'D', ID_EDIT_CLEAR_COLORSET },
-    // ctrl + shift + c   copy colorset
+    // ctrl + shift + C   copy colorset
     { FCONTROL | FSHIFT | FVIRTKEY, 'C', ID_EDIT_COPY_COLORSET },
-    // ctrl + shift + v   paste colorset
+    // ctrl + shift + V   paste colorset
     { FCONTROL | FSHIFT | FVIRTKEY, 'V', ID_EDIT_PASTE_COLORSET },
     // ctrl + e  pull
     { FCONTROL | FVIRTKEY, 'E', ID_FILE_PULL },
@@ -261,12 +263,16 @@ bool VortexEditor::init(HINSTANCE hInst)
     { FCONTROL | FVIRTKEY, 'S', ID_FILE_SAVE },
     // ctrl + o  open
     { FCONTROL | FVIRTKEY, 'O', ID_FILE_LOAD },
-    // ctrl + shift + s  save
+    // ctrl + shift + S  save
     { FCONTROL | FSHIFT | FVIRTKEY, 'S', ID_FILE_EXPORT },
-    // ctrl + shift + o  open
+    // ctrl + shift + O  open
     { FCONTROL | FSHIFT | FVIRTKEY, 'O', ID_FILE_IMPORT },
     // ctrl + d
     { FCONTROL | FVIRTKEY, 'D', ID_EDIT_CLEAR_PATTERN },
+    // ctrl + u
+    { FCONTROL | FVIRTKEY, 'U', ID_OPTIONS_TRANSMIT_DUO },
+    // ctrl + i
+    { FCONTROL | FVIRTKEY, 'I', ID_OPTIONS_TRANSMIT_INFRARED },
   };
   m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
   if (!m_accelTable) {
@@ -385,6 +391,12 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_FILE_EXPORT:
     exportMode(nullptr);
+    return;
+  case ID_OPTIONS_TRANSMIT_DUO:
+    transmitVL(nullptr);
+    return;
+  case ID_OPTIONS_TRANSMIT_INFRARED:
+    transmitIR(nullptr);
     return;
   case ID_TOOLS_COLOR_PICKER:
     m_colorPicker.show();
@@ -1076,6 +1088,33 @@ void VortexEditor::exportMode(VWindow *window)
   }
   CloseHandle(hFile);
   debug("Saved to [%s]", filename.c_str());
+}
+
+void VortexEditor::transmitVL(VWindow *window)
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  int sel = m_modeListBox.getSelection();
+  if (sel < 0 || !isConnected()) {
+    return;
+  }
+  // now unserialize the stream of data that was read
+  ByteStream curMode;
+  if (!m_vortex.getCurMode(curMode) || curMode.size() <= 4) {
+    // error!
+    // TODO: abort
+    return;
+  }
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_TRANSMIT_VL);
+  // read data again
+  port->expectData(EDITOR_VERB_TRANSMIT_VL_ACK);
+}
+
+void VortexEditor::transmitIR(VWindow *window)
+{
 }
 
 void VortexEditor::selectMode(VWindow *window)
