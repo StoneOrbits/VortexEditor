@@ -33,21 +33,48 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
     - uses: actions/checkout@v3
-    - name: Download Artifact
-      uses: actions/download-artifact@v2
       with:
-        name: Binaries
-        path: x64/Release/
+        fetch-depth: 0 # Important: fetch all history so we can get all tags
+    - name: Calculate new version
+      id: versioning
+      run: |
+        # Fetch tags
+        git fetch --tags
+
+        # Get latest tag, assuming the tag is in the format v[MAJOR].[MINOR], e.g., v1.0
+        latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "Latest tag: $latest_tag"
+
+        # Increment the minor version. If no tag found, start at v1.0
+        if [[ $latest_tag =~ ^(v[0-9]+)\.([0-9]+)$ ]]; then
+          major=${BASH_REMATCH[1]}
+          minor=${BASH_REMATCH[2]}
+          new_tag="$major.$((minor+1))"
+        else
+          new_tag="v1.0"
+        fi
+
+        echo "New tag: $new_tag"
+        echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
+
+    - name: Create and push new tag
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git tag ${{ env.NEW_TAG }}
+        git push origin ${{ env.NEW_TAG }}
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ env.NEW_TAG }}
+        release_name: Release ${{ env.NEW_TAG }}
         draft: false
         prerelease: false
+
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
