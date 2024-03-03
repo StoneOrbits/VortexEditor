@@ -84,7 +84,7 @@ jobs:
 
 
   upload-release:
-    needs: [build-editor, calculate-version, create-release]
+    needs: [build-editor, calculate-version]
     runs-on: windows-latest
     if: github.ref == 'refs/heads/master'
     steps:
