@@ -42,6 +42,7 @@ jobs:
 
       - name: Find latest 'desktop' version tag
         id: find_version
+        shell: bash
         run: |
           cd VortexEngine
           # Fetch all tags
