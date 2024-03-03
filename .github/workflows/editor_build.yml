@@ -52,34 +52,35 @@ jobs:
           echo "Latest desktop version tag: $latest_tag"
           echo "version=$latest_tag" >> $GITHUB_OUTPUT
 
-  create-release:
-    needs: [build-editor, calculate-version]
-    runs-on: windows-latest
-    if: github.ref == 'refs/heads/master'
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: Binaries
-          path: x64/Release
-      - name: Create Release for Editor
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ needs.calculate-version.outputs.version }}
-          release_name: Vortex Editor Release ${{ needs.calculate-version.outputs.version }}
-          draft: false
-          prerelease: false
-      - name: Upload Release Asset for Editor
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./x64/Release/VortexEditor.exe
-          asset_name: VortexEditor-${{ needs.calculate-version.outputs.version }}.exe
-          asset_content_type: application/octet-stream
+          #  create-release:
+          #    needs: [build-editor, calculate-version]
+          #    runs-on: windows-latest
+          #    if: github.ref == 'refs/heads/master'
+          #    steps:
+          #      - uses: actions/download-artifact@v2
+          #        with:
+          #          name: Binaries
+          #          path: x64/Release
+          #            # commenting out the create release step for now
+          #            #- name: Create Release for Editor
+          #            #  id: create_release
+          #            #  uses: actions/create-release@v1
+          #            #  env:
+          #            #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #            #  with:
+          #            #    tag_name: ${{ needs.calculate-version.outputs.version }}
+          #            #    release_name: Vortex Editor Release ${{ needs.calculate-version.outputs.version }}
+          #            #    draft: false
+          #            #    prerelease: false
+          #      - name: Upload Release Asset for Editor
+          #        uses: actions/upload-release-asset@v1
+          #        env:
+          #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #        with:
+          #          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          #          asset_path: ./x64/Release/VortexEditor.exe
+          #          asset_name: VortexEditor-${{ needs.calculate-version.outputs.version }}.exe
+          #          asset_content_type: application/octet-stream
 
 
   upload-release:
