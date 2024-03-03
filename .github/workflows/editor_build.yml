@@ -10,92 +10,103 @@ jobs:
   build-editor:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Checkout Vortex Engine
-      uses: actions/checkout@v3
-      with:
-        repository: 'StoneOrbits/VortexEngine'
-        path: 'VortexEditor/VortexEngine'
-        ref: 'desktop'
-    - name: Set up MSBuild path
-      uses: microsoft/setup-msbuild@v1
-    - name: Build
-      run: msbuild VortexEditor.sln /p:Configuration=Release /p:Platform=x64
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: Binaries
-        path: x64/Release/VortexEditor.exe
+      - uses: actions/checkout@v4
+      - name: Checkout Vortex Engine
+        uses: actions/checkout@v4
+        with:
+          repository: 'StoneOrbits/VortexEngine'
+          path: 'VortexEditor/VortexEngine'
+          ref: 'desktop'
+      - name: Set up MSBuild path
+        uses: microsoft/setup-msbuild@v1
+      - name: Build
+        run: msbuild VortexEditor.sln /p:Configuration=Release /p:Platform=x64
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: Binaries
+          path: x64/Release/VortexEditor.exe
 
-  create-release:
+  calculate-version:
     runs-on: windows-latest
     needs: build-editor
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    outputs:
+      version: ${{ steps.find_version.outputs.version }}
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0 # Important: fetch all history so we can get all tags
-    - name: Download Artifacts
-      uses: actions/download-artifact@v2
-      with:
-        name: Binaries
-        path: x64/Release
-    - name: Calculate new version
-      id: versioning
-      shell: bash
-      run: |
-        # Fetch tags
-        git fetch --tags
+      - uses: actions/checkout@v4
+        with:
+          repository: 'StoneOrbits/VortexEngine'
+          path: 'VortexEngine'
+          ref: 'desktop'
+          fetch-depth: 0 # Fetch all history for tags
 
-        # Check if there are any tags
-        if git describe --tags `git rev-list --tags --max-count=1` &>/dev/null; then
-          # Get latest tag, assuming the tag is in the format v[MAJOR].[MINOR], e.g., v1.0
-          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "Latest tag: $latest_tag"
+      - name: Find latest 'desktop' version tag
+        id: find_version
+        run: |
+          cd VortexEngine
+          # Fetch all tags
+          git fetch --tags
+          # Get the latest 'l' (library for desktop) tag
+          latest_tag=$(git tag --list '*l' | sort -V | tail -n1)
+          echo "Latest desktop version tag: $latest_tag"
+          echo "version=$latest_tag" >> $GITHUB_OUTPUT
 
-          # Increment the minor version
-          if [[ $latest_tag =~ ^(v[0-9]+)\.([0-9]+)$ ]]; then
-            major=${BASH_REMATCH[1]}
-            minor=${BASH_REMATCH[2]}
-            new_tag="$major.$((minor+1))"
-          else
-            # Fallback if the tag doesn't match the expected format
-            new_tag="v1.0"
-          fi
-        else
-          # Start from v1.0 if no tags found
-          new_tag="v1.0"
-        fi
+  create-release:
+    needs: [build-editor, calculate-version]
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: Binaries
+          path: x64/Release
+      - name: Create Release for Editor
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.calculate-version.outputs.version }}
+          release_name: Vortex Editor Release ${{ needs.calculate-version.outputs.version }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset for Editor
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./x64/Release/VortexEditor.exe
+          asset_name: VortexEditor-${{ needs.calculate-version.outputs.version }}.exe
+          asset_content_type: application/octet-stream
 
-        echo "New tag: $new_tag"
-        echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
 
-    - name: Create and push new tag
-      shell: bash
-      run: |
-        git config user.name github-actions
-        git config user.email github-actions@github.com
-        git tag ${{ env.NEW_TAG }}
-        git push origin ${{ env.NEW_TAG }}
+  upload-release:
+    needs: [build-editor, calculate-version, create-release]
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: Binaries
+          path: x64/Release
+      - name: Upload to server
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.version }}
+          DEVICE_TYPE="editor"
+          FILENAME="VortexEditor-${DEVICE_TYPE}-${VERSION}.exe"
+          # Rename the file to include the version (Windows syntax)
+          Rename-Item "x64/Release/VortexEditor.exe" $FILENAME
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.NEW_TAG }}
-        release_name: Vortex Editor Release ${{ env.NEW_TAG }}
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./x64/Release/VortexEditor.exe
-        asset_name: VortexEditor.exe
-        asset_content_type: application/octet-stream
+          # Assuming you have an endpoint set up for firmware upload
+          curl -X POST \
+            -F "file=@x64/Release/$FILENAME" \
+            -F "device=$DEVICE_TYPE" \
+            -F "version=$VERSION" \
+            -F "category=editor" \
+            -F "clientApiKey=${{ secrets.VORTEX_COMMUNITY_API_KEY }}" \
+            https://vortex.community/firmware/upload
+        shell: pwsh
+        env:
+          VORTEX_COMMUNITY_API_KEY: ${{ secrets.VORTEX_COMMUNITY_API_KEY }}
 
