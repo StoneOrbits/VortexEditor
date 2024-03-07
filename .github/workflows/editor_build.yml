@@ -94,21 +94,21 @@ jobs:
           path: x64/Release
       - name: Upload to server
         run: |
-          VERSION=${{ needs.calculate-version.outputs.version }}
-          DEVICE_TYPE="editor"
-          FILENAME="VortexEditor-${DEVICE_TYPE}-${VERSION}.exe"
+          $VERSION="${{ needs.calculate-version.outputs.version }}"
+          $DEVICE_TYPE="editor"
+          $FILENAME="VortexEditor-${DEVICE_TYPE}-${VERSION}.exe"
           # Rename the file to include the version (Windows syntax)
           Rename-Item "x64/Release/VortexEditor.exe" $FILENAME
-
+  
           # Assuming you have an endpoint set up for firmware upload
-          curl -X POST \
-            -F "file=@x64/Release/$FILENAME" \
-            -F "device=$DEVICE_TYPE" \
-            -F "version=$VERSION" \
-            -F "category=editor" \
-            -F "clientApiKey=${{ secrets.VORTEX_COMMUNITY_API_KEY }}" \
+          curl -X POST `
+            -F "file=@x64/Release/$FILENAME" `
+            -F "device=$DEVICE_TYPE" `
+            -F "version=$VERSION" `
+            -F "category=editor" `
+            -F "clientApiKey=${{ secrets.VORTEX_COMMUNITY_API_KEY }}" `
             https://vortex.community/firmware/upload
         shell: pwsh
         env:
           VORTEX_COMMUNITY_API_KEY: ${{ secrets.VORTEX_COMMUNITY_API_KEY }}
-
+  
