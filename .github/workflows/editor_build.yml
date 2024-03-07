@@ -102,7 +102,7 @@ jobs:
 
           # Assuming you have an endpoint set up for firmware upload
           curl -X POST \
-            -F "file=@x64/Release/$FILENAME" \
+            -F "file=@$FILENAME" \
             -F "device=$DEVICE_TYPE" \
             -F "version=$VERSION" \
             -F "category=editor" \
