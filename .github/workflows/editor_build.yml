@@ -48,9 +48,9 @@ jobs:
           # Fetch all tags
           git fetch --tags
           # Get the latest 'l' (library for desktop) tag
-          latest_tag=$(git tag --list '*l' | sort -V | tail -n1)
+          latest_tag=$(git tag --list '*l' | sort -V | tail -n1 | cut -dl -f1)
           echo "Latest desktop version tag: $latest_tag"
-          echo "version=$latest_tag" >> $GITHUB_OUTPUT
+          echo "version=1.0.$latest_tag" >> $GITHUB_OUTPUT
 
           #  create-release:
           #    needs: [build-editor, calculate-version]
@@ -82,7 +82,6 @@ jobs:
           #          asset_name: VortexEditor-${{ needs.calculate-version.outputs.version }}.exe
           #          asset_content_type: application/octet-stream
 
-
   upload-release:
     needs: [build-editor, calculate-version]
     runs-on: windows-latest
@@ -93,22 +92,21 @@ jobs:
           name: Binaries
           path: x64/Release
       - name: Upload to server
+        shell: bash
         run: |
-          $VERSION="${{ needs.calculate-version.outputs.version }}"
-          $DEVICE_TYPE="editor"
-          $FILENAME="VortexEditor-${DEVICE_TYPE}-${VERSION}.exe"
+          VERSION=${{ needs.calculate-version.outputs.version }}
+          DEVICE_TYPE="editor"
+          FILENAME="VortexEditor-${DEVICE_TYPE}-${VERSION}.exe"
           # Rename the file to include the version (Windows syntax)
           Rename-Item "x64/Release/VortexEditor.exe" $FILENAME
-  
+
           # Assuming you have an endpoint set up for firmware upload
-          curl -X POST `
-            -F "file=@x64/Release/$FILENAME" `
-            -F "device=$DEVICE_TYPE" `
-            -F "version=$VERSION" `
-            -F "category=editor" `
-            -F "clientApiKey=${{ secrets.VORTEX_COMMUNITY_API_KEY }}" `
+          curl -X POST \
+            -F "file=@x64/Release/$FILENAME" \
+            -F "device=$DEVICE_TYPE" \
+            -F "version=$VERSION" \
+            -F "category=editor" \
+            -F "clientApiKey=${{ secrets.VORTEX_COMMUNITY_API_KEY }}" \
             https://vortex.community/firmware/upload
-        shell: pwsh
         env:
           VORTEX_COMMUNITY_API_KEY: ${{ secrets.VORTEX_COMMUNITY_API_KEY }}
-  
