@@ -95,7 +95,7 @@ jobs:
         shell: bash
         run: |
           VERSION=${{ needs.calculate-version.outputs.version }}
-          DEVICE_TYPE="editor"
+          DEVICE_TYPE="desktop"
           FILENAME="VortexEditor-${DEVICE_TYPE}-${VERSION}.exe"
           # Rename the file to include the version (Windows syntax)
           mv "x64/Release/VortexEditor.exe" $FILENAME
