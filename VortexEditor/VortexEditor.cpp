@@ -1140,6 +1140,7 @@ void VortexEditor::transmitIR(VWindow *window)
 
 void VortexEditor::receiveVL(VWindow *window)
 {
+#if 0
   VortexPort *port = nullptr;
   if (!isConnected() || !getCurPort(&port)) {
     return;
@@ -1174,6 +1175,7 @@ void VortexEditor::receiveVL(VWindow *window)
   m_modeListBox.setSelection(m_vortex.numModes() - 1);
   m_ledsMultiListBox.setSelection(0);
   refreshLedList();
+#endif
 }
 
 void VortexEditor::selectMode(VWindow *window)
