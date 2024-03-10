@@ -36,7 +36,7 @@ public:
   // helper to validate a handshake message
   bool parseHandshake(const ByteStream &handshakewindow);
   // read out the full list of modes
-  bool readModes(ByteStream &outModes);
+  bool readByteStream(ByteStream &outModes);
 private:
   // the raw serial connection
   ArduinoSerial m_serialPort;

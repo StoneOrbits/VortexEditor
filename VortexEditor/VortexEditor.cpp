@@ -214,6 +214,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_CLEAR_PATTERN, handleMenusCallback);
   m_window.addCallback(ID_OPTIONS_TRANSMIT_DUO, handleMenusCallback);
   m_window.addCallback(ID_OPTIONS_TRANSMIT_INFRARED, handleMenusCallback);
+  m_window.addCallback(ID_OPTIONS_RECEIVE_FROM_DUO, handleMenusCallback);
   m_window.addCallback(ID_EDIT_UNDO, handleMenusCallback);
   m_window.addCallback(ID_EDIT_REDO, handleMenusCallback);
   m_window.addCallback(ID_FILE_PULL, handleMenusCallback);
@@ -276,6 +277,20 @@ bool VortexEditor::init(HINSTANCE hInst)
     { FCONTROL | FVIRTKEY, 'U', ID_OPTIONS_TRANSMIT_DUO },
     // ctrl + i
     { FCONTROL | FVIRTKEY, 'I', ID_OPTIONS_TRANSMIT_INFRARED },
+    // ctrl + k
+    { FCONTROL | FVIRTKEY, 'K', ID_OPTIONS_RECEIVE_FROM_DUO },
+    // ctrl + 1
+    { FCONTROL | FVIRTKEY, '1', ID_COLORSET_RANDOM_MONOCHROMATIC },
+    // ctrl + 2
+    { FCONTROL | FVIRTKEY, '2', ID_COLORSET_RANDOM_COMPLIMENTARY },
+    // ctrl + 3
+    { FCONTROL | FVIRTKEY, '3', ID_COLORSET_RANDOM_TRIADIC },
+    // ctrl + 4
+    { FCONTROL | FVIRTKEY, '4', ID_COLORSET_RANDOM_SQUARE },
+    // ctrl + 5
+    { FCONTROL | FVIRTKEY, '5', ID_COLORSET_RANDOM_PENTADIC },
+    // ctrl + 6
+    { FCONTROL | FVIRTKEY, '6', ID_COLORSET_RANDOM_RAINBOW },
   };
   m_accelTable = CreateAcceleratorTable(accelerators, sizeof(accelerators) / sizeof(accelerators[0]));
   if (!m_accelTable) {
@@ -400,6 +415,9 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_OPTIONS_TRANSMIT_INFRARED:
     transmitIR(nullptr);
+    return;
+  case ID_OPTIONS_RECEIVE_FROM_DUO:
+    receiveVL(nullptr);
     return;
   case ID_TOOLS_COLOR_PICKER:
     m_colorPicker.show();
@@ -915,7 +933,7 @@ void VortexEditor::pull(VWindow *window)
   // now immediately tell it what to do
   port->writeData(EDITOR_VERB_PULL_MODES);
   stream.clear();
-  if (!port->readModes(stream) || !stream.size()) {
+  if (!port->readByteStream(stream) || !stream.size()) {
     debug("Couldn't read anything");
     return;
   }
@@ -1118,6 +1136,44 @@ void VortexEditor::transmitVL(VWindow *window)
 
 void VortexEditor::transmitIR(VWindow *window)
 {
+}
+
+void VortexEditor::receiveVL(VWindow *window)
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  int sel = m_modeListBox.getSelection();
+  if (sel < 0 || !isConnected()) {
+    return;
+  }
+  // now unserialize the stream of data that was read
+  ByteStream curMode;
+  if (!m_vortex.getCurMode(curMode) || curMode.size() <= 4) {
+    // error!
+    // TODO: abort
+    return;
+  }
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_LISTEN_VL);
+  // listen for he mode
+  ByteStream stream;
+  stream.clear();
+  if (!port->readByteStream(stream) || !stream.size()) {
+    debug("Couldn't read anything");
+    return;
+  }
+  m_vortex.setLedCount(2);
+  m_vortex.addNewMode(stream);
+  // read data again
+  port->expectData(EDITOR_VERB_LISTEN_VL_ACK);
+  // refresh
+  refreshModeList();
+  // select the new mode
+  m_modeListBox.setSelection(m_vortex.numModes() - 1);
+  m_ledsMultiListBox.setSelection(0);
+  refreshLedList();
 }
 
 void VortexEditor::selectMode(VWindow *window)

@@ -114,6 +114,7 @@ private:
   void exportMode(VWindow *window);
   void transmitVL(VWindow *window);
   void transmitIR(VWindow *window);
+  void receiveVL(VWindow *window);
   void selectMode(VWindow *window);
   void demoCurMode();
   void clearDemo();

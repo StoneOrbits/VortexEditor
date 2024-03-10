@@ -256,7 +256,7 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
   return true;
 }
 
-bool VortexPort::readModes(ByteStream &outModes)
+bool VortexPort::readByteStream(ByteStream &outModes)
 {
   uint32_t size = 0;
   // first check how much is in the serial port
