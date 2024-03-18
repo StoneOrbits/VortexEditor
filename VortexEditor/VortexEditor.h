@@ -26,6 +26,8 @@
 
 // editor includes
 #include "VortexColorPicker.h"
+#include "VortexModeRandomizer.h"
+#include "VortexCommunityBrowser.h"
 #include "ArduinoSerial.h"
 
 // stl includes
@@ -46,6 +48,8 @@ class Colorset;
 class VortexEditor
 {
   friend class VortexColorPicker;
+  friend class VortexModeRandomizer;
+  friend class VortexCommunityBrowser;
 public:
   VortexEditor();
   ~VortexEditor();
@@ -244,6 +248,8 @@ private:
 
   // the vortex color picker window
   VortexColorPicker m_colorPicker;
+  VortexModeRandomizer m_modeRandomizer;
+  VortexCommunityBrowser m_communityBrowser;
 };
 
 extern VortexEditor *g_pEditor;

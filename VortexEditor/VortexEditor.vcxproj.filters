@@ -72,6 +72,15 @@
     <ClCompile Include="GUI\VWindow.cpp">
       <Filter>Source Files\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="VortexModeRandomizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VortexCommunityBrowser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\VPatternStrip.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -126,6 +135,15 @@
       <Filter>Header Files\GUI</Filter>
     </ClInclude>
     <ClInclude Include="GUI\VButton.h">
+      <Filter>Header Files\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexModeRandomizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexCommunityBrowser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\VPatternStrip.h">
       <Filter>Header Files\GUI</Filter>
     </ClInclude>
   </ItemGroup>

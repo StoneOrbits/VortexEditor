@@ -96,6 +96,8 @@ BEGIN
     POPUP "Tools"
     BEGIN
         MENUITEM "Color Picker",                ID_TOOLS_COLOR_PICKER
+        MENUITEM "Mode Randomizer",             ID_TOOLS_MODE_RANDOMIZER
+        MENUITEM "Community Browser",           ID_TOOLS_COMMUNITY_BROWSER
     END
     POPUP "Options"
     BEGIN

@@ -45,13 +45,17 @@
 #define ID_OPTIONS_RECEIVEFROMDUO       40057
 #define ID_OPTIONS_RECEIVE_FROM_DUO     40058
 #define ID_OPTIONS_RECEIVE_DUO          40059
+#define ID_TOOLS_RANDOMIZER             40060
+#define ID_TOOLS_COMMUNITYBROWSER       40061
+#define ID_TOOLS_MODE_RANDOMIZER        40062
+#define ID_TOOLS_COMMUNITY_BROWSER      40063
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
-#define _APS_NEXT_COMMAND_VALUE         40060
+#define _APS_NEXT_COMMAND_VALUE         40064
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

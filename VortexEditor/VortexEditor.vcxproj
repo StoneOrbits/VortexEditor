@@ -168,9 +168,12 @@
     <ClCompile Include="GUI\VStatusBar.cpp" />
     <ClCompile Include="GUI\VTextBox.cpp" />
     <ClCompile Include="VortexColorPicker.cpp" />
+    <ClCompile Include="VortexCommunityBrowser.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
     <ClCompile Include="GUI\VWindow.cpp" />
+    <ClCompile Include="VortexModeRandomizer.cpp" />
     <ClCompile Include="VortexPort.cpp" />
+    <ClCompile Include="GUI\VPatternStrip.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -189,9 +192,12 @@
     <ClInclude Include="GUI\VTextBox.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="VortexColorPicker.h" />
+    <ClInclude Include="VortexCommunityBrowser.h" />
     <ClInclude Include="VortexEditor.h" />
     <ClInclude Include="GUI\VWindow.h" />
+    <ClInclude Include="VortexModeRandomizer.h" />
     <ClInclude Include="VortexPort.h" />
+    <ClInclude Include="GUI\VPatternStrip.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VortexEditor.rc" />

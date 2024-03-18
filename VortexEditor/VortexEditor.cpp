@@ -224,17 +224,34 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_FILE_IMPORT, handleMenusCallback);
   m_window.addCallback(ID_FILE_EXPORT, handleMenusCallback);
   m_window.addCallback(ID_TOOLS_COLOR_PICKER, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_MODE_RANDOMIZER, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_COMMUNITY_BROWSER, handleMenusCallback);
 
   // add user callback for refreshes
   m_window.installUserCallback(WM_REFRESH_UI, refreshWindowCallback);
   m_window.installUserCallback(WM_TEST_CONNECT, connectTestFrameworkCallback);
   m_window.installUserCallback(WM_TEST_DISCONNECT, disconnectTestFrameworkCallback);
 
-  // initialize the color picker window
-  m_colorPicker.init(hInst);
+  // current window pos for child window init
   RECT pos;
   GetWindowRect(m_window.hwnd(), &pos);
-  SetWindowPos(m_colorPicker.hwnd(), 0, pos.left - 400, pos.top-200, 0, 0, SWP_NOSIZE);
+
+  // initialize the color picker window
+  m_colorPicker.init(hInst);
+  SetWindowPos(m_colorPicker.hwnd(), 0, pos.left - 422, pos.top-200, 0, 0, SWP_NOSIZE);
+
+  // initialize the mode randomizer window
+  m_modeRandomizer.init(hInst);
+  SetWindowPos(m_modeRandomizer.hwnd(), 0, pos.left + 50, pos.top-300, 0, 0, SWP_NOSIZE);
+ 
+  // initialize the community browser window
+  m_communityBrowser.init(hInst);
+  SetWindowPos(m_communityBrowser.hwnd(), 0, pos.right + 2, pos.top - 200, 0, 0, SWP_NOSIZE);
+
+  // show subwindows
+  m_colorPicker.show();
+  m_modeRandomizer.show();
+  m_communityBrowser.show();
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -421,6 +438,12 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_TOOLS_COLOR_PICKER:
     m_colorPicker.show();
+    return;
+  case ID_TOOLS_MODE_RANDOMIZER:
+    m_modeRandomizer.show();
+    return;
+  case ID_TOOLS_COMMUNITY_BROWSER:
+    m_communityBrowser.show();
     return;
   default:
     break;
