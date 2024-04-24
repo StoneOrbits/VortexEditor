@@ -4,6 +4,14 @@
 //
 #define IDR_MENU1                       101
 #define IDI_ICON1                       104
+#define IDB_BITMAP1                     109
+#define IDB_BITMAP2                     110
+#define IDB_BITMAP3                     111
+#define IDB_BITMAP4                     112
+#define IDB_BITMAP5                     113
+#define IDB_BITMAP6                     114
+#define IDB_BITMAP7                     115
+#define IDB_BITMAP8                     116
 #define ID_FILE_PUSH                    40001
 #define ID_FILE_PULL                    40002
 #define ID_FILE_LOAD                    40003
@@ -49,13 +57,15 @@
 #define ID_TOOLS_COMMUNITYBROWSER       40061
 #define ID_TOOLS_MODE_RANDOMIZER        40062
 #define ID_TOOLS_COMMUNITY_BROWSER      40063
+#define ID_HELP_TUTORIAL                40064
+#define ID_HELP_WIKI                    40065
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        109
-#define _APS_NEXT_COMMAND_VALUE         40064
+#define _APS_NEXT_RESOURCE_VALUE        117
+#define _APS_NEXT_COMMAND_VALUE         40066
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

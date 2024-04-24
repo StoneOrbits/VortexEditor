@@ -9,6 +9,8 @@
 
 #include "Serial/Compression.h"
 
+#include "HttpClient.h"
+
 #include <winhttp.h>
 #include <iostream>
 
@@ -17,58 +19,52 @@
 #define PREVIEW_ID 55501
 #define PATTERN_STRIP_ID 55601
 
+#define NEXT_PAGE_ID 55705
+#define PREV_PAGE_ID 55706
+#define PAGE_LABEL_ID 55707
+
+// number of modes requested and displayed on each page
+#define MODES_PER_PAGE 15
+
 using namespace std;
-using json = nlohmann::json;
 
 VortexCommunityBrowser::VortexCommunityBrowser() :
+  m_hInstance(nullptr),
   m_isOpen(false),
   m_hIcon(nullptr),
   m_mutex(nullptr),
-  m_runThreadId(nullptr),
   m_communityBrowserWindow(),
-  m_patternStrips()
+  m_patternStrips(),
+  m_prevPageButton(),
+  m_nextPageButton(),
+  m_pageLabel(),
+  m_curPage(1),
+  m_lastPage(false)
 {
 }
 
 VortexCommunityBrowser::~VortexCommunityBrowser()
 {
   DestroyIcon(m_hIcon);
-  TerminateThread(m_runThreadId, 0);
 }
 
 // initialize the color picker
 bool VortexCommunityBrowser::init(HINSTANCE hInst)
 {
+  m_hInstance = hInst;
+
   // the color picker
   m_communityBrowserWindow.init(hInst, "Vortex Community Browser", BACK_COL, 420, 690, this);
   m_communityBrowserWindow.setVisible(false);
   m_communityBrowserWindow.setCloseCallback(hideGUICallback);
   m_communityBrowserWindow.installLoseFocusCallback(loseFocusCallback);
 
-  // fetch json of modes from community api
-  try {
-    m_communityModes = json::parse(GetHttpRequest(L"vortex.community", L"/modes/json"));
-  } catch (...) {
-    return false;
-  }
-
-  // Verify if 'data' is an array
-  if (!m_communityModes.contains("data")) {
-    std::cerr << "'data' is not an array or does not exist" << std::endl;
-    return false;
-  }
-
-  uint32_t i = 0;
-  for (auto mode : m_communityModes["data"]) {
-    if (!mode.contains("modeData")) {
-      //continue;
-    }
-    shared_ptr<VPatternStrip> strip = make_shared<VPatternStrip>(hInst, 
-      m_communityBrowserWindow, "Mode " + to_string(i), BACK_COL,
-      300, 32, 16, 16 + (i * 36), 2, mode["modeData"], PATTERN_STRIP_ID + i, nullptr);
-    m_patternStrips.push_back(move(strip));
-    i++;
-  }
+  m_prevPageButton.init(hInst, m_communityBrowserWindow, "Prev", BACK_COL,
+    64, 32, 100, 600, NEXT_PAGE_ID, prevPageCallback);
+  m_nextPageButton.init(hInst, m_communityBrowserWindow, "Next", BACK_COL,
+    64, 32, 256, 600, PREV_PAGE_ID, nextPageCallback);
+  m_pageLabel.init(hInst, m_communityBrowserWindow, "1 / 1", BACK_COL,
+    64, 32, 195, 600, PAGE_LABEL_ID, nullptr);
 
   // create stuff
   HFONT hFont = CreateFont(15, 0, 0, 0, FW_DONTCARE, FALSE, FALSE,
@@ -80,27 +76,15 @@ bool VortexCommunityBrowser::init(HINSTANCE hInst)
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
   SendMessage(m_communityBrowserWindow.hwnd(), WM_SETICON, ICON_BIG, (LPARAM)m_hIcon);
 
-  m_runThreadId  = CreateThread(NULL, 0, runThread, this, 0, NULL);
-
-  return true;
-}
-
-DWORD __stdcall VortexCommunityBrowser::runThread(void *arg)
-{
-  VortexCommunityBrowser *browser = (VortexCommunityBrowser *)arg;
-  while (1) {
-    if (browser->m_isOpen) {
-      browser->run();
-    }
+  // 15 modes per page
+  for (uint32_t i = 0; i < MODES_PER_PAGE; ++i) {
+    unique_ptr<VPatternStrip> strip = make_unique<VPatternStrip>(m_hInstance,
+      m_communityBrowserWindow, "", BACK_COL,
+      370, 32, 16, 16 + (i * 38), 2, json(), PATTERN_STRIP_ID + i, nullptr);
+    m_patternStrips.push_back(move(strip));
   }
-  return 0;
-}
 
-void VortexCommunityBrowser::run()
-{
-  for (auto strip : m_patternStrips) {
-    strip.get()->run();
-  }
+  return loadPage();
 }
 
 void VortexCommunityBrowser::show()
@@ -135,92 +119,61 @@ void VortexCommunityBrowser::loseFocus()
 {
 }
 
-std::wstring VortexCommunityBrowser::GetHttpRequest(const std::wstring& host, const std::wstring& path)
+json VortexCommunityBrowser::fetchModesJson(uint32_t page, uint32_t pageSize)
 {
-  DWORD dwSize = 0;
-  DWORD dwDownloaded = 0;
-  LPSTR pszOutBuffer;
-  std::wstring result;
-  BOOL  bResults = FALSE;
-  HINTERNET  hSession = NULL,
-    hConnect = NULL,
-    hRequest = NULL;
-
-  // Use WinHttpOpen to obtain a session handle.
-  hSession = WinHttpOpen(L"A Vortex Editor/1.0",
-    WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-    WINHTTP_NO_PROXY_NAME,
-    WINHTTP_NO_PROXY_BYPASS, 0);
-  if (!hSession) {
-    return L"";
-  }
-  hConnect = WinHttpConnect(hSession, host.c_str(),
-    INTERNET_DEFAULT_HTTP_PORT, 0);
-  // Create an HTTP request handle.
-  if (!hConnect) {
-    return L"";
-  }
-  hRequest = WinHttpOpenRequest(hConnect, L"GET", path.c_str(),
-    NULL, WINHTTP_NO_REFERER,
-    WINHTTP_DEFAULT_ACCEPT_TYPES,
-    0);
-  // Send a request.
-  if (!hRequest) {
-    return L"";
-  }
-  bResults = WinHttpSendRequest(hRequest,
-    WINHTTP_NO_ADDITIONAL_HEADERS, 0,
-    WINHTTP_NO_REQUEST_DATA, 0,
-    0, 0);
-
-  // End the request.
-  if (!bResults) {
-    return L"";
-  }
-  bResults = WinHttpReceiveResponse(hRequest, NULL);
-
-  // Keep checking for data until there is nothing left.
-  if (!bResults) {
-    return L"";
-  }
-  do {
-    // Check for available data.
-    dwSize = 0;
-    if (!WinHttpQueryDataAvailable(hRequest, &dwSize)) {
-      //std::wcout << L"Error " << GetLastError() << L" in WinHttpQueryDataAvailable.\n";
-    }
-
-    // Allocate space for the buffer.
-    pszOutBuffer = new char[dwSize + 1];
-    if (!pszOutBuffer) {
-      //std::wcout << L"Out of memory\n";
-      dwSize = 0;
-      return L"";
-    }
-    // Read the data.
-    ZeroMemory(pszOutBuffer, dwSize + 1);
-    if (!WinHttpReadData(hRequest, (LPVOID)pszOutBuffer, dwSize, &dwDownloaded)) {
-      delete[] pszOutBuffer;
-      return L"";
-    }
-    result.append(pszOutBuffer, pszOutBuffer + dwDownloaded);
-    // Free the memory allocated to the buffer.
-    delete[] pszOutBuffer;
-  } while (dwSize > 0);
-
-  // Close any open handles.
-  if (hRequest) {
-    WinHttpCloseHandle(hRequest);
-  }
-  if (hConnect) {
-    WinHttpCloseHandle(hConnect);
-  }
-  if (hSession) {
-    WinHttpCloseHandle(hSession);
-  }
-
-  if (result.empty()) {
-    return std::wstring();
+  HttpClient httpClient("VortexEditor/1.0");
+  json result;
+  try {
+    map<string, string> queryParams = {
+      { "page", to_string(page) },
+      { "pageSize", to_string(pageSize) },
+    };
+    string jsonResponse = httpClient.SendRequest("vortex.community", "/modes/json", "GET", {}, "", queryParams);
+    // Parse and return the JSON object
+    result = json::parse(jsonResponse);
+  } catch (const exception &e) {
+    cerr << "Exception caught: " << e.what() << endl;
   }
   return result;
+}
+
+bool VortexCommunityBrowser::loadPage()
+{
+  // fetch json of modes from community api
+  try {
+    m_communityModes = fetchModesJson(m_curPage, MODES_PER_PAGE);
+  } catch (...) {
+    return false;
+  }
+  // Verify if 'data' is an array
+  if (!m_communityModes.contains("data")) {
+    cerr << "'data' is not an array or does not exist" << endl;
+    return false;
+  }
+  for (uint32_t i = 0; i < MODES_PER_PAGE; ++i) {
+    auto mode = m_communityModes["data"][i];
+    m_patternStrips[i]->loadJson(mode);
+  }
+  uint32_t numPages = m_communityModes["pages"];
+  m_lastPage = (m_curPage == numPages);
+  m_pageLabel.setText(to_string(m_curPage) + " / " + to_string(numPages));
+  return true;
+}
+
+bool VortexCommunityBrowser::prevPage()
+{
+  if (m_curPage <= 1) {
+    return false;
+  }
+  m_curPage--;
+  return loadPage();
+}
+
+bool VortexCommunityBrowser::nextPage()
+{
+  if (m_lastPage) {
+    return false;
+  }
+  m_curPage++;
+  return loadPage();
 }

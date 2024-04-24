@@ -2,6 +2,7 @@
 
 // Windows includes
 #include <CommCtrl.h>
+#include <gdiplus.h>
 
 // Vortex Engine includes
 #include "EditorConfig.h"
@@ -88,5 +89,3 @@ void VButton::pressButton(WPARAM wParam, LPARAM lParam)
 void VButton::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
-
-

@@ -93,7 +93,10 @@ void VStatusBar::releaseButton(WPARAM wParam, LPARAM lParam)
 
 void VStatusBar::setText(std::string item)
 {
+  SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0); // Disable redrawing
   Edit_SetText(m_hwnd, item.c_str());
+  SendMessage(m_hwnd, WM_SETREDRAW, TRUE, 0); // Re-enable redrawing
+  InvalidateRect(m_hwnd, NULL, TRUE); // Force redraw
 }
 
 void VStatusBar::clearText()

@@ -23,32 +23,41 @@ WNDCLASS VPatternStrip::m_wc = { 0 };
 VPatternStrip::VPatternStrip() :
   VWindow(),
   m_vortex(),
-  m_colorLabel(),
+  m_runThreadId(nullptr),
+  m_stripLabel(),
   m_callback(nullptr),
-  m_color(0),
   m_active(true),
   m_selected(false),
   m_selectable(true),
-  m_colorSequence()
+  m_colorSequence(),
+  m_lineWidth(1),
+  m_numSlices(0),
+  m_backbufferDC(nullptr),
+  m_backbuffer(nullptr),
+  m_oldBitmap(nullptr),
+  m_backbufferWidth(0),
+  m_backbufferHeight(0),
+  m_scrollOffset(0)
 {
 }
 
 VPatternStrip::VPatternStrip(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uint32_t lineWidth, const json &modeData, uintptr_t menuID, VPatternStripCallback callback) :
+  uint32_t lineWidth, const json &js, uintptr_t menuID, VPatternStripCallback callback) :
   VPatternStrip()
 {
-  init(hInstance, parent, title, backcol, width, height, x, y, lineWidth, modeData, menuID, callback);
+  init(hInstance, parent, title, backcol, width, height, x, y, lineWidth, js, menuID, callback);
 }
 
 VPatternStrip::~VPatternStrip()
 {
+  setActive(false);
   cleanup();
 }
 
 void VPatternStrip::init(HINSTANCE hInstance, VWindow &parent, const string &title,
   COLORREF backcol, uint32_t width, uint32_t height, uint32_t x, uint32_t y,
-  uint32_t lineWidth, const json &modeData, uintptr_t menuID, VPatternStripCallback callback)
+  uint32_t lineWidth, const json &js, uintptr_t menuID, VPatternStripCallback callback)
 {
   // store callback and menu id
   m_callback = callback;
@@ -81,27 +90,46 @@ void VPatternStrip::init(HINSTANCE hInstance, VWindow &parent, const string &tit
   // routine can access the object
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
-  m_colorLabel.init(hInstance, parent, title, backcol, 100, 24, x + width + 6, y + (height / 4), 0, nullptr);
-
-  //// preview box for current color
-  //m_colorPreview.init(hInst, m_communityBrowserWindow, "", BACK_COL, 122, 96, 273, 274, PREVIEW_ID, clickCurColorCallback);
-  //m_colorPreview.setActive(true);
-  //m_colorPreview.setColor(0xFF0000);
-  //m_colorPreview.setSelectable(false);
+  m_stripLabel.init(hInstance, parent, "", backcol, 400, 24, x + width + 6, y + (height / 4), 0, nullptr);
+  //m_colorLabel.setVisible(false);
 
   // load the communty modes into the local vortex instance for the browser window
   m_vortex.init();
   m_vortex.setLedCount(1);
   m_vortex.setTickrate(30);
-  m_vortex.engine().modes().clearModes();
-  m_vortex.loadModeFromJson(modeData);
+
+  HDC hdc = GetDC(m_hwnd);
+  createBackBuffer(hdc, width, height);
+
+  loadJson(js);
+}
+
+void VPatternStrip::loadJson(const json &js)
+{
+  setActive(false);
+  if (js.contains("modeData")) {
+    if (js.contains("name")) {
+      m_stripLabel.setText(js["name"]);
+    }
+    m_vortex.engine().modes().clearModes();
+    m_vortex.loadModeFromJson(js["modeData"]);
+    setActive(true);
+  }
+}
+
+DWORD __stdcall VPatternStrip::runThread(void *arg)
+{
+  VPatternStrip *strip = (VPatternStrip *)arg;
+  while (strip->m_active) {
+    strip->run();
+  }
+  return 0;
 }
 
 void VPatternStrip::cleanup()
 {
+  destroyBackBuffer();
 }
-
-uint32_t m_scrollOffset = 0;
 
 void VPatternStrip::run()
 {
@@ -138,29 +166,34 @@ static HBRUSH getBrushCol(DWORD rgbcol)
 
 void VPatternStrip::paint()
 {
-  PAINTSTRUCT paintStruct;
-  HDC hdc = BeginPaint(m_hwnd, &paintStruct);
+  PAINTSTRUCT ps;
+  HDC hdc = BeginPaint(m_hwnd, &ps);
+  // Copy the backbuffer to the screen
+  BitBlt(hdc, 0, 0, m_backbufferWidth, m_backbufferHeight, m_backbufferDC, 0, 0, SRCCOPY);
+  EndPaint(m_hwnd, &ps);
+  // draw backbuffer
+  drawToBackBuffer();
+}
+
+void VPatternStrip::drawToBackBuffer()
+{
+  // Ensure the backbuffer is ready for drawing
+  if (!m_backbufferDC) {
+    return;
+  }
+
   RECT rect;
   GetClientRect(m_hwnd, &rect);
   uint32_t width = rect.right - rect.left;
   uint32_t height = rect.bottom - rect.top;
 
-  // Create an off-screen buffer to perform our drawing operations
-  HDC backbuffDC = CreateCompatibleDC(hdc);
-  HBITMAP backbuffer = CreateCompatibleBitmap(hdc, width, height);
-  HBITMAP oldBitmap = (HBITMAP)SelectObject(backbuffDC, backbuffer);
+  // Fill the backbuffer background
+  FillRect(m_backbufferDC, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-  // Initially fill the background
-  FillRect(backbuffDC, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
-  // Draw the new frame on top
-  uint32_t numLines = m_colorSequence.size(); // Number of lines we have in our sequence
-
-  // Calculate the starting x position for the first line (right-most)
+  // Draw the color sequence
+  uint32_t numLines = m_colorSequence.size();
   int startX = width - (numLines * m_lineWidth) % width;
-
   for (int i = 0; i < numLines; ++i) {
-    // Determine the color for this line
     RGBColor col = m_colorSequence[i];
     if (col.empty()) {
       continue;
@@ -169,40 +202,10 @@ void VPatternStrip::paint()
     if (!brush) {
       continue;
     }
-    // draw the line
     int xPos = (startX + (i * m_lineWidth)) % width;
     RECT lineRect = { xPos, rect.top, xPos + m_lineWidth, rect.bottom };
-    FillRect(backbuffDC, &lineRect, brush);
+    FillRect(m_backbufferDC, &lineRect, brush);
   }
-
-  // Create a temporary DC for the darkening operation
-  HDC tempDC = CreateCompatibleDC(hdc);
-  HBITMAP tempBitmap = CreateCompatibleBitmap(hdc, width, height);
-  SelectObject(tempDC, tempBitmap);
-
-  // Copy current backbuffer content to tempDC
-  BitBlt(tempDC, 0, 0, width, height, backbuffDC, 0, 0, SRCCOPY);
-
-  BLENDFUNCTION blendFunc = { 0 };
-  blendFunc.BlendOp = AC_SRC_OVER;
-  blendFunc.SourceConstantAlpha = 230; // Adjust for desired trail darkness
-  blendFunc.AlphaFormat = 0;
-
-  // Apply the darkening effect on the backbuffer using content from tempDC
-  AlphaBlend(backbuffDC, 0, 0, width, height, tempDC, 0, 0, width, height, blendFunc);
-
-  // Cleanup temporary objects
-  DeleteDC(tempDC);
-  DeleteObject(tempBitmap);
-
-  // Copy the off-screen buffer to the screen
-  BitBlt(hdc, 0, 0, width, height, backbuffDC, 0, 0, SRCCOPY);
-
-  // Cleanup
-  SelectObject(backbuffDC, oldBitmap);
-  DeleteObject(backbuffer);
-  DeleteDC(backbuffDC);
-  EndPaint(m_hwnd, &paintStruct);
 }
 
 void VPatternStrip::command(WPARAM wParam, LPARAM lParam)
@@ -211,6 +214,8 @@ void VPatternStrip::command(WPARAM wParam, LPARAM lParam)
 
 void VPatternStrip::pressButton(WPARAM wParam, LPARAM lParam)
 {
+  g_pEditor->addMode(nullptr, m_vortex.engine().modes().curMode());
+  //m_vortex.setTickrate(100);
   //if (m_selectable) {
   //  setSelected(!m_selected);
   //  if (m_selected && !m_active) {
@@ -255,42 +260,11 @@ void VPatternStrip::rightButtonPress()
 
 void VPatternStrip::clear()
 {
-  setColor(0);
-}
-
-void VPatternStrip::setColor(uint32_t col)
-{
-  m_color = col;
-  m_colorLabel.setText(getColorName());
-  redraw();
-}
-
-string VPatternStrip::getColorName() const
-{
-  if (m_color == 0) {
-    return "blank";
-  }
-  char colText[64] = { 0 };
-  snprintf(colText, sizeof(colText), "#%02X%02X%02X",
-    (m_color >> 16) & 0xFF, (m_color >> 8) & 0xFF, m_color & 0xFF);
-  return colText;
-}
-
-void VPatternStrip::setColor(std::string name)
-{
-  if (name == "blank") {
-    setColor(0);
-    return;
-  }
-  // either the start of string, or string + 1 if the first
-  // letter is a hashtag/pound character
-  const char *hexStr = name.c_str() + (name[0] == '#');
-  setColor(strtoul(hexStr, NULL, 16));
-}
-
-uint32_t VPatternStrip::getColor() const
-{
-  return m_color;
+  RECT rect;
+  GetClientRect(m_hwnd, &rect);
+  FillRect(m_backbufferDC, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
+  m_colorSequence.clear();
+  InvalidateRect(m_hwnd, nullptr, FALSE);
 }
 
 bool VPatternStrip::isActive() const
@@ -301,9 +275,16 @@ bool VPatternStrip::isActive() const
 void VPatternStrip::setActive(bool active)
 {
   m_active = active;
-  m_colorLabel.setVisible(active);
+  m_stripLabel.setVisible(active);
   if (!m_active) {
     setSelected(false);
+    WaitForSingleObject(m_runThreadId, INFINITE);
+    m_runThreadId = nullptr;
+    clear();
+    return;
+  }
+  if (!m_runThreadId) {
+    m_runThreadId = CreateThread(NULL, 0, runThread, this, 0, NULL);
   }
 }
 
@@ -316,16 +297,16 @@ void VPatternStrip::setSelected(bool selected)
 {
   m_selected = selected;
   if (m_selected) {
-    m_colorLabel.setForeColor(0xFFFFFF);
+    m_stripLabel.setForeColor(0xFFFFFF);
   } else {
-    m_colorLabel.setForeColor(0xAAAAAA);
+    m_stripLabel.setForeColor(0xAAAAAA);
   }
 }
 
 void VPatternStrip::setLabelEnabled(bool enabled)
 {
-  m_colorLabel.setVisible(enabled);
-  m_colorLabel.setEnabled(enabled);
+  m_stripLabel.setVisible(enabled);
+  m_stripLabel.setEnabled(enabled);
 }
 
 void VPatternStrip::setSelectable(bool selectable)
@@ -394,3 +375,74 @@ void VPatternStrip::registerWindowClass(HINSTANCE hInstance, COLORREF backcol)
   m_wc.lpszClassName = WC_PATTERN_STRIP;
   RegisterClass(&m_wc);
 }
+
+void VPatternStrip::updateVisuals()
+{
+  if (!m_backbufferDC) return;
+
+  // Clear the backbuffer with the background color
+  RECT backbufferRect = { 0, 0, m_backbufferWidth, m_backbufferHeight };
+  FillRect(m_backbufferDC, &backbufferRect, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+  // Implement your drawing logic here, similar to the existing drawToBackBuffer logic
+  // This might involve iterating over m_colorSequence and drawing each color
+  int xPos = 0;
+  for (const auto &color : m_colorSequence) {
+    HBRUSH brush = getBrushCol(color.raw());
+    RECT lineRect = { xPos, 0, xPos + m_lineWidth, m_backbufferHeight };
+    FillRect(m_backbufferDC, &lineRect, brush);
+    xPos += m_lineWidth;
+    if (xPos >= m_backbufferWidth) break; // Stop if we've filled the whole backbuffer
+  }
+}
+
+void VPatternStrip::draw(HDC hdc, int x, int y, int width, int height)
+{
+  updateVisuals(); // Make sure visuals are up-to-date before drawing
+
+  // Use BitBlt to transfer the backbuffer content to the specified device context.
+  // Adjust source and destination rectangles if you want to support scaling or partial drawing.
+  BitBlt(hdc, x, y, width, height, m_backbufferDC, 0, 0, SRCCOPY);
+}
+
+//void VPatternStrip::paint()
+//{
+//  PAINTSTRUCT ps;
+//  HDC hdc = BeginPaint(m_hwnd, &ps);
+//
+//  updateVisuals(); // Update the backbuffer first
+//
+//  // Now draw the backbuffer to this window's client area.
+//  BitBlt(hdc, 0, 0, m_backbufferWidth, m_backbufferHeight, m_backbufferDC, 0, 0, SRCCOPY);
+//
+//  EndPaint(m_hwnd, &ps);
+//}
+
+// Remember to implement createBackBuffer and destroyBackBuffer methods as well.
+// These methods will handle the creation and destruction of the backbuffer resources.
+
+void VPatternStrip::createBackBuffer(HDC hdc, uint32_t width, uint32_t height)
+{
+  if (m_backbufferDC) {
+    // If there's already a backbuffer, release it first
+    destroyBackBuffer();
+  }
+
+  m_backbufferDC = CreateCompatibleDC(hdc);
+  m_backbuffer = CreateCompatibleBitmap(hdc, width, height);
+  m_oldBitmap = (HBITMAP)SelectObject(m_backbufferDC, m_backbuffer);
+  m_backbufferWidth = width;
+  m_backbufferHeight = height;
+}
+
+void VPatternStrip::destroyBackBuffer()
+{
+  if (m_backbufferDC) {
+    SelectObject(m_backbufferDC, m_oldBitmap); // Restore the old bitmap
+    DeleteDC(m_backbufferDC);
+    DeleteObject(m_backbuffer);
+    m_backbufferDC = nullptr;
+    m_backbuffer = nullptr;
+  }
+}
+

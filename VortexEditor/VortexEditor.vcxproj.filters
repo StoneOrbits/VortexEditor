@@ -81,6 +81,15 @@
     <ClCompile Include="GUI\VPatternStrip.cpp">
       <Filter>Source Files\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="GUI\VPatternListBox.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VortexEditorTutorial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -146,6 +155,15 @@
     <ClInclude Include="GUI\VPatternStrip.h">
       <Filter>Header Files\GUI</Filter>
     </ClInclude>
+    <ClInclude Include="GUI\VPatternListBox.h">
+      <Filter>Header Files\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexEditorTutorial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VortexEditor.rc">
@@ -154,6 +172,30 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\chromadeck-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\gloves-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\handle-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\orbit-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\chromadeck-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\gloves-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\handle-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\orbit-logo-square-green-64.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

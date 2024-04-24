@@ -208,7 +208,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_COPY_COLOR_SET_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_PATTERN_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_HELP_ABOUT, handleMenusCallback);
-  m_window.addCallback(ID_HELP_HELP, handleMenusCallback);
+  m_window.addCallback(ID_HELP_TUTORIAL, handleMenusCallback);
+  m_window.addCallback(ID_HELP_WIKI, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_CLEAR_PATTERN, handleMenusCallback);
@@ -248,10 +249,14 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_communityBrowser.init(hInst);
   SetWindowPos(m_communityBrowser.hwnd(), 0, pos.right + 2, pos.top - 200, 0, 0, SWP_NOSIZE);
 
+  // initialize the tutorial
+  m_tutorial.init(hInst);
+  SetWindowPos(m_tutorial.hwnd(), 0, pos.left + 180, pos.top + 50, 0, 0, SWP_NOSIZE);
+
   // show subwindows
-  m_colorPicker.show();
-  m_modeRandomizer.show();
-  m_communityBrowser.show();
+  //m_colorPicker.show();
+  //m_modeRandomizer.show();
+  //m_communityBrowser.show();
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -383,8 +388,11 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   case ID_HELP_ABOUT:
     MessageBox(m_window.hwnd(), "Vortex Editor 1.0\nMade by Daniel Fraser and Shane Aronson", "About", 0);
     break;
-  case ID_HELP_HELP:
-    ShellExecute(NULL, "open", "https://github.com/StoneOrbits/VortexEditor/wiki", NULL, NULL, SW_SHOWNORMAL);
+  case ID_HELP_WIKI:
+    ShellExecute(NULL, "open", "https://stoneorbits.github.io/VortexEngine/editor.html", NULL, NULL, SW_SHOWNORMAL);
+    return;
+  case ID_HELP_TUTORIAL:
+    beginTutorial();
     return;
   case ID_EDIT_COPY_COLORSET:
     copyColorset();
@@ -1283,6 +1291,24 @@ void VortexEditor::addMode(VWindow *window)
   }
 }
 
+void VortexEditor::addMode(VWindow *window, const Mode *mode)
+{
+  if (!mode) {
+    return;
+  }
+#if MAX_MODES != 0
+  if (m_vortex.numModes() >= MAX_MODES) {
+    return;
+  }
+#endif
+  debug("Adding mode %u", m_vortex.numModes() + 1);
+  m_vortex.addMode(mode);
+  m_vortex.setCurMode(m_vortex.numModes() - 1);
+  m_modeListBox.setSelection(m_vortex.curModeIndex());
+  refreshModeList();
+  demoCurMode();
+}
+
 void VortexEditor::delMode(VWindow *window)
 {
   debug("Deleting mode %u", m_vortex.curModeIndex());
@@ -1917,4 +1943,9 @@ int VortexEditor::getPortListIndex() const
     }
   }
   return -1;
+}
+
+void VortexEditor::beginTutorial()
+{
+  m_tutorial.show();
 }

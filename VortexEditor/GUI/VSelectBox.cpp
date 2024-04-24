@@ -34,10 +34,13 @@ VSelectBox::VSelectBox() :
   m_drawVLine(true),
   m_drawCircle(true),
   m_pressed(false),
+  m_useTransparency(false),
+  m_mouseInside(false),
   m_xSelect(0),
   m_ySelect(0),
   m_callback(nullptr),
-  m_bitmap(nullptr)
+  m_bitmap(nullptr),
+  m_hoverBitmap(nullptr)
 {
 }
 
@@ -125,22 +128,60 @@ static HBRUSH getBrushCol(DWORD rgbcol)
   return br;
 }
 
+//void VSelectBox::paint()
+//{
+//  PAINTSTRUCT paintStruct;
+//  memset(&paintStruct, 0, sizeof(paintStruct));
+//  HDC hdc = BeginPaint(m_hwnd, &paintStruct);
+//
+//  // create a backbuffer and select it
+//  HDC backbuffDC = CreateCompatibleDC(hdc);
+//  HBITMAP backbuffer = CreateCompatibleBitmap(hdc, m_width, m_height);
+//  SelectObject(backbuffDC, backbuffer);
+//
+//  // copy the bitmap into the backbuffer
+//  HDC bmpDC = CreateCompatibleDC(hdc);
+//  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, m_bitmap);
+//  BitBlt(backbuffDC, 0, 0, m_width, m_height, bmpDC, 0, 0, BLACKNESS);
+//  BitBlt(backbuffDC, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, bmpDC, 0, 0, SRCCOPY);
+//  DeleteDC(bmpDC);
+//
+//
+//  BitBlt(hdc, 0, 0, m_width, m_height, backbuffDC, 0, 0, SRCCOPY);
+//
+//  DeleteObject(backbuffer);
+//  DeleteDC(backbuffDC);
+//
+//  EndPaint(m_hwnd, &paintStruct);
+//}
+
 void VSelectBox::paint()
 {
   PAINTSTRUCT paintStruct;
   memset(&paintStruct, 0, sizeof(paintStruct));
   HDC hdc = BeginPaint(m_hwnd, &paintStruct);
 
-  // create a backbuffer and select it
   HDC backbuffDC = CreateCompatibleDC(hdc);
   HBITMAP backbuffer = CreateCompatibleBitmap(hdc, m_width, m_height);
-  SelectObject(backbuffDC, backbuffer);
+  HBITMAP hbmOldBackbuffer = (HBITMAP)SelectObject(backbuffDC, backbuffer);
 
-  // copy the bitmap into the backbuffer
   HDC bmpDC = CreateCompatibleDC(hdc);
-  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, m_bitmap);
-  BitBlt(backbuffDC, 0, 0, m_width, m_height, bmpDC, 0, 0, BLACKNESS);
-  BitBlt(backbuffDC, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, bmpDC, 0, 0, SRCCOPY);
+  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, m_mouseInside ? m_hoverBitmap : m_bitmap);
+
+  if (m_useTransparency) {
+    // Fill the background with a color that will be made transparent
+    HBRUSH hBrush = CreateSolidBrush(RGB(45, 45, 45)); // Magenta, assuming this is the transparent color
+    FillRect(backbuffDC, &paintStruct.rcPaint, hBrush);
+    DeleteObject(hBrush);
+
+    // Use TransparentBlt to copy the bitmap with transparency
+    TransparentBlt(backbuffDC, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, bmpDC, 0, 0, m_innerWidth, m_innerHeight, RGB(255, 0, 255));
+  } else {
+    // Use BitBlt to copy the bitmap without transparency
+    BitBlt(backbuffDC, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, bmpDC, 0, 0, SRCCOPY);
+  }
+
+  SelectObject(bmpDC, hbmpOld);
   DeleteDC(bmpDC);
 
   // draw the lines and circle
@@ -192,13 +233,16 @@ void VSelectBox::paint()
       m_innerTop + (m_ySelect + selectorSize) - 1);
   }
 
+
   BitBlt(hdc, 0, 0, m_width, m_height, backbuffDC, 0, 0, SRCCOPY);
 
+  SelectObject(backbuffDC, hbmOldBackbuffer); // Restore the original bitmap
   DeleteObject(backbuffer);
   DeleteDC(backbuffDC);
 
   EndPaint(m_hwnd, &paintStruct);
 }
+
 
 void VSelectBox::command(WPARAM wParam, LPARAM lParam)
 {
@@ -241,8 +285,26 @@ void VSelectBox::releaseButton(WPARAM wParam, LPARAM lParam)
   doCallback(SELECT_RELEASE);
 }
 
-void VSelectBox::mouseMove()
+void VSelectBox::mouseMove(uint32_t buttons, uint16_t x, uint16_t y)
 {
+  //if (inside != m_mouseInside) {
+  //  if (inside) {
+  //    mouseEnter();
+  //  } else {
+  //    mouseLeave();
+  //  }
+  //}
+  if (!m_mouseInside) {
+    TRACKMOUSEEVENT mouseEvent;
+    mouseEvent.cbSize = sizeof(mouseEvent);
+    mouseEvent.dwFlags = 2;
+    mouseEvent.hwndTrack = m_hwnd;
+    mouseEvent.dwHoverTime = 0;
+    TrackMouseEvent(&mouseEvent);
+    InvalidateRect(m_hwnd, nullptr, FALSE);
+    m_mouseInside = true;
+  }
+  setBorderSize(0);
   if (!m_pressed) {
     return;
   }
@@ -272,6 +334,34 @@ void VSelectBox::setBackground(HBITMAP hBitmap)
   m_bitmap = hBitmap;
 }
 
+void VSelectBox::setHoverBackground(HBITMAP hBitmap)
+{
+  m_hoverBitmap = hBitmap;
+}
+
+void VSelectBox::setBackgroundTransparency(bool transparent)
+{
+  m_useTransparency = transparent;
+}
+
+void VSelectBox::setBorderSize(uint32_t borderSize)
+{
+  m_borderSize = borderSize;
+
+  uint32_t borders = m_borderSize * 2;
+  m_width = m_innerWidth + borders;
+  m_height = m_innerHeight + borders;
+
+  m_innerLeft = m_borderSize;
+  m_innerTop = m_borderSize;
+  // if the inner width/height is 1 (it's 1 pixel big) then it's the same 
+  // pixel as the inner left/top. That helps to understand the -1 offset
+  // because the inside size is 1x1 but the inner left == inner right and
+  // the inner top == inner bottom because it's all the same 1x1 inner pixel
+  m_innerRight = m_borderSize + m_innerWidth - 1;
+  m_innerBottom = m_borderSize + m_innerHeight - 1;
+}
+
 void VSelectBox::setSelection(uint32_t x, uint32_t y)
 {
   m_xSelect = x;
@@ -282,37 +372,41 @@ void VSelectBox::setSelection(uint32_t x, uint32_t y)
 
 LRESULT CALLBACK VSelectBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-  VSelectBox *pColorSelect = (VSelectBox *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-  if (!pColorSelect) {
+  VSelectBox *pSelectBox = (VSelectBox *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  if (!pSelectBox) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
   }
   switch (uMsg) {
   case WM_VSCROLL:
     break;
   case WM_LBUTTONDOWN:
-    pColorSelect->pressButton(wParam, lParam);
+    pSelectBox->pressButton(wParam, lParam);
     break;
   case WM_LBUTTONUP:
-    pColorSelect->releaseButton(wParam, lParam);
+    pSelectBox->releaseButton(wParam, lParam);
     break;
   case WM_MOUSEMOVE:
-    pColorSelect->mouseMove();
+    pSelectBox->mouseMove(wParam, LOWORD(lParam), HIWORD(lParam));
+    break;
+  case WM_MOUSELEAVE:
+    InvalidateRect(pSelectBox->m_hwnd, nullptr, FALSE);
+    pSelectBox->m_mouseInside = false;
     break;
   case WM_CTLCOLORSTATIC:
-    return (INT_PTR)pColorSelect->m_wc.hbrBackground;
+    return (INT_PTR)pSelectBox->m_wc.hbrBackground;
   case WM_ERASEBKGND:
     return 1;
   case WM_CREATE:
-    pColorSelect->create();
+    pSelectBox->create();
     break;
   case WM_PAINT:
-    pColorSelect->paint();
+    pSelectBox->paint();
     return 0;
   case WM_COMMAND:
-    pColorSelect->command(wParam, lParam);
+    pSelectBox->command(wParam, lParam);
     break;
   case WM_DESTROY:
-    pColorSelect->cleanup();
+    pSelectBox->cleanup();
     break;
   default:
     break;

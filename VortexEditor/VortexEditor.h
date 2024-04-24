@@ -28,6 +28,7 @@
 #include "VortexColorPicker.h"
 #include "VortexModeRandomizer.h"
 #include "VortexCommunityBrowser.h"
+#include "VortexEditorTutorial.h"
 #include "ArduinoSerial.h"
 
 // stl includes
@@ -63,6 +64,8 @@ public:
   void triggerRefresh();
 
   HINSTANCE hInst() const { return m_hInstance; }
+
+  void addMode(VWindow *window, const Mode *mode);
 
 private:
   // print to the log
@@ -191,6 +194,9 @@ private:
   // get the current pattern selection from the pattern dropdown
   PatternID patternSelection() const;
 
+  // start the interactive tutorial
+  void beginTutorial();
+
   // ==================================
   //  Member data
 
@@ -244,12 +250,13 @@ private:
   VSelectBox m_storageProgress;
 
   // ==================================
-  //  Color picker GUI
+  //  Sub-window GUIS
 
   // the vortex color picker window
   VortexColorPicker m_colorPicker;
   VortexModeRandomizer m_modeRandomizer;
   VortexCommunityBrowser m_communityBrowser;
+  VortexEditorTutorial m_tutorial;
 };
 
 extern VortexEditor *g_pEditor;

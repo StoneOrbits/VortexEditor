@@ -108,7 +108,8 @@ BEGIN
     POPUP "Help"
     BEGIN
         MENUITEM "About",                       ID_HELP_ABOUT
-        MENUITEM "Help",                        ID_HELP_HELP
+        MENUITEM "Tutorial",                    ID_HELP_TUTORIAL
+        MENUITEM "Wiki",                        ID_HELP_WIKI
     END
 END
 
@@ -160,6 +161,28 @@ BEGIN
         VALUE "Translation", 0x809, 1200
     END
 END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP1             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\chromadeck-logo-square-64.bmp"
+
+IDB_BITMAP2             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\gloves-logo-square-64.bmp"
+
+IDB_BITMAP3             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\handle-logo-square-64.bmp"
+
+IDB_BITMAP4             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\orbit-logo-square-64.bmp"
+
+IDB_BITMAP5             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\chromadeck-logo-square-green-64.bmp"
+
+IDB_BITMAP6             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\gloves-logo-square-green-64.bmp"
+
+IDB_BITMAP7             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\handle-logo-square-green-64.bmp"
+
+IDB_BITMAP8             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\orbit-logo-square-green-64.bmp"
 
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////

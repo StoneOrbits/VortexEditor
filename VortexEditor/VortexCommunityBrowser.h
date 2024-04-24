@@ -27,17 +27,17 @@ public:
 
   // initialize the test framework
   bool init(HINSTANCE hInstance);
-  // run the mode randomizer
-  void run();
 
   // show/hide the mode randomizer window
   void show();
   void hide();
   void loseFocus();
-  std::wstring GetHttpRequest(const std::wstring &host, const std::wstring &path);
+  json fetchModesJson(uint32_t page = 1, uint32_t pageSize = 15);
+  bool loadPage();
+  bool prevPage();
+  bool nextPage();
 
   bool isOpen() const { return m_isOpen; }
-  
   HWND hwnd() const { return m_communityBrowserWindow.hwnd(); }
 
 private:
@@ -49,8 +49,14 @@ private:
   static void loseFocusCallback(void *pthis, VWindow *window) {
     ((VortexCommunityBrowser *)pthis)->loseFocus();
   }
+  static void prevPageCallback(void *pthis, VWindow *window) {
+    ((VortexCommunityBrowser *)pthis)->prevPage();
+  }
+  static void nextPageCallback(void *pthis, VWindow *window) {
+    ((VortexCommunityBrowser *)pthis)->nextPage();
+  }
 
-  static DWORD __stdcall runThread(void *arg);
+  HINSTANCE m_hInstance;
 
   bool m_isOpen;
 
@@ -62,10 +68,20 @@ private:
   // mutex to synchronize access to vortex engine
   HANDLE m_mutex;
   // thread that runs the community browser vortex engine instance
-  HANDLE m_runThreadId;
+  //HANDLE m_runThreadId;
 
   // child window for mode randomizer tool
   VChildWindow m_communityBrowserWindow;
   // preview of color
-  std::vector<std::shared_ptr<VPatternStrip>> m_patternStrips;
+  std::vector<std::unique_ptr<VPatternStrip>> m_patternStrips;
+
+  // next/prev page buttons
+  VButton m_prevPageButton;
+  VButton m_nextPageButton;
+  VLabel m_pageLabel;
+
+  // the current page of the browser
+  uint32_t m_curPage;
+  // whether we're on the last page (received all responses)
+  bool m_lastPage;
 };
