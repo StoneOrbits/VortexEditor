@@ -55,9 +55,34 @@ private:
   static void selectOrbitCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
     ((VortexEditorTutorial *)pthis)->selectOrbit(x, y, sevent); 
   }
-
-  void selectOrbit(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+  // callbacks for selecting sv and h
+  static void selectHandleCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexEditorTutorial *)pthis)->selectHandle(x, y, sevent); 
   }
+  // callbacks for selecting sv and h
+  static void selectGlovesCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexEditorTutorial *)pthis)->selectGloves(x, y, sevent); 
+  }
+  // callbacks for selecting sv and h
+  static void selectChromadeckCallback(void *pthis, uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent) {
+    ((VortexEditorTutorial *)pthis)->selectChromadeck(x, y, sevent); 
+  }
+
+  void selectOrbit(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent);
+  void selectHandle(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent);
+  void selectGloves(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent);
+  void selectChromadeck(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent);
+
+  enum SelectedDevice {
+    SELECTED_NONE,
+
+    SELECTED_ORBIT,
+    SELECTED_HANDLE,
+    SELECTED_GLOVES,
+    SELECTED_CHROMADECK
+  };
+
+  SelectedDevice m_selectedDevice;
 
   static DWORD __stdcall runThread(void *arg);
 
@@ -68,7 +93,6 @@ private:
   std::vector<std::string> m_script;
   uint32_t m_currentScriptIndex;
   bool m_nextPressed;
-
 
   // mutex that is posted once we're loaded
   HANDLE m_mutex;

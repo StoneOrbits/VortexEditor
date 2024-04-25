@@ -32,13 +32,19 @@ VortexEditorTutorial::VortexEditorTutorial() :
   m_glovesSelect(),
   m_chromadeckBitmap(),
   m_chromadeckSelectedBitmap(),
-  m_chromadeckSelect()
+  m_chromadeckSelect(),
+  m_selectedDevice(SELECTED_NONE)
 {
 }
 
 VortexEditorTutorial::~VortexEditorTutorial()
 {
   DestroyIcon(m_hIcon);
+  if (m_runThread) {
+    TerminateThread(m_runThread, 0);
+    WaitForSingleObject(m_runThread, 100);
+    m_runThread = 0;
+  }
 }
 
 // initialize the color picker
@@ -80,7 +86,7 @@ bool VortexEditorTutorial::init(HINSTANCE hInst)
   m_orbitSelect.setBorderSize(0);
 
   // the handles select
-  m_handlesSelect.init(hInst, m_tutorialWindow, "handles", BACK_COL, 64, 64, 124, 100, 123124, selectOrbitCallback);
+  m_handlesSelect.init(hInst, m_tutorialWindow, "handles", BACK_COL, 64, 64, 124, 100, 123124, selectHandleCallback);
   m_handlesSelect.setVisible(true);
   m_handlesSelect.setEnabled(true);
   m_handlesSelect.setBackground(m_handlesBitmap);
@@ -92,7 +98,7 @@ bool VortexEditorTutorial::init(HINSTANCE hInst)
   m_handlesSelect.setBorderSize(0);
 
   // the gloves select
-  m_glovesSelect.init(hInst, m_tutorialWindow, "gloves", BACK_COL, 64, 64, 214, 100, 123125, selectOrbitCallback);
+  m_glovesSelect.init(hInst, m_tutorialWindow, "gloves", BACK_COL, 64, 64, 214, 100, 123125, selectGlovesCallback);
   m_glovesSelect.setVisible(true);
   m_glovesSelect.setEnabled(true);
   m_glovesSelect.setBackground(m_glovesBitmap);
@@ -104,7 +110,7 @@ bool VortexEditorTutorial::init(HINSTANCE hInst)
   m_glovesSelect.setBorderSize(0);
 
   // the chromadeck select
-  m_chromadeckSelect.init(hInst, m_tutorialWindow, "chromadeck", BACK_COL, 64, 64, 304, 100, 123126, selectOrbitCallback);
+  m_chromadeckSelect.init(hInst, m_tutorialWindow, "chromadeck", BACK_COL, 64, 64, 304, 100, 123126, selectChromadeckCallback);
   m_chromadeckSelect.setVisible(true);
   m_chromadeckSelect.setEnabled(true);
   m_chromadeckSelect.setBackground(m_chromadeckBitmap);
@@ -173,7 +179,7 @@ void VortexEditorTutorial::loseFocus()
 DWORD __stdcall VortexEditorTutorial::runThread(void *arg)
 {
   VortexEditorTutorial *editorTutorial = (VortexEditorTutorial *)arg;
-  while (editorTutorial->m_currentScriptIndex < editorTutorial->m_script.size()) {
+  while (editorTutorial->m_currentScriptIndex < (editorTutorial->m_script.size() - 1)) {
     WaitForSingleObject(editorTutorial->m_mutex, INFINITE);
     if (editorTutorial->m_nextPressed) {
       editorTutorial->m_nextPressed = false;
@@ -188,7 +194,7 @@ DWORD __stdcall VortexEditorTutorial::runThread(void *arg)
     const std::string &message = editorTutorial->m_script[editorTutorial->m_currentScriptIndex];
     std::string msg;
     for (size_t i = 0; i < message.length(); ++i) {
-      Sleep(40); // Simulate typing delay
+      Sleep(30); // Simulate typing delay
       msg += message[i];
       // Place your method to update the text in UI here
       editorTutorial->UpdateTextDisplay(msg.c_str());
@@ -204,6 +210,7 @@ DWORD __stdcall VortexEditorTutorial::runThread(void *arg)
     Sleep(1000); // Adjust as needed
     editorTutorial->NextMessageAutomatically();
   }
+
   return 0;
 }
 
@@ -238,3 +245,60 @@ void VortexEditorTutorial::NextMessageAutomatically()
   }
   ReleaseMutex(m_mutex);
 }
+
+void VortexEditorTutorial::selectOrbit(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)
+{
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+
+  //m_orbitSelect.setVisible(false);
+  m_handlesSelect.setVisible(false);
+  m_glovesSelect.setVisible(false);
+  m_chromadeckSelect.setVisible(false);
+
+  m_selectedDevice = SELECTED_ORBIT;
+}
+
+void VortexEditorTutorial::selectHandle(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)
+{
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+
+  m_orbitSelect.setVisible(false);
+  //m_handlesSelect.setVisible(false);
+  m_glovesSelect.setVisible(false);
+  m_chromadeckSelect.setVisible(false);
+
+  m_selectedDevice = SELECTED_HANDLE;
+}
+
+void VortexEditorTutorial::selectGloves(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)
+{
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+
+  m_orbitSelect.setVisible(false);
+  m_handlesSelect.setVisible(false);
+  //m_glovesSelect.setVisible(false);
+  m_chromadeckSelect.setVisible(false);
+
+  m_selectedDevice = SELECTED_GLOVES;
+}
+
+void VortexEditorTutorial::selectChromadeck(uint32_t x, uint32_t y, VSelectBox::SelectEvent sevent)
+{
+  if (sevent != VSelectBox::SelectEvent::SELECT_RELEASE) {
+    return;
+  }
+
+  m_orbitSelect.setVisible(false);
+  m_handlesSelect.setVisible(false);
+  m_glovesSelect.setVisible(false);
+  //m_chromadeckSelect.setVisible(false);
+
+  m_selectedDevice = SELECTED_CHROMADECK;
+}
+

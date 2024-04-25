@@ -29,6 +29,7 @@
 using namespace std;
 
 VortexCommunityBrowser::VortexCommunityBrowser() :
+  m_hThread(nullptr),
   m_hInstance(nullptr),
   m_isOpen(false),
   m_hIcon(nullptr),
@@ -84,7 +85,19 @@ bool VortexCommunityBrowser::init(HINSTANCE hInst)
     m_patternStrips.push_back(move(strip));
   }
 
-  return loadPage();
+  m_hThread = CreateThread(NULL, 0, backgroundLoader, this, 0, NULL);
+
+  return true;
+}
+
+DWORD __stdcall VortexCommunityBrowser::backgroundLoader(void *pthis)
+{
+  VortexCommunityBrowser *browser = (VortexCommunityBrowser *)pthis;
+  Sleep(300);
+  browser->loadPage();
+  CloseHandle(browser->m_hThread);
+  browser->m_hThread = nullptr;
+  return 0;
 }
 
 void VortexCommunityBrowser::show()

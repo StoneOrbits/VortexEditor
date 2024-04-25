@@ -128,33 +128,6 @@ static HBRUSH getBrushCol(DWORD rgbcol)
   return br;
 }
 
-//void VSelectBox::paint()
-//{
-//  PAINTSTRUCT paintStruct;
-//  memset(&paintStruct, 0, sizeof(paintStruct));
-//  HDC hdc = BeginPaint(m_hwnd, &paintStruct);
-//
-//  // create a backbuffer and select it
-//  HDC backbuffDC = CreateCompatibleDC(hdc);
-//  HBITMAP backbuffer = CreateCompatibleBitmap(hdc, m_width, m_height);
-//  SelectObject(backbuffDC, backbuffer);
-//
-//  // copy the bitmap into the backbuffer
-//  HDC bmpDC = CreateCompatibleDC(hdc);
-//  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, m_bitmap);
-//  BitBlt(backbuffDC, 0, 0, m_width, m_height, bmpDC, 0, 0, BLACKNESS);
-//  BitBlt(backbuffDC, m_innerLeft, m_innerTop, m_innerWidth, m_innerHeight, bmpDC, 0, 0, SRCCOPY);
-//  DeleteDC(bmpDC);
-//
-//
-//  BitBlt(hdc, 0, 0, m_width, m_height, backbuffDC, 0, 0, SRCCOPY);
-//
-//  DeleteObject(backbuffer);
-//  DeleteDC(backbuffDC);
-//
-//  EndPaint(m_hwnd, &paintStruct);
-//}
-
 void VSelectBox::paint()
 {
   PAINTSTRUCT paintStruct;
@@ -166,7 +139,11 @@ void VSelectBox::paint()
   HBITMAP hbmOldBackbuffer = (HBITMAP)SelectObject(backbuffDC, backbuffer);
 
   HDC bmpDC = CreateCompatibleDC(hdc);
-  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, m_mouseInside ? m_hoverBitmap : m_bitmap);
+  HBITMAP back = m_bitmap;
+  if (m_mouseInside && m_hoverBitmap) {
+    back = m_hoverBitmap;
+  }
+  HBITMAP hbmpOld = (HBITMAP)SelectObject(bmpDC, back);
 
   if (m_useTransparency) {
     // Fill the background with a color that will be made transparent
@@ -287,14 +264,7 @@ void VSelectBox::releaseButton(WPARAM wParam, LPARAM lParam)
 
 void VSelectBox::mouseMove(uint32_t buttons, uint16_t x, uint16_t y)
 {
-  //if (inside != m_mouseInside) {
-  //  if (inside) {
-  //    mouseEnter();
-  //  } else {
-  //    mouseLeave();
-  //  }
-  //}
-  if (!m_mouseInside) {
+  if (!m_mouseInside && m_hoverBitmap) {
     TRACKMOUSEEVENT mouseEvent;
     mouseEvent.cbSize = sizeof(mouseEvent);
     mouseEvent.dwFlags = 2;
@@ -304,7 +274,6 @@ void VSelectBox::mouseMove(uint32_t buttons, uint16_t x, uint16_t y)
     InvalidateRect(m_hwnd, nullptr, FALSE);
     m_mouseInside = true;
   }
-  setBorderSize(0);
   if (!m_pressed) {
     return;
   }
@@ -354,7 +323,7 @@ void VSelectBox::setBorderSize(uint32_t borderSize)
 
   m_innerLeft = m_borderSize;
   m_innerTop = m_borderSize;
-  // if the inner width/height is 1 (it's 1 pixel big) then it's the same 
+  // if the inner width/height is 1 (it's 1 pixel big) then it's the same
   // pixel as the inner left/top. That helps to understand the -1 offset
   // because the inside size is 1x1 but the inner left == inner right and
   // the inner top == inner bottom because it's all the same 1x1 inner pixel
@@ -389,7 +358,9 @@ LRESULT CALLBACK VSelectBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
     pSelectBox->mouseMove(wParam, LOWORD(lParam), HIWORD(lParam));
     break;
   case WM_MOUSELEAVE:
-    InvalidateRect(pSelectBox->m_hwnd, nullptr, FALSE);
+    if (pSelectBox->m_hoverBitmap) {
+      InvalidateRect(pSelectBox->m_hwnd, nullptr, FALSE);
+    }
     pSelectBox->m_mouseInside = false;
     break;
   case WM_CTLCOLORSTATIC:

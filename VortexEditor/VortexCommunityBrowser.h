@@ -56,6 +56,10 @@ private:
     ((VortexCommunityBrowser *)pthis)->nextPage();
   }
 
+  static DWORD __stdcall backgroundLoader(void *pthis);
+  // a handle to the thread that initializes in the background
+  HANDLE m_hThread;
+
   HINSTANCE m_hInstance;
 
   bool m_isOpen;
