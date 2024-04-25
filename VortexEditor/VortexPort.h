@@ -38,12 +38,16 @@ public:
   // read out the full list of modes
   bool readByteStream(ByteStream &outModes);
 private:
+  bool heartbeat();
+
   // the raw serial connection
   ArduinoSerial m_serialPort;
   // a handle to the thread that waits for the initial handshake
   HANDLE m_hThread;
   // whether the port is 'active' ie the handshake has been received
   bool m_portActive;
+  // the time of the last heartbeat
+  uint64_t m_lastHeartbeat;
   // thread func to wait and begin a port connection
   static DWORD __stdcall begin(void *ptr);
 };

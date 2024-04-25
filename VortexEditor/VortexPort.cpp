@@ -20,14 +20,16 @@ uint32_t g_counter = 0;
 VortexPort::VortexPort() :
   m_serialPort(),
   m_hThread(nullptr),
-  m_portActive(false)
+  m_portActive(false),
+  m_lastHeartbeat(0)
 {
 }
 
 VortexPort::VortexPort(const std::string &portName) :
   m_serialPort(portName),
   m_hThread(nullptr),
-  m_portActive(false)
+  m_portActive(false),
+  m_lastHeartbeat(0)
 {
 }
 
@@ -283,6 +285,23 @@ bool VortexPort::readByteStream(ByteStream &outModes)
   return true;
 }
 
+// number of ms in a heartbeat
+#define HEARTBEAT_PERIOD 1000
+
+bool VortexPort::heartbeat()
+{
+  uint64_t cur = GetTickCount64();
+
+  if ((cur - m_lastHeartbeat) > HEARTBEAT_PERIOD) {
+  }
+
+
+  m_lastHeartbeat = GetTickCount64();
+
+
+  return true;
+}
+
 DWORD __stdcall VortexPort::begin(void *ptr)
 {
   VortexPort *port = (VortexPort *)ptr;
@@ -305,6 +324,13 @@ DWORD __stdcall VortexPort::begin(void *ptr)
   }
   // send a message to trigger a UI refresh
   g_pEditor->triggerRefresh();
+  while (port->m_portActive) {
+    // continuously send a heartbeat and if the device doesn't respond
+    // consider it disconnected
+    if (!port->heartbeat()) {
+      port->m_portActive = false;
+    }
+  }
   // cleanup this thread this function is running in
   CloseHandle(port->m_hThread);
   port->m_hThread = nullptr;
