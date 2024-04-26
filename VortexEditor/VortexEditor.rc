@@ -168,21 +168,21 @@ END
 // Bitmap
 //
 
-IDB_BITMAP1             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\chromadeck-logo-square-64.bmp"
+IDB_BITMAP1             BITMAP                  "chromadeck-logo-square-64.bmp"
 
-IDB_BITMAP2             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\gloves-logo-square-64.bmp"
+IDB_BITMAP2             BITMAP                  "gloves-logo-square-64.bmp"
 
-IDB_BITMAP3             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\handle-logo-square-64.bmp"
+IDB_BITMAP3             BITMAP                  "handle-logo-square-64.bmp"
 
-IDB_BITMAP4             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\orbit-logo-square-64.bmp"
+IDB_BITMAP4             BITMAP                  "orbit-logo-square-64.bmp"
 
-IDB_BITMAP5             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\chromadeck-logo-square-green-64.bmp"
+IDB_BITMAP5             BITMAP                  "chromadeck-logo-square-green-64.bmp"
 
-IDB_BITMAP6             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\gloves-logo-square-green-64.bmp"
+IDB_BITMAP6             BITMAP                  "gloves-logo-square-green-64.bmp"
 
-IDB_BITMAP7             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\handle-logo-square-green-64.bmp"
+IDB_BITMAP7             BITMAP                  "handle-logo-square-green-64.bmp"
 
-IDB_BITMAP8             BITMAP                  "C:\\Users\\danie\\source\\repos\\VortexEditor\\orbit-logo-square-green-64.bmp"
+IDB_BITMAP8             BITMAP                  "orbit-logo-square-green-64.bmp"
 
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
