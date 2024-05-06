@@ -39,7 +39,7 @@ VortexCommunityBrowser::VortexCommunityBrowser() :
   m_prevPageButton(),
   m_nextPageButton(),
   m_pageLabel(),
-  m_curPage(1),
+  m_curPage(0),
   m_lastPage(false)
 {
 }
@@ -93,8 +93,9 @@ bool VortexCommunityBrowser::init(HINSTANCE hInst)
 DWORD __stdcall VortexCommunityBrowser::backgroundLoader(void *pthis)
 {
   VortexCommunityBrowser *browser = (VortexCommunityBrowser *)pthis;
-  Sleep(300);
-  browser->loadPage();
+  // load the first two pages
+  browser->loadPage(0, false);
+  browser->loadPage(1, false);
   CloseHandle(browser->m_hThread);
   browser->m_hThread = nullptr;
   return 0;
@@ -107,6 +108,9 @@ void VortexCommunityBrowser::show()
   }
   m_communityBrowserWindow.setVisible(true);
   m_communityBrowserWindow.setEnabled(true);
+  for (uint32_t i = 0; i < MODES_PER_PAGE; ++i) {
+    m_patternStrips[i]->setActive(true);
+  }
   m_isOpen = true;
 }
 
@@ -124,6 +128,9 @@ void VortexCommunityBrowser::hide()
   for (uint32_t i = 0; i < 8; ++i) {
     g_pEditor->m_colorSelects[i].setSelected(false);
     g_pEditor->m_colorSelects[i].redraw();
+  }
+  for (uint32_t i = 0; i < MODES_PER_PAGE; ++i) {
+    m_patternStrips[i]->setActive(false);
   }
   m_isOpen = false;
 }
@@ -150,36 +157,46 @@ json VortexCommunityBrowser::fetchModesJson(uint32_t page, uint32_t pageSize)
   return result;
 }
 
-bool VortexCommunityBrowser::loadPage()
+bool VortexCommunityBrowser::loadCurPage(bool active)
 {
-  // fetch json of modes from community api
-  try {
-    m_communityModes = fetchModesJson(m_curPage, MODES_PER_PAGE);
-  } catch (...) {
-    return false;
-  }
-  // Verify if 'data' is an array
-  if (!m_communityModes.contains("data")) {
-    cerr << "'data' is not an array or does not exist" << endl;
-    return false;
+  return loadPage(m_curPage, active);
+}
+
+bool VortexCommunityBrowser::loadPage(uint32_t page, bool active)
+{
+  // if the page hasn't been loaded yet
+  if (m_communityModes.size() <= m_curPage) {
+    // fetch json of modes from community api
+    try {
+      // cache the page of data
+      m_communityModes.push_back(fetchModesJson(m_curPage + 1, MODES_PER_PAGE));
+    } catch (...) {
+      return false;
+    }
+    // Verify if 'data' is an array
+    if (!m_communityModes[m_curPage].contains("data")) {
+      cerr << "'data' is not an array or does not exist" << endl;
+      return false;
+    }
   }
   for (uint32_t i = 0; i < MODES_PER_PAGE; ++i) {
-    auto mode = m_communityModes["data"][i];
+    auto mode = m_communityModes[m_curPage]["data"][i];
     m_patternStrips[i]->loadJson(mode);
+    m_patternStrips[i]->setActive(active);
   }
-  uint32_t numPages = m_communityModes["pages"];
-  m_lastPage = (m_curPage == numPages);
-  m_pageLabel.setText(to_string(m_curPage) + " / " + to_string(numPages));
+  uint32_t numPages = m_communityModes[m_curPage]["pages"];
+  m_lastPage = (m_curPage == (numPages - 1));
+  m_pageLabel.setText(to_string(m_curPage + 1) + " / " + to_string(numPages));
   return true;
 }
 
 bool VortexCommunityBrowser::prevPage()
 {
-  if (m_curPage <= 1) {
+  if (!m_curPage) {
     return false;
   }
   m_curPage--;
-  return loadPage();
+  return loadCurPage();
 }
 
 bool VortexCommunityBrowser::nextPage()
@@ -188,5 +205,5 @@ bool VortexCommunityBrowser::nextPage()
     return false;
   }
   m_curPage++;
-  return loadPage();
+  return loadCurPage();
 }

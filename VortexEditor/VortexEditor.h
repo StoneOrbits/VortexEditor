@@ -68,6 +68,8 @@ public:
   void addMode(VWindow *window, const Mode *mode);
 
 private:
+  static DWORD __stdcall scanPortsThread(void *arg);
+
   // print to the log
   static void printlog(const char *file, const char *func, int line, const char *msg, ...);
 
@@ -218,6 +220,8 @@ private:
   // keeps track of the last colorset entry selected to support shift+click
   // which needs to set prevIndex to curIndex upon shift clicking
   uint32_t m_lastClickedColor;
+  // thread for scanning the ports for connected devices on init
+  HANDLE m_scanPortsThread;
 
   // ==================================
   //  GUI Members

@@ -63,6 +63,7 @@ VortexEditor::VortexEditor() :
   m_portList(),
   m_accelTable(),
   m_lastClickedColor(0),
+  m_scanPortsThread(nullptr),
   m_window(),
   m_portSelection(),
   m_pushButton(),
@@ -323,12 +324,21 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.installDeviceCallback(deviceChangeCallback);
 
   // check for connected devices
-  scanPorts();
+  m_scanPortsThread = CreateThread(NULL, 0, scanPortsThread, this, 0, NULL);
 
   // trigger a ui refresh
   refreshModeList();
 
   return true;
+}
+
+DWORD __stdcall VortexEditor::scanPortsThread(void *arg)
+{
+  VortexEditor *editor = (VortexEditor *)arg;
+  editor->scanPorts();
+  CloseHandle(editor->m_scanPortsThread);
+  editor->m_scanPortsThread = nullptr;
+  return 0;
 }
 
 void VortexEditor::run()

@@ -33,7 +33,8 @@ public:
   void hide();
   void loseFocus();
   json fetchModesJson(uint32_t page = 1, uint32_t pageSize = 15);
-  bool loadPage();
+  bool loadCurPage(bool active = true);
+  bool loadPage(uint32_t page, bool active = true);
   bool prevPage();
   bool nextPage();
 
@@ -67,7 +68,7 @@ private:
   HICON m_hIcon;
 
   // modes fetched from community api
-  nlohmann::json m_communityModes;
+  std::vector<nlohmann::json> m_communityModes;
 
   // mutex to synchronize access to vortex engine
   HANDLE m_mutex;

@@ -64,7 +64,7 @@ private:
     static DWORD __stdcall runThread(void *arg);
 
     Vortex m_vortex;
-    HANDLE m_runThreadId;
+    HANDLE m_runThread;
     VLabel m_stripLabel;
     VPatternStripCallback m_callback;
     bool m_active;

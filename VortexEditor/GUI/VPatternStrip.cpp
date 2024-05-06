@@ -23,7 +23,7 @@ WNDCLASS VPatternStrip::m_wc = { 0 };
 VPatternStrip::VPatternStrip() :
   VWindow(),
   m_vortex(),
-  m_runThreadId(nullptr),
+  m_runThread(nullptr),
   m_stripLabel(),
   m_callback(nullptr),
   m_active(true),
@@ -96,7 +96,8 @@ void VPatternStrip::init(HINSTANCE hInstance, VWindow &parent, const string &tit
   // load the communty modes into the local vortex instance for the browser window
   m_vortex.init();
   m_vortex.setLedCount(1);
-  m_vortex.setTickrate(30);
+  m_vortex.setTickrate(40);
+  //m_vortex.setInstantTimestep(true);
 
   HDC hdc = GetDC(m_hwnd);
   createBackBuffer(hdc, width, height);
@@ -113,8 +114,21 @@ void VPatternStrip::loadJson(const json &js)
     }
     m_vortex.engine().modes().clearModes();
     m_vortex.loadModeFromJson(js["modeData"]);
-    setActive(true);
   }
+
+    m_vortex.setInstantTimestep(true);
+  for (uint32_t i = 0; i < m_backbufferWidth; ++i) {
+    m_vortex.engine().tick();
+    RGBColor col = m_vortex.engine().leds().getLed(0);
+    m_colorSequence.push_back(col);
+    if (m_colorSequence.size() > m_numSlices) {
+      m_colorSequence.pop_front();
+    }
+    // Update scroll offset for scrolling animation
+    m_scrollOffset = (m_scrollOffset + 1) % m_numSlices;
+  }
+    m_vortex.setInstantTimestep(false);
+
 }
 
 DWORD __stdcall VPatternStrip::runThread(void *arg)
@@ -175,9 +189,7 @@ void VPatternStrip::paint()
   drawToBackBuffer();
 }
 
-void VPatternStrip::drawToBackBuffer()
-{
-  // Ensure the backbuffer is ready for drawing
+void VPatternStrip::drawToBackBuffer() {
   if (!m_backbufferDC) {
     return;
   }
@@ -190,20 +202,29 @@ void VPatternStrip::drawToBackBuffer()
   // Fill the backbuffer background
   FillRect(m_backbufferDC, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-  // Draw the color sequence
+  // Calculate the starting position for drawing lines
   uint32_t numLines = m_colorSequence.size();
   int startX = width - (numLines * m_lineWidth) % width;
+  RECT lineRect;
+  lineRect.top = rect.top;
+  lineRect.bottom = rect.bottom;
+
+  // Iterate through each color in the sequence and draw the corresponding line
   for (int i = 0; i < numLines; ++i) {
-    RGBColor col = m_colorSequence[i];
+    const auto& col = m_colorSequence[i];
     if (col.empty()) {
       continue;
     }
+
     HBRUSH brush = getBrushCol(col.raw());
     if (!brush) {
       continue;
     }
+
     int xPos = (startX + (i * m_lineWidth)) % width;
-    RECT lineRect = { xPos, rect.top, xPos + m_lineWidth, rect.bottom };
+    lineRect.left = xPos;
+    lineRect.right = xPos + m_lineWidth;
+
     FillRect(m_backbufferDC, &lineRect, brush);
   }
 }
@@ -276,15 +297,22 @@ void VPatternStrip::setActive(bool active)
 {
   m_active = active;
   m_stripLabel.setVisible(active);
+
+  // if active == false
   if (!m_active) {
     setSelected(false);
-    WaitForSingleObject(m_runThreadId, INFINITE);
-    m_runThreadId = nullptr;
+    if (m_runThread) {
+      WaitForSingleObject(m_runThread, INFINITE);
+      m_runThread = nullptr;
+    }
     clear();
+    //  end active == false
     return;
   }
-  if (!m_runThreadId) {
-    m_runThreadId = CreateThread(NULL, 0, runThread, this, 0, NULL);
+
+  // otherwise active = true
+  if (!m_runThread) {
+    m_runThread = CreateThread(NULL, 0, runThread, this, 0, NULL);
   }
 }
 
