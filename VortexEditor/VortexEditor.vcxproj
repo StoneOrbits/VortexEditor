@@ -168,6 +168,7 @@
     <ClCompile Include="GUI\VStatusBar.cpp" />
     <ClCompile Include="GUI\VTextBox.cpp" />
     <ClCompile Include="HttpClient.cpp" />
+    <ClCompile Include="VortexChromaLink.cpp" />
     <ClCompile Include="VortexColorPicker.cpp" />
     <ClCompile Include="VortexCommunityBrowser.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
@@ -195,6 +196,7 @@
     <ClInclude Include="GUI\VTextBox.h" />
     <ClInclude Include="HttpClient.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="VortexChromaLink.h" />
     <ClInclude Include="VortexColorPicker.h" />
     <ClInclude Include="VortexCommunityBrowser.h" />
     <ClInclude Include="VortexEditor.h" />
@@ -217,7 +219,15 @@
     <Image Include="..\handle-logo-square-green-64.bmp" />
     <Image Include="..\orbit-logo-square-64.bmp" />
     <Image Include="..\orbit-logo-square-green-64.bmp" />
+    <Image Include="chromadeck-logo-square-64.bmp" />
+    <Image Include="chromadeck-logo-square-green-64.bmp" />
+    <Image Include="gloves-logo-square-64.bmp" />
+    <Image Include="gloves-logo-square-green-64.bmp" />
+    <Image Include="handle-logo-square-64.bmp" />
+    <Image Include="handle-logo-square-green-64.bmp" />
     <Image Include="icon.ico" />
+    <Image Include="orbit-logo-square-64.bmp" />
+    <Image Include="orbit-logo-square-green-64.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

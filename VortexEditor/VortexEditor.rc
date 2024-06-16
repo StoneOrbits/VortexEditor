@@ -98,6 +98,7 @@ BEGIN
         MENUITEM "Color Picker",                ID_TOOLS_COLOR_PICKER
         MENUITEM "Mode Randomizer",             ID_TOOLS_MODE_RANDOMIZER
         MENUITEM "Community Browser",           ID_TOOLS_COMMUNITY_BROWSER
+        MENUITEM "Chromalink",                  ID_TOOLS_CHROMALINK
     END
     POPUP "Options"
     BEGIN

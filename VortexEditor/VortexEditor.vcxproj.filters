@@ -90,6 +90,9 @@
     <ClCompile Include="VortexEditorTutorial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VortexChromaLink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -164,6 +167,9 @@
     <ClInclude Include="VortexEditorTutorial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VortexChromaLink.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VortexEditor.rc">
@@ -196,6 +202,30 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="..\orbit-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="chromadeck-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="gloves-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="handle-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="orbit-logo-square-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="chromadeck-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="gloves-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="handle-logo-square-green-64.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="orbit-logo-square-green-64.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

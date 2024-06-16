@@ -25,6 +25,8 @@ public:
   int readData(ByteStream &stream);
   // wait till data arrives then read it out
   int waitData(ByteStream &stream);
+  // write byte to the port
+  int writeData(uint8_t *data, uint32_t size);
   // write a message to the port
   int writeData(const std::string &message);
   // write a buffer of binary data to the port

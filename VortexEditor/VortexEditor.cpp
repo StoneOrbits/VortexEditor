@@ -228,6 +228,7 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_TOOLS_COLOR_PICKER, handleMenusCallback);
   m_window.addCallback(ID_TOOLS_MODE_RANDOMIZER, handleMenusCallback);
   m_window.addCallback(ID_TOOLS_COMMUNITY_BROWSER, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_CHROMALINK, handleMenusCallback);
 
   // add user callback for refreshes
   m_window.installUserCallback(WM_REFRESH_UI, refreshWindowCallback);
@@ -249,6 +250,10 @@ bool VortexEditor::init(HINSTANCE hInst)
   // initialize the community browser window
   m_communityBrowser.init(hInst);
   SetWindowPos(m_communityBrowser.hwnd(), 0, pos.right + 2, pos.top - 200, 0, 0, SWP_NOSIZE);
+
+  // initialize the chromalink
+  m_chromalink.init(hInst);
+  SetWindowPos(m_chromalink.hwnd(), 0, pos.left + 200, pos.bottom - 50, 0, 0, SWP_NOSIZE);
 
   // initialize the tutorial
   m_tutorial.init(hInst);
@@ -462,6 +467,9 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_TOOLS_COMMUNITY_BROWSER:
     m_communityBrowser.show();
+    return;
+  case ID_TOOLS_CHROMALINK:
+    m_chromalink.show();
     return;
   default:
     break;
@@ -978,12 +986,13 @@ void VortexEditor::pull(VWindow *window)
     debug("Couldn't read anything");
     return;
   }
-  m_vortex.matchLedCount(stream, false);
-  m_vortex.setModes(stream);
   // now send the done message
   port->writeData(EDITOR_VERB_PULL_MODES_DONE);
   // wait for the ack from the gloves
   port->expectData(EDITOR_VERB_PULL_MODES_ACK);
+  // now set the modes
+  m_vortex.matchLedCount(stream, false);
+  m_vortex.setModes(stream);
   // unserialized all our modes
   debug("Unserialized %u modes", m_vortex.numModes());
   // refresh the mode list

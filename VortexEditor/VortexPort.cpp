@@ -156,6 +156,11 @@ int VortexPort::waitData(ByteStream &stream)
   return stream.size();
 }
 
+int VortexPort::writeData(uint8_t *data, uint32_t size)
+{
+  return m_serialPort.writeData(data, size);
+}
+
 int VortexPort::writeData(const std::string &message)
 {
   debug_send("%u %x > Writing message: %s\n", g_counter++, GetCurrentThreadId(), message.c_str());

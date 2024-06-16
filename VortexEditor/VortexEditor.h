@@ -28,6 +28,7 @@
 #include "VortexColorPicker.h"
 #include "VortexModeRandomizer.h"
 #include "VortexCommunityBrowser.h"
+#include "VortexChromaLink.h"
 #include "VortexEditorTutorial.h"
 #include "ArduinoSerial.h"
 
@@ -48,6 +49,7 @@ class Colorset;
 
 class VortexEditor
 {
+  friend class VortexChromaLink;
   friend class VortexColorPicker;
   friend class VortexModeRandomizer;
   friend class VortexCommunityBrowser;
@@ -261,6 +263,7 @@ private:
   VortexModeRandomizer m_modeRandomizer;
   VortexCommunityBrowser m_communityBrowser;
   VortexEditorTutorial m_tutorial;
+  VortexChromaLink m_chromalink;
 };
 
 extern VortexEditor *g_pEditor;
