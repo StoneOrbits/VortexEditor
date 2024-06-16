@@ -7,6 +7,8 @@
 #include <map>
 #include <string>
 
+#include <d2d1.h>
+
 class VPatternStrip : public VWindow {
 public:
     enum SelectEvent {
@@ -57,11 +59,19 @@ public:
     void draw(HDC hdc, int x, int y, int width, int height);
 
 private:
+    // Helper methods for Direct2D
+    bool InitializeDirect2D();
+    void DiscardDirect2DResources();
+
     static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     static void registerWindowClass(HINSTANCE hInstance, COLORREF backcol);
     static WNDCLASS m_wc;
 
     static DWORD __stdcall runThread(void *arg);
+
+    ID2D1Factory *d2dFactory;
+    ID2D1HwndRenderTarget *renderTarget;
+    ID2D1SolidColorBrush *brush;
 
     Vortex m_vortex;
     HANDLE m_runThread;

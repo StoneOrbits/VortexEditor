@@ -13,7 +13,8 @@
 
 using namespace std;
 
-#pragma comment(lib, "Msimg32.lib");
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "Msimg32.lib")
 
 #define WC_PATTERN_STRIP "VPatternStrip"
 #define LINE_SIZE 2
@@ -22,6 +23,7 @@ WNDCLASS VPatternStrip::m_wc = { 0 };
 
 VPatternStrip::VPatternStrip() :
   VWindow(),
+  d2dFactory(nullptr), renderTarget(nullptr), brush(nullptr),
   m_vortex(),
   m_runThread(nullptr),
   m_stripLabel(),
@@ -96,13 +98,16 @@ void VPatternStrip::init(HINSTANCE hInstance, VWindow &parent, const string &tit
   // load the communty modes into the local vortex instance for the browser window
   m_vortex.init();
   m_vortex.setLedCount(1);
-  m_vortex.setTickrate(40);
+  m_vortex.setTickrate(1000);
   //m_vortex.setInstantTimestep(true);
 
   HDC hdc = GetDC(m_hwnd);
   createBackBuffer(hdc, width, height);
 
   loadJson(js);
+
+  // Existing initialization logic...
+  InitializeDirect2D(); // Initialize Direct2D components
 }
 
 void VPatternStrip::loadJson(const json &js)
@@ -116,18 +121,18 @@ void VPatternStrip::loadJson(const json &js)
     m_vortex.loadModeFromJson(js["modeData"]);
   }
 
-    m_vortex.setInstantTimestep(true);
-  for (uint32_t i = 0; i < m_backbufferWidth; ++i) {
-    m_vortex.engine().tick();
-    RGBColor col = m_vortex.engine().leds().getLed(0);
-    m_colorSequence.push_back(col);
-    if (m_colorSequence.size() > m_numSlices) {
-      m_colorSequence.pop_front();
-    }
-    // Update scroll offset for scrolling animation
-    m_scrollOffset = (m_scrollOffset + 1) % m_numSlices;
-  }
-    m_vortex.setInstantTimestep(false);
+  //m_vortex.setInstantTimestep(true);
+  //for (uint32_t i = 0; i < m_backbufferWidth; ++i) {
+  //  m_vortex.engine().tick();
+  //  RGBColor col = m_vortex.engine().leds().getLed(0);
+  //  m_colorSequence.push_back(col);
+  //  if (m_colorSequence.size() > m_numSlices) {
+  //    m_colorSequence.pop_front();
+  //  }
+  //  // Update scroll offset for scrolling animation
+  //  m_scrollOffset = (m_scrollOffset + 1) % m_numSlices;
+  //}
+  //m_vortex.setInstantTimestep(false);
 
 }
 
@@ -159,6 +164,7 @@ void VPatternStrip::run()
 
   // Trigger window update for animation
   InvalidateRect(m_hwnd, nullptr, FALSE);
+  UpdateWindow(m_hwnd);
 }
 
 void VPatternStrip::create()
@@ -178,18 +184,86 @@ static HBRUSH getBrushCol(DWORD rgbcol)
   return br;
 }
 
-void VPatternStrip::paint()
+// Initialize Direct2D resources
+bool VPatternStrip::InitializeDirect2D()
 {
-  PAINTSTRUCT ps;
-  HDC hdc = BeginPaint(m_hwnd, &ps);
-  // Copy the backbuffer to the screen
-  BitBlt(hdc, 0, 0, m_backbufferWidth, m_backbufferHeight, m_backbufferDC, 0, 0, SRCCOPY);
-  EndPaint(m_hwnd, &ps);
-  // draw backbuffer
-  drawToBackBuffer();
+  HRESULT hr;
+  if (!d2dFactory) {
+    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2dFactory);
+    if (FAILED(hr)) {
+      return false;
+    }
+  }
+  if (!renderTarget) {
+    RECT rc;
+    GetClientRect(m_hwnd, &rc);
+    D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
+    hr = d2dFactory->CreateHwndRenderTarget(
+      D2D1::RenderTargetProperties(),
+      D2D1::HwndRenderTargetProperties(m_hwnd, size),
+      &renderTarget
+    );
+    if (FAILED(hr)) {
+      return false;
+    }
+
+    hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &brush);
+    if (FAILED(hr)) {
+      return false;
+    }
+  }
+  return true;
 }
 
-void VPatternStrip::drawToBackBuffer() {
+// Clean up Direct2D resources
+void VPatternStrip::DiscardDirect2DResources()
+{
+  if (brush) { brush->Release(); brush = nullptr; }
+  if (renderTarget) { renderTarget->Release(); renderTarget = nullptr; }
+  if (d2dFactory) { d2dFactory->Release(); d2dFactory = nullptr; }
+}
+
+void VPatternStrip::paint()
+{
+  if (!renderTarget) {
+    InitializeDirect2D(); // Ensure Direct2D is initialized
+    if (!renderTarget) return; // Fail if still not initialized
+  }
+
+  renderTarget->BeginDraw();
+  renderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));  // Clearing the background
+
+  // Assuming m_colorSequence holds the colors for each segment or line
+  const float segmentWidth = static_cast<float>(m_backbufferWidth) / m_colorSequence.size();
+  float currentX = 0;
+
+  for (const auto &color : m_colorSequence) {
+    // Set the brush color for each segment
+    D2D1_COLOR_F d2dColor = D2D1::ColorF(GetRValue(color.raw()), GetGValue(color.raw()), GetBValue(color.raw()));
+    brush->SetColor(d2dColor);
+
+    // Define the rectangle for the current segment
+    D2D1_RECT_F rect = D2D1::RectF(currentX, 0, currentX + segmentWidth, static_cast<float>(m_backbufferHeight));
+
+    // Fill the rectangle with the current color
+    renderTarget->FillRectangle(&rect, brush);
+
+    // Move to the next segment
+    currentX += segmentWidth;
+  }
+
+  HRESULT hr = renderTarget->EndDraw();
+  if (hr == D2DERR_RECREATE_TARGET) {
+    DiscardDirect2DResources();
+    InitializeDirect2D();
+  } else if (FAILED(hr)) {
+    MessageBox(nullptr, "Failed to draw Direct2D content.", "Draw Error", MB_OK);
+  }
+}
+
+
+void VPatternStrip::drawToBackBuffer()
+{
   if (!m_backbufferDC) {
     return;
   }
@@ -211,7 +285,7 @@ void VPatternStrip::drawToBackBuffer() {
 
   // Iterate through each color in the sequence and draw the corresponding line
   for (int i = 0; i < numLines; ++i) {
-    const auto& col = m_colorSequence[i];
+    const auto &col = m_colorSequence[i];
     if (col.empty()) {
       continue;
     }
@@ -370,6 +444,7 @@ LRESULT CALLBACK VPatternStrip::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam,
     return (INT_PTR)pPatternStrip->m_wc.hbrBackground;
   case WM_CREATE:
     pPatternStrip->create();
+    //SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)((CREATESTRUCT *)lParam)->lpCreateParams);
     break;
   case WM_PAINT:
     pPatternStrip->paint();
