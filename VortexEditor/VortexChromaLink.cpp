@@ -12,6 +12,7 @@
 #include "VortexPort.h"
 
 #define CHROMALINK_PULL_ID 58001
+#define CHROMALINK_PUSH_ID 58002
 
 using namespace std;
 
@@ -45,6 +46,8 @@ bool VortexChromaLink::init(HINSTANCE hInst)
 
   m_pullButton.init(hInst, m_chromaLinkWindow, "Pull Duo", BACK_COL,
     64, 28, 10, 10, CHROMALINK_PULL_ID, pullCallback);
+  m_pushButton.init(hInst, m_chromaLinkWindow, "Push Duo", BACK_COL,
+    64, 28, 10, 40, CHROMALINK_PUSH_ID, pushCallback);
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -157,3 +160,70 @@ void VortexChromaLink::pullDuoMode()
   g_pEditor->demoCurMode();
 }
 
+void VortexChromaLink::pushDuoMode()
+{
+  VortexPort *port = nullptr;
+  if (!g_pEditor->isConnected() || !g_pEditor->getCurPort(&port)) {
+    return;
+  }
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_PUSH_CHROMA_HDR);
+  // wait for the ready
+  port->expectData(EDITOR_VERB_READY);
+  // send the header
+  struct HeaderData
+  {
+    uint8_t vMajor;
+    uint8_t vMinor;
+    uint8_t globalFlags;
+    uint8_t brightness;
+    uint8_t numModes;
+  };
+  // quick way to interpret the data
+  HeaderData headerData;
+  headerData.vMajor = 1;
+  headerData.vMinor = 2;
+  headerData.globalFlags = 0;
+  headerData.brightness = 255;
+  headerData.numModes = g_pEditor->m_engine.modes().numModes();
+  // max 9 modes on duo
+  if (headerData.numModes > 9) {
+    headerData.numModes = 9;
+  }
+  ByteStream headerBuffer(sizeof(headerData), (const uint8_t *)&headerData);
+  port->writeData(headerBuffer);
+  port->expectData(EDITOR_VERB_PUSH_CHROMA_HDR_ACK);
+  // backup the mode idx in the engine
+  uint8_t oldModeIdx = g_pEditor->m_engine.modes().curModeIndex();
+  g_pEditor->m_engine.modes().setCurMode(0);
+  for (uint8_t i = 0; i < headerData.numModes; ++i) {
+    ByteStream modeBuffer;
+    // tell it to send a mode
+    port->writeData(EDITOR_VERB_PUSH_CHROMA_MODE);
+    // it's ready for the mode idx
+    port->expectData(EDITOR_VERB_READY);
+    // send the mode idx
+    port->writeData((uint8_t *)&i, 1);
+    // wait till it's ready for the mode
+    port->expectData(EDITOR_VERB_READY);
+    // grab the current mode from the engine
+    Mode *cur = g_pEditor->m_engine.modes().curMode();
+    if (cur) {
+      // serialize it to the mode buffer
+      cur->serialize(modeBuffer);
+    }
+    modeBuffer.recalcCRC();
+    // send the mode
+    port->writeData(modeBuffer);
+    // wait for the ack
+    port->expectData(EDITOR_VERB_PULL_CHROMA_MODE_ACK);
+    // iterate to the next mode
+    g_pEditor->m_engine.modes().nextMode();
+  }
+  // restore the mode idx in the engine since we changed it
+  g_pEditor->m_engine.modes().setCurMode(oldModeIdx);
+  // refresh the mode list
+  g_pEditor->refreshModeList();
+  // demo the current mode
+  g_pEditor->demoCurMode();
+}

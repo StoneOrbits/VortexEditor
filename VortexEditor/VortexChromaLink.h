@@ -30,6 +30,7 @@ public:
   void hide();
   void loseFocus();
   void pullDuoMode();
+  void pushDuoMode();
 
   bool isOpen() const { return m_isOpen; }
   
@@ -47,6 +48,9 @@ private:
   static void pullCallback(void *pthis, VWindow *window) {
     ((VortexChromaLink *)pthis)->pullDuoMode();
   }
+  static void pushCallback(void *pthis, VWindow *window) {
+    ((VortexChromaLink *)pthis)->pushDuoMode();
+  }
 
   bool m_isOpen;
 
@@ -57,5 +61,6 @@ private:
 
   // pull from the connected duo via chromadeck
   VButton m_pullButton;
+  VButton m_pushButton;
 
 };
