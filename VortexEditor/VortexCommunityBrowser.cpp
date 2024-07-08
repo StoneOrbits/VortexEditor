@@ -148,7 +148,7 @@ json VortexCommunityBrowser::fetchModesJson(uint32_t page, uint32_t pageSize)
       { "page", to_string(page) },
       { "pageSize", to_string(pageSize) },
     };
-    string jsonResponse = httpClient.SendRequest("vortex.community", "/modes/json", "GET", {}, "", queryParams);
+    string jsonResponse = httpClient.SendRequest("vortex.community", "/pats/json", "GET", {}, "", queryParams);
     // Parse and return the JSON object
     result = json::parse(jsonResponse);
   } catch (const exception &e) {
