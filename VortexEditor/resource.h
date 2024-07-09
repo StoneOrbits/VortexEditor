@@ -60,13 +60,20 @@
 #define ID_HELP_TUTORIAL                40064
 #define ID_HELP_WIKI                    40065
 #define ID_TOOLS_CHROMALINK             40066
+#define ID_OPTIONS_CHOOSEDEVICE         40067
+#define ID_CHOOSE_DEVICE_ORBIT          40068
+#define ID_CHOOSE_DEVICE_HANDLE         40069
+#define ID_CHOOSE_DEVICE_GLOVES         40070
+#define ID_CHOOSE_DEVICE_CHROMADECK     40071
+#define ID_CHOOSE_DEVICE_SPARK          40072
+#define ID_CHOOSE_DEVICE_DUO            40073
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        117
-#define _APS_NEXT_COMMAND_VALUE         40067
+#define _APS_NEXT_COMMAND_VALUE         40074
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

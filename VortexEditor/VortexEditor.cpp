@@ -229,6 +229,12 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_TOOLS_MODE_RANDOMIZER, handleMenusCallback);
   m_window.addCallback(ID_TOOLS_COMMUNITY_BROWSER, handleMenusCallback);
   m_window.addCallback(ID_TOOLS_CHROMALINK, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_ORBIT, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_HANDLE, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_GLOVES, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_CHROMADECK, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_SPARK, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_DUO, handleMenusCallback);
 
   // add user callback for refreshes
   m_window.installUserCallback(WM_REFRESH_UI, refreshWindowCallback);
@@ -471,6 +477,24 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   case ID_TOOLS_CHROMALINK:
     m_chromalink.show();
     return;
+  case ID_CHOOSE_DEVICE_ORBIT:
+    m_engine.leds().setLedCount(28);
+    break;
+  case ID_CHOOSE_DEVICE_HANDLE:
+    m_engine.leds().setLedCount(3);
+    break;
+  case ID_CHOOSE_DEVICE_GLOVES:
+    m_engine.leds().setLedCount(10);
+    break;
+  case ID_CHOOSE_DEVICE_CHROMADECK:
+    m_engine.leds().setLedCount(20);
+    break;
+  case ID_CHOOSE_DEVICE_SPARK:
+    m_engine.leds().setLedCount(6);
+    break;
+  case ID_CHOOSE_DEVICE_DUO:
+    m_engine.leds().setLedCount(2);
+    break;
   default:
     break;
   }
