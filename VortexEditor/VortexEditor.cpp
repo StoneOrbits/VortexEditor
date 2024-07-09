@@ -478,22 +478,22 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     m_chromalink.show();
     return;
   case ID_CHOOSE_DEVICE_ORBIT:
-    m_engine.leds().setLedCount(28);
+    m_vortex.setLedCount(28);
     break;
   case ID_CHOOSE_DEVICE_HANDLE:
-    m_engine.leds().setLedCount(3);
+    m_vortex.setLedCount(3);
     break;
   case ID_CHOOSE_DEVICE_GLOVES:
-    m_engine.leds().setLedCount(10);
+    m_vortex.setLedCount(10);
     break;
   case ID_CHOOSE_DEVICE_CHROMADECK:
-    m_engine.leds().setLedCount(20);
+    m_vortex.setLedCount(20);
     break;
   case ID_CHOOSE_DEVICE_SPARK:
-    m_engine.leds().setLedCount(6);
+    m_vortex.setLedCount(6);
     break;
   case ID_CHOOSE_DEVICE_DUO:
-    m_engine.leds().setLedCount(2);
+    m_vortex.setLedCount(2);
     break;
   default:
     break;
