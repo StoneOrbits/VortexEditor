@@ -65,7 +65,7 @@ void VWindow::init(HINSTANCE hInstance, const string &title,
 
   // create the window
   m_hwnd = CreateWindow(className.c_str(), title.c_str(),
-    WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
+    WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE | WS_CLIPCHILDREN,
     (desktop.right / 2) - (width / 2), (desktop.bottom / 2) - (height / 2),
     width, height, nullptr, nullptr, hInstance, nullptr);
   if (!m_hwnd) {

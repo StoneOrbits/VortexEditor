@@ -26,6 +26,10 @@
 
 // editor includes
 #include "VortexColorPicker.h"
+#include "VortexModeRandomizer.h"
+#include "VortexCommunityBrowser.h"
+#include "VortexChromaLink.h"
+#include "VortexEditorTutorial.h"
 #include "ArduinoSerial.h"
 
 // stl includes
@@ -45,7 +49,10 @@ class Colorset;
 
 class VortexEditor
 {
+  friend class VortexChromaLink;
   friend class VortexColorPicker;
+  friend class VortexModeRandomizer;
+  friend class VortexCommunityBrowser;
 public:
   VortexEditor();
   ~VortexEditor();
@@ -60,7 +67,11 @@ public:
 
   HINSTANCE hInst() const { return m_hInstance; }
 
+  void addMode(VWindow *window, const Mode *mode);
+
 private:
+  static DWORD __stdcall scanPortsThread(void *arg);
+
   // print to the log
   static void printlog(const char *file, const char *func, int line, const char *msg, ...);
 
@@ -187,6 +198,9 @@ private:
   // get the current pattern selection from the pattern dropdown
   PatternID patternSelection() const;
 
+  // start the interactive tutorial
+  void beginTutorial();
+
   // ==================================
   //  Member data
 
@@ -208,6 +222,8 @@ private:
   // keeps track of the last colorset entry selected to support shift+click
   // which needs to set prevIndex to curIndex upon shift clicking
   uint32_t m_lastClickedColor;
+  // thread for scanning the ports for connected devices on init
+  HANDLE m_scanPortsThread;
 
   // ==================================
   //  GUI Members
@@ -240,10 +256,14 @@ private:
   VSelectBox m_storageProgress;
 
   // ==================================
-  //  Color picker GUI
+  //  Sub-window GUIS
 
   // the vortex color picker window
   VortexColorPicker m_colorPicker;
+  VortexModeRandomizer m_modeRandomizer;
+  VortexCommunityBrowser m_communityBrowser;
+  VortexEditorTutorial m_tutorial;
+  VortexChromaLink m_chromalink;
 };
 
 extern VortexEditor *g_pEditor;

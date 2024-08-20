@@ -63,6 +63,7 @@ VortexEditor::VortexEditor() :
   m_portList(),
   m_accelTable(),
   m_lastClickedColor(0),
+  m_scanPortsThread(nullptr),
   m_window(),
   m_portSelection(),
   m_pushButton(),
@@ -208,7 +209,8 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_EDIT_COPY_COLOR_SET_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_PATTERN_TO_ALL, handleMenusCallback);
   m_window.addCallback(ID_HELP_ABOUT, handleMenusCallback);
-  m_window.addCallback(ID_HELP_HELP, handleMenusCallback);
+  m_window.addCallback(ID_HELP_TUTORIAL, handleMenusCallback);
+  m_window.addCallback(ID_HELP_WIKI, handleMenusCallback);
   m_window.addCallback(ID_EDIT_COPY_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_PASTE_COLORSET, handleMenusCallback);
   m_window.addCallback(ID_EDIT_CLEAR_PATTERN, handleMenusCallback);
@@ -224,17 +226,49 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.addCallback(ID_FILE_IMPORT, handleMenusCallback);
   m_window.addCallback(ID_FILE_EXPORT, handleMenusCallback);
   m_window.addCallback(ID_TOOLS_COLOR_PICKER, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_MODE_RANDOMIZER, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_COMMUNITY_BROWSER, handleMenusCallback);
+  m_window.addCallback(ID_TOOLS_CHROMALINK, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_ORBIT, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_HANDLE, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_GLOVES, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_CHROMADECK, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_SPARK, handleMenusCallback);
+  m_window.addCallback(ID_CHOOSE_DEVICE_DUO, handleMenusCallback);
 
   // add user callback for refreshes
   m_window.installUserCallback(WM_REFRESH_UI, refreshWindowCallback);
   m_window.installUserCallback(WM_TEST_CONNECT, connectTestFrameworkCallback);
   m_window.installUserCallback(WM_TEST_DISCONNECT, disconnectTestFrameworkCallback);
 
-  // initialize the color picker window
-  m_colorPicker.init(hInst);
+  // current window pos for child window init
   RECT pos;
   GetWindowRect(m_window.hwnd(), &pos);
-  SetWindowPos(m_colorPicker.hwnd(), 0, pos.left - 400, pos.top-200, 0, 0, SWP_NOSIZE);
+
+  // initialize the color picker window
+  m_colorPicker.init(hInst);
+  SetWindowPos(m_colorPicker.hwnd(), 0, pos.left - 422, pos.top-200, 0, 0, SWP_NOSIZE);
+
+  // initialize the mode randomizer window
+  m_modeRandomizer.init(hInst);
+  SetWindowPos(m_modeRandomizer.hwnd(), 0, pos.left + 50, pos.top-300, 0, 0, SWP_NOSIZE);
+ 
+  // initialize the community browser window
+  m_communityBrowser.init(hInst);
+  SetWindowPos(m_communityBrowser.hwnd(), 0, pos.right + 2, pos.top - 200, 0, 0, SWP_NOSIZE);
+
+  // initialize the chromalink
+  m_chromalink.init(hInst);
+  SetWindowPos(m_chromalink.hwnd(), 0, pos.left + 200, pos.bottom - 50, 0, 0, SWP_NOSIZE);
+
+  // initialize the tutorial
+  m_tutorial.init(hInst);
+  SetWindowPos(m_tutorial.hwnd(), 0, pos.left + 180, pos.top + 50, 0, 0, SWP_NOSIZE);
+
+  // show subwindows
+  //m_colorPicker.show();
+  //m_modeRandomizer.show();
+  //m_communityBrowser.show();
 
   // apply the icon
   m_hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
@@ -301,12 +335,21 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_window.installDeviceCallback(deviceChangeCallback);
 
   // check for connected devices
-  scanPorts();
+  m_scanPortsThread = CreateThread(NULL, 0, scanPortsThread, this, 0, NULL);
 
   // trigger a ui refresh
   refreshModeList();
 
   return true;
+}
+
+DWORD __stdcall VortexEditor::scanPortsThread(void *arg)
+{
+  VortexEditor *editor = (VortexEditor *)arg;
+  editor->scanPorts();
+  CloseHandle(editor->m_scanPortsThread);
+  editor->m_scanPortsThread = nullptr;
+  return 0;
 }
 
 void VortexEditor::run()
@@ -366,8 +409,11 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   case ID_HELP_ABOUT:
     MessageBox(m_window.hwnd(), "Vortex Editor 1.0\nMade by Daniel Fraser and Shane Aronson", "About", 0);
     break;
-  case ID_HELP_HELP:
-    ShellExecute(NULL, "open", "https://github.com/StoneOrbits/VortexEditor/wiki", NULL, NULL, SW_SHOWNORMAL);
+  case ID_HELP_WIKI:
+    ShellExecute(NULL, "open", "https://stoneorbits.github.io/VortexEngine/editor.html", NULL, NULL, SW_SHOWNORMAL);
+    return;
+  case ID_HELP_TUTORIAL:
+    beginTutorial();
     return;
   case ID_EDIT_COPY_COLORSET:
     copyColorset();
@@ -422,6 +468,33 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
   case ID_TOOLS_COLOR_PICKER:
     m_colorPicker.show();
     return;
+  case ID_TOOLS_MODE_RANDOMIZER:
+    m_modeRandomizer.show();
+    return;
+  case ID_TOOLS_COMMUNITY_BROWSER:
+    m_communityBrowser.show();
+    return;
+  case ID_TOOLS_CHROMALINK:
+    m_chromalink.show();
+    return;
+  case ID_CHOOSE_DEVICE_ORBIT:
+    m_vortex.setLedCount(28);
+    break;
+  case ID_CHOOSE_DEVICE_HANDLE:
+    m_vortex.setLedCount(3);
+    break;
+  case ID_CHOOSE_DEVICE_GLOVES:
+    m_vortex.setLedCount(10);
+    break;
+  case ID_CHOOSE_DEVICE_CHROMADECK:
+    m_vortex.setLedCount(20);
+    break;
+  case ID_CHOOSE_DEVICE_SPARK:
+    m_vortex.setLedCount(6);
+    break;
+  case ID_CHOOSE_DEVICE_DUO:
+    m_vortex.setLedCount(2);
+    break;
   default:
     break;
   }
@@ -937,12 +1010,13 @@ void VortexEditor::pull(VWindow *window)
     debug("Couldn't read anything");
     return;
   }
-  m_vortex.matchLedCount(stream, false);
-  m_vortex.setModes(stream);
   // now send the done message
   port->writeData(EDITOR_VERB_PULL_MODES_DONE);
   // wait for the ack from the gloves
   port->expectData(EDITOR_VERB_PULL_MODES_ACK);
+  // now set the modes
+  m_vortex.matchLedCount(stream, false);
+  m_vortex.setModes(stream);
   // unserialized all our modes
   debug("Unserialized %u modes", m_vortex.numModes());
   // refresh the mode list
@@ -1258,6 +1332,24 @@ void VortexEditor::addMode(VWindow *window)
     refreshModeList();
     demoCurMode();
   }
+}
+
+void VortexEditor::addMode(VWindow *window, const Mode *mode)
+{
+  if (!mode) {
+    return;
+  }
+#if MAX_MODES != 0
+  if (m_vortex.numModes() >= MAX_MODES) {
+    return;
+  }
+#endif
+  debug("Adding mode %u", m_vortex.numModes() + 1);
+  m_vortex.addMode(mode);
+  m_vortex.setCurMode(m_vortex.numModes() - 1);
+  m_modeListBox.setSelection(m_vortex.curModeIndex());
+  refreshModeList();
+  demoCurMode();
 }
 
 void VortexEditor::delMode(VWindow *window)
@@ -1894,4 +1986,9 @@ int VortexEditor::getPortListIndex() const
     }
   }
   return -1;
+}
+
+void VortexEditor::beginTutorial()
+{
+  m_tutorial.show();
 }

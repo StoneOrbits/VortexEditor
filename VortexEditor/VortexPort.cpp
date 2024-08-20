@@ -145,7 +145,7 @@ int VortexPort::waitData(ByteStream &stream)
   }
   debug_send("%u %x << Waited 1 byte data\n", g_counter++, GetCurrentThreadId());
   // insert the byte into the output stream
-  stream.serialize(byte);
+  stream.serialize8(byte);
   // check how much more data is avail
   int data = bytesAvailable();
   if (data > 0) {
@@ -154,6 +154,11 @@ int VortexPort::waitData(ByteStream &stream)
   }
   debug_send("%u %x << Waited data: %s\n", g_counter++, GetCurrentThreadId(), stream.data());
   return stream.size();
+}
+
+int VortexPort::writeData(uint8_t *data, uint32_t size)
+{
+  return m_serialPort.writeData(data, size);
 }
 
 int VortexPort::writeData(const std::string &message)
@@ -173,7 +178,7 @@ int VortexPort::writeData(ByteStream &stream)
   // create a new ByteStream that will contain the size + full stream
   ByteStream buf(size + sizeof(size));
   // serialize the size into the buf
-  buf.serialize(size);
+  buf.serialize32(size);
   // append the raw data of the input stream (crc/flags/size/buffer)
   buf.append(ByteStream(size, (const uint8_t *)stream.rawData()));
   // We must send the whole buffer in one go, cannot send size first

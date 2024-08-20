@@ -37,11 +37,14 @@ public:
   virtual void command(WPARAM wParam, LPARAM lParam) override;
   virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
   virtual void releaseButton(WPARAM wParam, LPARAM lParam) override;
-  virtual void mouseMove();
+  virtual void mouseMove(uint32_t buttons, uint16_t x, uint16_t y);
 
   // set a background via callback to convert x/y to rgb
   //void setBackground(VFillCallback fillCallback);
   void setBackground(HBITMAP hBitmap);
+  void setHoverBackground(HBITMAP hBitmap);
+  void setBackgroundTransparency(bool transparent);
+  void setBorderSize(uint32_t borderSize);
   void setSelection(uint32_t x, uint32_t y);
 
   // whether to draw specific components
@@ -75,6 +78,9 @@ private:
   bool m_drawCircle;
 
   bool m_pressed;
+  bool m_useTransparency;
+  
+  bool m_mouseInside;
 
   uint32_t m_xSelect;
   uint32_t m_ySelect;
@@ -84,4 +90,5 @@ private:
 
   VSelectBoxCallback m_callback;
   HBITMAP m_bitmap;
+  HBITMAP m_hoverBitmap;
 };

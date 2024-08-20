@@ -167,10 +167,17 @@
     <ClCompile Include="GUI\VSlider.cpp" />
     <ClCompile Include="GUI\VStatusBar.cpp" />
     <ClCompile Include="GUI\VTextBox.cpp" />
+    <ClCompile Include="HttpClient.cpp" />
+    <ClCompile Include="VortexChromaLink.cpp" />
     <ClCompile Include="VortexColorPicker.cpp" />
+    <ClCompile Include="VortexCommunityBrowser.cpp" />
     <ClCompile Include="VortexEditor.cpp" />
     <ClCompile Include="GUI\VWindow.cpp" />
+    <ClCompile Include="VortexEditorTutorial.cpp" />
+    <ClCompile Include="VortexModeRandomizer.cpp" />
     <ClCompile Include="VortexPort.cpp" />
+    <ClCompile Include="GUI\VPatternStrip.cpp" />
+    <ClCompile Include="GUI\VPatternListBox.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -187,17 +194,40 @@
     <ClInclude Include="GUI\VSlider.h" />
     <ClInclude Include="GUI\VStatusBar.h" />
     <ClInclude Include="GUI\VTextBox.h" />
+    <ClInclude Include="HttpClient.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="VortexChromaLink.h" />
     <ClInclude Include="VortexColorPicker.h" />
+    <ClInclude Include="VortexCommunityBrowser.h" />
     <ClInclude Include="VortexEditor.h" />
     <ClInclude Include="GUI\VWindow.h" />
+    <ClInclude Include="VortexEditorTutorial.h" />
+    <ClInclude Include="VortexModeRandomizer.h" />
     <ClInclude Include="VortexPort.h" />
+    <ClInclude Include="GUI\VPatternStrip.h" />
+    <ClInclude Include="GUI\VPatternListBox.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VortexEditor.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\chromadeck-logo-square-64.bmp" />
+    <Image Include="..\chromadeck-logo-square-green-64.bmp" />
+    <Image Include="..\gloves-logo-square-64.bmp" />
+    <Image Include="..\gloves-logo-square-green-64.bmp" />
+    <Image Include="..\handle-logo-square-64.bmp" />
+    <Image Include="..\handle-logo-square-green-64.bmp" />
+    <Image Include="..\orbit-logo-square-64.bmp" />
+    <Image Include="..\orbit-logo-square-green-64.bmp" />
+    <Image Include="chromadeck-logo-square-64.bmp" />
+    <Image Include="chromadeck-logo-square-green-64.bmp" />
+    <Image Include="gloves-logo-square-64.bmp" />
+    <Image Include="gloves-logo-square-green-64.bmp" />
+    <Image Include="handle-logo-square-64.bmp" />
+    <Image Include="handle-logo-square-green-64.bmp" />
     <Image Include="icon.ico" />
+    <Image Include="orbit-logo-square-64.bmp" />
+    <Image Include="orbit-logo-square-green-64.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

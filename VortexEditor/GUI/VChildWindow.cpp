@@ -16,7 +16,8 @@ using namespace std;
 WNDCLASS VChildWindow::m_wc = {0};
 
 VChildWindow::VChildWindow() :
-  VWindow()
+  VWindow(),
+  m_closeCallback(nullptr)
 {
 }
 
