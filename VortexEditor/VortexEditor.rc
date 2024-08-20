@@ -96,9 +96,9 @@ BEGIN
     POPUP "Tools"
     BEGIN
         MENUITEM "Color Picker",                ID_TOOLS_COLOR_PICKER
-        MENUITEM "Mode Randomizer",             ID_TOOLS_MODE_RANDOMIZER
-        MENUITEM "Community Browser",           ID_TOOLS_COMMUNITY_BROWSER
-        MENUITEM "Chromalink",                  ID_TOOLS_CHROMALINK
+        MENUITEM "Mode Randomizer\t(Coming Soon)", ID_TOOLS_MODE_RANDOMIZER, INACTIVE
+        MENUITEM "Community Browser\t(Coming Soon)", ID_TOOLS_COMMUNITY_BROWSER, INACTIVE
+        MENUITEM "Chromalink\t(Coming Soon)",   ID_TOOLS_CHROMALINK, INACTIVE
     END
     POPUP "Options"
     BEGIN
