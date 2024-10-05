@@ -146,8 +146,8 @@ bool VortexEditor::init(HINSTANCE hInst)
 
   m_portSelection.init(hInst, m_window, "Select Port", BACK_COL, 72, 100, 16, 15, SELECT_PORT_ID, selectPortCallback);
 
-  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 78, 24, 100, 15, ID_FILE_PULL, pullCallback);
-  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 78, 24, 188, 15, ID_FILE_PUSH, pushCallback);
+  m_pullButton.init(hInst, m_window, "Pull", BACK_COL, 78, 24, 100, 15, ID_FILE_PULL, pullEachCallback);
+  m_pushButton.init(hInst, m_window, "Push", BACK_COL, 78, 24, 188, 15, ID_FILE_PUSH, pushEachCallback);
 
   // status bar
   m_statusBar.init(hInst, m_window, "", BACK_COL, 462, 24, 278, 15, 0, nullptr);
@@ -439,10 +439,10 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     refreshModeList();
     return;
   case ID_FILE_PULL:
-    pull(nullptr);
+    pullEach(nullptr);
     return;
   case ID_FILE_PUSH:
-    push(nullptr);
+    pushEach(nullptr);
     return;
   case ID_FILE_LOAD:
     load(nullptr);
@@ -479,21 +479,27 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     return;
   case ID_CHOOSE_DEVICE_ORBIT:
     m_vortex.setLedCount(28);
+    refreshModeList();
     break;
   case ID_CHOOSE_DEVICE_HANDLE:
     m_vortex.setLedCount(3);
+    refreshModeList();
     break;
   case ID_CHOOSE_DEVICE_GLOVES:
     m_vortex.setLedCount(10);
+    refreshModeList();
     break;
   case ID_CHOOSE_DEVICE_CHROMADECK:
     m_vortex.setLedCount(20);
+    refreshModeList();
     break;
   case ID_CHOOSE_DEVICE_SPARK:
     m_vortex.setLedCount(6);
+    refreshModeList();
     break;
   case ID_CHOOSE_DEVICE_DUO:
     m_vortex.setLedCount(2);
+    refreshModeList();
     break;
   default:
     break;
@@ -962,6 +968,7 @@ void VortexEditor::disconnectPort(uint32_t portNum)
     refreshPortList();
     break;
   }
+  setStatus(255, 0, 0, "Disconnected");
 }
 
 void VortexEditor::selectPort(VWindow *window)
@@ -973,8 +980,6 @@ void VortexEditor::selectPort(VWindow *window)
   // try to begin operations on port
   port->tryBegin();
   refreshPortList();
-  // refresh the status
-  refreshStatus();
 }
 
 void VortexEditor::push(VWindow *window)
@@ -1017,6 +1022,78 @@ void VortexEditor::pull(VWindow *window)
   // now set the modes
   m_vortex.matchLedCount(stream, false);
   m_vortex.setModes(stream);
+  // unserialized all our modes
+  debug("Unserialized %u modes", m_vortex.numModes());
+  // refresh the mode list
+  refreshModeList();
+  // demo the current mode
+  demoCurMode();
+}
+
+void VortexEditor::pushEach(VWindow *window)
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  // send the push modes command
+  port->writeData(EDITOR_VERB_PUSH_EACH_MODE);
+  // expect an ack
+  port->expectData(EDITOR_VERB_PUSH_EACH_MODE_ACK);
+  // now unserialize the stream of data that was read
+  ByteStream numModesBuf;
+  uint8_t numModes = m_vortex.numModes();
+  numModesBuf.serialize8(numModes);
+  // send the number of modes
+  port->writeData(numModesBuf);
+  // expect an ack
+  port->expectData(EDITOR_VERB_PUSH_EACH_MODE_ACK);
+  m_vortex.setCurMode(0);
+  for (uint8_t i = 0; i < numModes; ++i) {
+    // now unserialize the stream of data that was read
+    ByteStream mode;
+    m_vortex.getCurMode(mode);
+    // send the modes
+    port->writeData(mode);
+    // wait for the ack
+    port->expectData(EDITOR_VERB_PUSH_EACH_MODE_ACK);
+    m_vortex.nextMode(false);
+  }
+  // wait for the done response
+  //port->expectData(EDITOR_VERB_PUSH_EACH_MODE_DONE);
+}
+
+void VortexEditor::pullEach(VWindow *window)
+{
+  VortexPort *port = nullptr;
+  if (!isConnected() || !getCurPort(&port)) {
+    return;
+  }
+  ByteStream stream;
+  // now immediately tell it what to do
+  port->writeData(EDITOR_VERB_PULL_EACH_MODE);
+  stream.clear();
+  if (!port->readByteStream(stream) || !stream.size()) {
+    debug("Couldn't read anything");
+    return;
+  }
+  // now send the ack
+  port->writeData(EDITOR_VERB_PULL_EACH_MODE_ACK);
+  uint8_t numModes = 0;
+  stream.unserialize8(&numModes);
+  m_vortex.clearModes();
+  for (uint8_t i = 0; i < numModes; ++i) {
+    stream.clear();
+    if (!port->readByteStream(stream) || !stream.size()) {
+      debug("Couldn't read anything");
+      return;
+    }
+    m_vortex.addNewMode(stream);
+    // now send the ack
+    port->writeData(EDITOR_VERB_PULL_EACH_MODE_ACK);
+  }
+  // wait for the ack from the gloves
+  //port->expectData(EDITOR_VERB_PULL_EACH_MODE_DONE);
   // unserialized all our modes
   debug("Unserialized %u modes", m_vortex.numModes());
   // refresh the mode list
@@ -1654,22 +1731,12 @@ void VortexEditor::refreshPortList()
     }
   }
   // hack: for now just refresh status here
-  refreshStatus();
   refreshStorageBar();
 }
 
-void VortexEditor::refreshStatus()
+void VortexEditor::setStatus(int r, int g, int b, const std::string &status)
 {
-  int sel = getPortListIndex();
-  if (sel < 0 || !m_portList.size()) {
-    m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
-    return;
-  }
-  if (!isConnected()) {
-    m_statusBar.setStatus(RGB(255, 0, 0), "Disconnected");
-    return;
-  }
-  m_statusBar.setStatus(RGB(0, 255, 0), "Connected");
+  m_statusBar.setStatus(RGB(r, g, b), status);
 }
 
 void VortexEditor::refreshStorageBar()
@@ -1752,8 +1819,6 @@ void VortexEditor::refreshModeList(bool recursive)
   if (recursive) {
     refreshLedList(recursive);
   }
-  // hack: for now just refresh status here
-  refreshStatus();
   refreshStorageBar();
 }
 

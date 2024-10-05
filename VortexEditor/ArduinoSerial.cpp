@@ -226,6 +226,9 @@ bool ArduinoSerial::writeData(const uint8_t *buffer, uint32_t nbChar)
     MessageBox(NULL, "Failed to full send", "", 0);
     return false;
   }
+  //if (!m_isSerial) {
+    FlushFileBuffers(m_hFile);
+  //}
   return true;
 }
 

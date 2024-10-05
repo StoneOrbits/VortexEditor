@@ -68,6 +68,7 @@ public:
   HINSTANCE hInst() const { return m_hInstance; }
 
   void addMode(VWindow *window, const Mode *mode);
+  void setStatus(int r, int g, int b, const std::string &status);
 
 private:
   static DWORD __stdcall scanPortsThread(void *arg);
@@ -80,6 +81,8 @@ private:
   static void selectPortCallback(void *editor, VWindow *window)    { ((VortexEditor *)editor)->selectPort(window); }
   static void pushCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->push(window); }
   static void pullCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->pull(window); }
+  static void pushEachCallback(void *editor, VWindow *window)      { ((VortexEditor *)editor)->pushEach(window); }
+  static void pullEachCallback(void *editor, VWindow *window)      { ((VortexEditor *)editor)->pullEach(window); }
   static void loadCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->load(window); }
   static void saveCallback(void *editor, VWindow *window)          { ((VortexEditor *)editor)->save(window); }
   static void importCallback(void *editor, VWindow *window)        { ((VortexEditor *)editor)->importMode(window); }
@@ -119,6 +122,8 @@ private:
   void selectPort(VWindow *window);
   void push(VWindow *window);
   void pull(VWindow *window);
+  void pushEach(VWindow *window);
+  void pullEach(VWindow *window);
   void load(VWindow *window);
   void save(VWindow *window);
   void importMode(VWindow *window);
@@ -171,7 +176,6 @@ private:
   void refreshAll();
   // port list and status are separate ui elements
   void refreshPortList();
-  void refreshStatus();
   void refreshStorageBar();
   // but the mode list, led list, etc are all considered a heirarchy so
   // there is an option to recursively refresh all children elements

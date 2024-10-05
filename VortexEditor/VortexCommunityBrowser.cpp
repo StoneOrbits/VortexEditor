@@ -52,6 +52,7 @@ VortexCommunityBrowser::~VortexCommunityBrowser()
 // initialize the color picker
 bool VortexCommunityBrowser::init(HINSTANCE hInst)
 {
+  return true;
   m_hInstance = hInst;
 
   // the color picker

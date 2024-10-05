@@ -208,7 +208,7 @@ bool VortexPort::expectData(const std::string &data)
 {
   debug_send("%u %x << Expecting data: %s\n", g_counter++, GetCurrentThreadId(), data.c_str());
   ByteStream stream;
-  readInLoop(stream);
+  readInLoop(stream, 25000);
   if (stream.size() < data.size()) {
     return false;
   }
@@ -255,7 +255,8 @@ bool VortexPort::parseHandshake(const ByteStream &handshake)
     debug_send("%u %x == Parsed handshake: Goodbye\n", g_counter++, GetCurrentThreadId());
     return false;
   }
-  // TODO: Parse the device info out of handshake
+  string connectionStr = "Connected ";
+  g_pEditor->setStatus(0, 255, 0, connectionStr);
   debug_send("%u %x == Parsed handshake: Good\n", g_counter++, GetCurrentThreadId());
   // check the handshake for valid datastart  // looks good
   return true;
