@@ -164,6 +164,9 @@ int ArduinoSerial::readData(void *buffer, uint32_t nbChar)
   DWORD bytesRead = 0;
   // Use the ClearCommError function to get status info on the Serial port
   ClearCommError(m_hFile, &m_errors, &m_status);
+  if (m_errors) {
+    MessageBox(0, ("Comm Error: " + to_string(m_errors)).c_str(), "error", 0);
+  }
   if (m_isSerial) {
     // Check if there is something to read
     if (!m_status.cbInQue) {
@@ -227,7 +230,8 @@ bool ArduinoSerial::writeData(const uint8_t *buffer, uint32_t nbChar)
     return false;
   }
   //if (!m_isSerial) {
-    FlushFileBuffers(m_hFile);
+  // idk if this is necessary
+    //FlushFileBuffers(m_hFile);
   //}
   return true;
 }

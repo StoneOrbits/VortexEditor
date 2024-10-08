@@ -294,6 +294,12 @@ void VortexChromaLink::pushDuoModes()
 void VortexChromaLink::flashFirmware()
 {
   thread([this]() {
+    // first establish the port that is connected to the chromadeck
+    if (!g_pEditor->isConnected() || !g_pEditor->getCurPort(&m_connectedPort) || !m_connectedPort) {
+      g_pEditor->setStatus(255, 0, 0, "No connection.");
+      return;
+    }
+
     g_pEditor->setStatus(255, 255, 0, "Flashing Duo Firmware...");
 
     VortexPort *port = nullptr;
@@ -374,6 +380,8 @@ void VortexChromaLink::flashFirmware()
 
       uint32_t bytesToSend = (remainder < chunkSize) ? remainder : chunkSize;
       ByteStream firmwareChunk(bytesToSend, (uint8_t *)buffer.data() + offset);
+
+      //Sleep(300);
 
       // Write each chunk
       if (!port->writeData(firmwareChunk)) {
