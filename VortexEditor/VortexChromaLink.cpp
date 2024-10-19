@@ -349,11 +349,8 @@ void VortexChromaLink::flashFirmware()
       return;
     }
 
-    ByteStream sizeBuf;
-    sizeBuf.serialize32(firmwareSize);
-    sizeBuf.recalcCRC();
     // Send the firmware size
-    port->writeData(sizeBuf);
+    m_connectedPort->writeData((uint8_t *)&firmwareSize, 4);
     if (!port->expectData(EDITOR_VERB_READY)) {
       g_pEditor->setStatus(255, 0, 0, "Failed to receive flash firmware size ACK");
       return;
