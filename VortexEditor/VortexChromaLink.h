@@ -19,12 +19,12 @@
 class VortexChromaLink
 {
 public:
-  // Duo save header
+  // Duo Vortex save header format
   struct HeaderData
   {
     HeaderData() :
       vMajor(0), vMinor(0), globalFlags(0),
-      brightness(0), numModes(0)
+      brightness(0), numModes(0), vBuild(0)
     {
     }
     uint8_t vMajor;
@@ -32,6 +32,10 @@ public:
     uint8_t globalFlags;
     uint8_t brightness;
     uint8_t numModes;
+    // The build was added later and on the duo it only exists in the savefile header
+    // so that the chromalink can read it, it normally wouldn't be apart of this structure
+    // only the major/minor are in the vortex savefile format and mode format.
+    uint8_t vBuild;
   };
 
   VortexChromaLink();
@@ -89,6 +93,9 @@ private:
   }
 
   bool m_isOpen;
+  // whether the connected duo is above 1.3.25 or not, after that version
+  // the duo header is larger in storage and needs to be read differently
+  bool m_isFullsizeHeader;
 
   HICON m_hIcon;
 

@@ -29,6 +29,7 @@ using namespace std;
 
 VortexChromaLink::VortexChromaLink() :
   m_isOpen(false),
+  m_isFullsizeHeader(false),
   m_hIcon(nullptr),
   m_chromaLinkWindow(),
   m_connectedDuo(),
@@ -130,11 +131,18 @@ bool VortexChromaLink::pullHeader(HeaderData &headerData)
     return false;
   }
   g_pEditor->setStatus(0, 255, 0, "Checking header CRC...");
-  if (!headerBuffer.checkCRC() || headerBuffer.size() < sizeof(headerData)) {
-    g_pEditor->setStatus(255, 0, 0, "Error: Header CRC or size invalid.");
+  if (!headerBuffer.checkCRC()) {
+    g_pEditor->setStatus(255, 0, 0, "Error: Header CRC invalid.");
     return false;
   }
-  memcpy(&headerData, (HeaderData *)headerBuffer.data(), sizeof(headerData));
+  if (headerBuffer.size() > sizeof(headerData)) {
+    g_pEditor->setStatus(255, 0, 0, "Error: Header size unknown, read: " + to_string(headerBuffer.size()) +
+      " (expected: " + to_string(sizeof(headerData)) + ")");
+    return false;
+  }
+  // copy headerBuffer.size bytes because it might be less than the sizeof HeaderData structure
+  // in the event this is an older duo that doesn't have the build number stored in it's header
+  memcpy(&headerData, (HeaderData *)headerBuffer.data(), headerBuffer.size());
   return true;
 }
 
@@ -160,9 +168,15 @@ void VortexChromaLink::connectLink()
         "." + to_string(m_connectedDuo.vMinor) + " - Major version 0! MUST FLASH FIRMWARE!";
       return;
     }
+    // TODO: v.1.4?
+    // assuming major v1
+    if (m_connectedDuo.vMinor > 3 || (m_connectedDuo.vMinor == 3 && m_connectedDuo.vBuild >= 25)) {
+      // this is a newer duo with a fullsize save header
+      m_isFullsizeHeader = true;
+    }
     // success connected
     string msg = "Connected Duo v" + to_string(m_connectedDuo.vMajor) +
-      "." + to_string(m_connectedDuo.vMinor);
+      "." + to_string(m_connectedDuo.vMinor) + "." + to_string(m_connectedDuo.vBuild);
     g_pEditor->setStatus(0, 255, 0, msg);
   }).detach();
 }

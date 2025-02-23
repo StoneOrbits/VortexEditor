@@ -175,6 +175,7 @@ int VortexPort::writeData(ByteStream &stream)
   debug_send("%u %x > Writing buf: %u\n", g_counter++, GetCurrentThreadId(), stream.rawSize());
   // write the data into the serial port
   uint32_t size = stream.rawSize();
+  stream.recalcCRC();
   // create a new ByteStream that will contain the size + full stream
   ByteStream buf(size + sizeof(size));
   // serialize the size into the buf
