@@ -77,7 +77,14 @@ VortexEditor::VortexEditor() :
   m_ledsMultiListBox(),
   m_patternSelectComboBox(),
   m_colorSelects(),
-  m_paramTextBoxes()
+  m_paramTextBoxes(),
+  m_storageProgress(),
+  m_colorPicker(),
+  m_modeRandomizer(),
+  m_communityBrowser(),
+  m_tutorial(),
+  m_chromalink(),
+  m_behaviourEditor(m_vortex.engine())
 {
 }
 
@@ -265,6 +272,10 @@ bool VortexEditor::init(HINSTANCE hInst)
   m_tutorial.init(hInst);
   SetWindowPos(m_tutorial.hwnd(), 0, pos.left + 180, pos.top + 50, 0, 0, SWP_NOSIZE);
 
+  m_behaviourEditor.init(hInst);
+  SetWindowPos(m_behaviourEditor.hwnd(), 0, pos.left + 180, pos.top + 50, 0, 0, SWP_NOSIZE);
+  m_behaviourEditor.show();
+
   // show subwindows
   //m_colorPicker.show();
   //m_modeRandomizer.show();
@@ -410,7 +421,7 @@ void VortexEditor::handleMenus(uintptr_t hMenu)
     MessageBox(m_window.hwnd(), "Vortex Editor 1.0\nMade by Daniel Fraser and Shane Aronson", "About", 0);
     break;
   case ID_HELP_WIKI:
-    ShellExecute(NULL, "open", "https://stoneorbits.github.io/VortexEngine/editor.html", NULL, NULL, SW_SHOWNORMAL);
+    ShellExecute(NULL, "open", "https://stoneorbits.github.io/VortexEngine", NULL, NULL, SW_SHOWNORMAL);
     return;
   case ID_HELP_TUTORIAL:
     beginTutorial();

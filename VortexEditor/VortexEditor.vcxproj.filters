@@ -93,6 +93,12 @@
     <ClCompile Include="VortexChromaLink.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VortexBehaviourEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BehaviourEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -168,6 +174,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VortexChromaLink.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VortexBehaviourEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BehaviourEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

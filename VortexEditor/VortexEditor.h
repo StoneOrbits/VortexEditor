@@ -30,6 +30,7 @@
 #include "VortexCommunityBrowser.h"
 #include "VortexChromaLink.h"
 #include "VortexEditorTutorial.h"
+#include "VortexBehaviourEditor.h"
 #include "ArduinoSerial.h"
 
 // stl includes
@@ -264,6 +265,7 @@ private:
   VortexCommunityBrowser m_communityBrowser;
   VortexEditorTutorial m_tutorial;
   VortexChromaLink m_chromalink;
+  VortexBehaviourEditor m_behaviourEditor;
 };
 
 extern VortexEditor *g_pEditor;
