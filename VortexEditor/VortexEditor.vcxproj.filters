@@ -99,9 +99,6 @@
     <ClCompile Include="GUI\VBehaviourNode.cpp">
       <Filter>Source Files\GUI</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\VBehaviourLinkOverlay.cpp">
-      <Filter>Source Files\GUI</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VortexEditor.h">
@@ -183,9 +180,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GUI\VBehaviourNode.h">
-      <Filter>Header Files\GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\VBehaviourLinkOverlay.h">
       <Filter>Header Files\GUI</Filter>
     </ClInclude>
   </ItemGroup>

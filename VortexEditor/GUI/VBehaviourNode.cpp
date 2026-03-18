@@ -3,6 +3,8 @@
 #include "Behaviours/BehaviourNode.h"
 #include "VortexBehaviourEditor.h"
 
+#include "VortexEditor.h"
+
 #include <windows.h>
 #include <stdio.h>
 
@@ -10,12 +12,18 @@
 #define NODE_H 80
 #define SOCKET_R 6
 
+#define PARAM_A_MENU_ID 50998
+#define PARAM_B_MENU_ID 50999
+
+#pragma optimize("", off)
+
 VBehaviourNode::VBehaviourNode() :
   VWindow(),
   m_engine(nullptr),
   m_node(nullptr),
-  m_param0(nullptr),
-  m_param1(nullptr),
+  m_param0(),
+  m_param1(),
+  m_selected(false),
   m_dragging(false),
   m_dragOffsetX(0),
   m_dragOffsetY(0)
@@ -58,20 +66,32 @@ void VBehaviourNode::init(HINSTANCE inst, HWND parent, VortexEngine &engine, Beh
 
   SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
+  // create text boxes
   char buf[32];
   sprintf_s(buf, "%.3f", node->param1);
-  m_param0 = CreateWindowEx(0, "EDIT", buf, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
-    30, 22, 60, 18, m_hwnd, (HMENU)1, inst, nullptr);
-
   sprintf_s(buf, "%.3f", node->param2);
-  m_param1 = CreateWindowEx(0, "EDIT", buf, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
-    30, 42, 60, 18, m_hwnd, (HMENU)2, inst, nullptr);
+  m_param0.init(inst, *this, buf, RGB(80, 80, 80), 60, 18, 30, 22, PARAM_A_MENU_ID, ParamChangedCallback);
+  m_param1.init(inst, *this, buf, RGB(80, 80, 80), 60, 18, 30, 42, PARAM_B_MENU_ID, ParamChangedCallback);
+  m_param0.setCallbackArg(this);
+  m_param1.setCallbackArg(this);
+  m_param0.setEnabled(true);
+  m_param1.setEnabled(true);
+}
+
+void VBehaviourNode::ParamChangedCallback(void *arg, VWindow *window)
+{
+  VBehaviourNode *node = (VBehaviourNode *)arg;
+  if (!node) {
+    // error
+    return;
+  }
+  node->updateParams();
 }
 
 void VBehaviourNode::cleanup()
 {
-  if (m_param0) DestroyWindow(m_param0);
-  if (m_param1) DestroyWindow(m_param1);
+  m_param0.cleanup();
+  m_param1.cleanup();
   if (m_hwnd) DestroyWindow(m_hwnd);
 }
 
@@ -112,15 +132,30 @@ void VBehaviourNode::paint()
 
 void VBehaviourNode::pressButton(WPARAM wParam, LPARAM lParam)
 {
-  POINT pt = { LOWORD(lParam), HIWORD(lParam) };
-  m_dragging = true;
-  m_dragOffsetX = pt.x;
-  m_dragOffsetY = pt.y;
-  SetCapture(m_hwnd);
+    POINT pt = { LOWORD(lParam), HIWORD(lParam) };
+
+    RECT r0, r1;
+    GetWindowRect(m_param0.hwnd(), &r0);
+    GetWindowRect(m_param1.hwnd(), &r1);
+    POINT screenPt = pt;
+    ClientToScreen(m_hwnd, &screenPt);
+
+    if (PtInRect(&r0, screenPt) || PtInRect(&r1, screenPt)) {
+        return;
+    }
+
+
+    m_dragging = true;
+    m_dragOffsetX = pt.x;
+    m_dragOffsetY = pt.y;
+    SetCapture(m_hwnd);
+
+    SetFocus(m_hwnd);
 }
 
 void VBehaviourNode::releaseButton(WPARAM wParam, LPARAM lParam)
 {
+  if (!m_dragging) return;
   m_dragging = false;
   ReleaseCapture();
 
@@ -130,6 +165,20 @@ void VBehaviourNode::releaseButton(WPARAM wParam, LPARAM lParam)
   if (editor) {
     editor->redraw();
   }
+}
+
+void VBehaviourNode::rightClick(WPARAM wParam, LPARAM lParam)
+{
+  POINT pt = { LOWORD(lParam), HIWORD(lParam) };
+  POINT screenPt = pt;
+  ClientToScreen(m_hwnd, &screenPt);
+
+  showContextMenu(
+    screenPt.x,
+    screenPt.y,
+    pt.x,
+    pt.y
+  );
 }
 
 void VBehaviourNode::mouseMove(WPARAM wParam, LPARAM lParam)
@@ -158,18 +207,13 @@ void VBehaviourNode::mouseMove(WPARAM wParam, LPARAM lParam)
 
 void VBehaviourNode::command(WPARAM wParam, LPARAM lParam)
 {
-  if (HIWORD(wParam) != EN_KILLFOCUS) return;
-  updateParams();
+  // notifications are now handled by VTextBox callbacks
 }
 
 void VBehaviourNode::updateParams()
 {
-  char buf[64];
-  GetWindowTextA(m_param0, buf, sizeof(buf));
-  m_node->param1 = (float)atof(buf);
-
-  GetWindowTextA(m_param1, buf, sizeof(buf));
-  m_node->param2 = (float)atof(buf);
+  m_node->param1 = m_param0.getFloatValue();
+  m_node->param2 = m_param1.getFloatValue();
 }
 
 BehaviourNode *VBehaviourNode::node() { return m_node; }
@@ -182,23 +226,50 @@ int VBehaviourNode::inputSocketY(int i) { RECT r; GetWindowRect(m_hwnd, &r); ret
 const char *VBehaviourNode::nodeTypeName(Behaviours::NodeType t)
 {
   switch (t) {
-  case Behaviours::NODE_ACCEL_MOTION: return "Accel Motion";
-  case Behaviours::NODE_ACCEL_NORMALIZED: return "Accel Norm";
-  case Behaviours::NODE_ACCEL_CURVED: return "Accel Curve";
-  case Behaviours::NODE_ACCEL_FILTERED: return "Accel Filter";
-  case Behaviours::NODE_ACCEL_DIR_X: return "Accel X";
-  case Behaviours::NODE_ACCEL_DIR_Y: return "Accel Y";
-  case Behaviours::NODE_ACCEL_DIR_Z: return "Accel Z";
-  case Behaviours::NODE_ACCEL_TILT: return "Tilt";
-  case Behaviours::NODE_ABS: return "Abs";
-  case Behaviours::NODE_ADD: return "Add";
-  case Behaviours::NODE_MULTIPLY: return "Multiply";
-  case Behaviours::NODE_CLAMP: return "Clamp";
-  case Behaviours::NODE_CURVE: return "Curve";
-  case Behaviours::NODE_THRESHOLD: return "Threshold";
-  case Behaviours::NODE_MODE_BLEND: return "Blend";
+  case Behaviours::NODE_INPUT_TIME: return "Time";
+  case Behaviours::NODE_INPUT_DELTA_TIME: return "Delta Time";
+  case Behaviours::NODE_INPUT_RANDOM: return "Random";
+  case Behaviours::NODE_INPUT_CONSTANT: return "Constant";
+
+  case Behaviours::NODE_INPUT_ACCEL_MOTION: return "Accel Motion";
+  case Behaviours::NODE_INPUT_ACCEL_NORMALIZED: return "Accel Norm";
+  case Behaviours::NODE_INPUT_ACCEL_CURVED: return "Accel Curve";
+  case Behaviours::NODE_INPUT_ACCEL_FILTERED: return "Accel Filter";
+  case Behaviours::NODE_INPUT_ACCEL_DIR_X: return "Accel X";
+  case Behaviours::NODE_INPUT_ACCEL_DIR_Y: return "Accel Y";
+  case Behaviours::NODE_INPUT_ACCEL_DIR_Z: return "Accel Z";
+  case Behaviours::NODE_INPUT_ACCEL_PITCH: return "Pitch";
+  case Behaviours::NODE_INPUT_ACCEL_ROLL: return "Roll";
+  case Behaviours::NODE_INPUT_ACCEL_TILT: return "Tilt";
+
+  case Behaviours::NODE_MODIFIER_ABS: return "Abs";
+  case Behaviours::NODE_MODIFIER_ADD: return "Add";
+  case Behaviours::NODE_MODIFIER_SUBTRACT: return "Subtract";
+  case Behaviours::NODE_MODIFIER_MULTIPLY: return "Multiply";
+  case Behaviours::NODE_MODIFIER_DIVIDE: return "Divide";
+  case Behaviours::NODE_MODIFIER_MIN: return "Min";
+  case Behaviours::NODE_MODIFIER_MAX: return "Max";
+  case Behaviours::NODE_MODIFIER_CLAMP: return "Clamp";
+  case Behaviours::NODE_MODIFIER_REMAP: return "Remap";
+  case Behaviours::NODE_MODIFIER_CURVE: return "Curve";
+  case Behaviours::NODE_MODIFIER_SMOOTHSTEP: return "Smoothstep";
+  case Behaviours::NODE_MODIFIER_SIN: return "Sin";
+  case Behaviours::NODE_MODIFIER_COS: return "Cos";
+  case Behaviours::NODE_MODIFIER_THRESHOLD: return "Threshold";
+  case Behaviours::NODE_MODIFIER_GREATER: return "Greater";
+  case Behaviours::NODE_MODIFIER_LESS: return "Less";
+  case Behaviours::NODE_MODIFIER_LERP: return "Lerp";
+  case Behaviours::NODE_MODIFIER_SELECT: return "Select";
+
+  case Behaviours::NODE_FUNCTIONAL_MODE_BLEND: return "Mode Blend";
+  case Behaviours::NODE_FUNCTIONAL_MODE_ADD: return "Mode Add";
+  case Behaviours::NODE_FUNCTIONAL_BRIGHTNESS_SHIFT: return "Brightness";
+  case Behaviours::NODE_FUNCTIONAL_COLOR_SHIFT: return "Color Shift";
+  case Behaviours::NODE_FUNCTIONAL_PATTERN_SHIFT: return "Pattern Shift";
+
+  default:
+    return "Node";
   }
-  return "Node";
 }
 
 COLORREF VBehaviourNode::nodeColor()
@@ -227,11 +298,36 @@ LRESULT CALLBACK VBehaviourNode::NodeWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   VBehaviourNode *node = (VBehaviourNode *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
   switch (msg) {
-  case WM_PAINT: if (node) node->paint(); return 0;
-  case WM_LBUTTONDOWN: if (node) node->pressButton(wParam, lParam); return 0;
-  case WM_LBUTTONUP: if (node) node->releaseButton(wParam, lParam); return 0;
-  case WM_MOUSEMOVE: if (node) node->mouseMove(wParam, lParam); return 0;
-  case WM_COMMAND: if (node) node->command(wParam, lParam); return 0;
+  case WM_PAINT:
+    if (node) node->paint();
+    return 0;
+
+  case WM_LBUTTONDOWN:
+    if (node) node->pressButton(wParam, lParam);
+    return 0;
+
+  case WM_LBUTTONUP:
+    if (node) node->releaseButton(wParam, lParam);
+    return 0;
+
+  case WM_RBUTTONUP:
+    if (node) node->rightClick(wParam, lParam);
+    return 0;
+
+  case WM_MOUSEMOVE:
+    if (node) node->mouseMove(wParam, lParam);
+    return 0;
+
+  case WM_COMMAND:
+    if (lParam) {
+      VTextBox *textbox = (VTextBox *)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
+      if (textbox) {
+        textbox->command(wParam, lParam);
+        return 0;
+      }
+    }
+    break;
+
   case WM_CTLCOLORSTATIC:
     if (node) {
       HDC hdc = (HDC)wParam;
@@ -243,7 +339,46 @@ LRESULT CALLBACK VBehaviourNode::NodeWndProc(HWND hwnd, UINT msg, WPARAM wParam,
       return (INT_PTR)br;
     }
     break;
-  case WM_DESTROY: return 0;
+
+  case WM_DESTROY:
+    return 0;
   }
+
   return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+void VBehaviourNode::select()
+{
+  m_selected = true;
+  redraw();
+}
+
+void VBehaviourNode::deselect()
+{
+  m_selected = false;
+
+  // Remove focus from textboxes
+  if (m_param0.hwnd()) {
+    SendMessage(m_param0.hwnd(), WM_KILLFOCUS, 0, 0);
+  }
+  if (m_param1.hwnd()) {
+    SendMessage(m_param1.hwnd(), WM_KILLFOCUS, 0, 0);
+  }
+
+  // Optionally redraw to show visual deselection
+  redraw();
+}
+
+void VBehaviourNode::showContextMenu(int screenX, int screenY, int clientX, int clientY)
+{
+  HMENU menu = CreatePopupMenu();
+  AppendMenu(menu, MF_STRING, 9999, "Delete Node");
+  int cmd = TrackPopupMenu(menu, TPM_RETURNCMD, screenX, screenY, 0, hwnd(), NULL);
+  DestroyMenu(menu);
+  if (cmd == 0) return;
+  if (cmd == 9999) {
+    g_pEditor->behaviourEditor().deleteNode(this);
+    return;
+  }
+  redraw();
 }

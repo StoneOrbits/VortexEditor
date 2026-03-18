@@ -124,6 +124,13 @@ uint8_t VTextBox::getValue() const
   return (uint8_t)val;
 }
 
+float VTextBox::getFloatValue() const
+{
+  char text[256] = { 0 };
+  Edit_GetText(m_hwnd, text, sizeof(text));
+  return (float)strtof(text, nullptr);
+}
+
 void VTextBox::enableChangeNotifications(bool enabled)
 {
   m_notifications = enabled;

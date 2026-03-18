@@ -78,6 +78,8 @@ public:
   virtual bool isBackEnabled() const;
   virtual bool isForeEnabled() const;
 
+  void setCallbackArg(void *callbackArg) { m_callbackArg = callbackArg; }
+
   HWND hwnd() const { return m_hwnd; }
   HMENU menu() const { return GetMenu(m_hwnd); }
 

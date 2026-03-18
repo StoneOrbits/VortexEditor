@@ -157,7 +157,6 @@
   <ItemGroup>
     <ClCompile Include="ArduinoSerial.cpp" />
     <ClCompile Include="GUI\VBehaviourNode.cpp" />
-    <ClCompile Include="GUI\VBehaviourLinkOverlay.cpp" />
     <ClCompile Include="VortexBehaviourEditor.cpp" />
     <ClCompile Include="GUI\VButton.cpp" />
     <ClCompile Include="GUI\VChildWindow.cpp" />
@@ -185,7 +184,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GUI\VBehaviourNode.h" />
-    <ClInclude Include="GUI\VBehaviourLinkOverlay.h" />
     <ClInclude Include="VortexBehaviourEditor.h" />
     <ClInclude Include="EditorConfig.h" />
     <ClInclude Include="ArduinoSerial.h" />

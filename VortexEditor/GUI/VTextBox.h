@@ -28,6 +28,7 @@ public:
   void clearText();
   std::string getText() const;
   uint8_t getValue() const;
+  float getFloatValue() const;
 
   void enableChangeNotifications(bool enabled);
 

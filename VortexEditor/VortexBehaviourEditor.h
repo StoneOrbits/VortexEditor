@@ -1,8 +1,8 @@
 #pragma once
 
-#include "GUI/VChildWindow.h"
 #include "GUI/VBehaviourNode.h"
-#include "GUI/VBehaviourLinkOverlay.h"
+#include "GUI/VChildWindow.h"
+#include "GUI/VButton.h"
 
 #include "Behaviours/Behaviours.h"
 #include "VortexEngine.h"
@@ -29,6 +29,10 @@ public:
   void drawLinks(HDC dc);
   void showContextMenu(int screenX, int screenY, int clientX, int clientY);
 
+  void deselectAllNodes();
+  void selectNode(VBehaviourNode *node);
+  VBehaviourNode *hitTestNode(POINT pt, bool &onTextbox);
+
   virtual void paint() override;
   virtual void mouseMove(WPARAM wParam, LPARAM lParam) override;
   virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
@@ -38,12 +42,20 @@ public:
   VBehaviourNode *findOutputSocket(int x, int y);
   VBehaviourNode *findInputSocket(int x, int y, int &socketIndex);
 
+  void deleteNode(VBehaviourNode *node);
+
+  void sendBehaviours();
+
 private:
+  static void sendCallback(void *pthis, VWindow *window) {
+    ((VortexBehaviourEditor *)pthis)->sendBehaviours();
+  }
+
   VortexEngine &m_engine;
 
-  VBehaviourLinkOverlay m_behaviourLinkOverlay;
-
   HINSTANCE m_inst;
+
+  VButton m_button;
 
   bool m_isOpen;
   HICON m_hIcon;

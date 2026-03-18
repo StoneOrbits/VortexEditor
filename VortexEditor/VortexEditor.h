@@ -70,7 +70,6 @@ public:
 
   void addMode(VWindow *window, const Mode *mode);
 
-private:
   static DWORD __stdcall scanPortsThread(void *arg);
 
   // print to the log
@@ -202,6 +201,16 @@ private:
   // start the interactive tutorial
   void beginTutorial();
 
+  // the vortex color picker window
+  VortexColorPicker &colorPicker() { return m_colorPicker; }
+  VortexModeRandomizer &modeRandomizer() { return m_modeRandomizer; }
+  VortexCommunityBrowser &communityBrowser() { return m_communityBrowser; }
+  VortexEditorTutorial &tutorial() { return m_tutorial; }
+  VortexChromaLink &chromalink() { return m_chromalink; }
+  VortexBehaviourEditor &behaviourEditor() { return m_behaviourEditor; }
+
+
+private:
   // ==================================
   //  Member data
 
