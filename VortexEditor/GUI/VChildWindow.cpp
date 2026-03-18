@@ -83,14 +83,6 @@ void VChildWindow::paint()
   EndPaint(m_hwnd, &ps);
 }
 
-void VChildWindow::pressButton(WPARAM wParam, LPARAM lParam)
-{
-}
-
-void VChildWindow::releaseButton(WPARAM wParam, LPARAM lParam)
-{
-}
-
 void VChildWindow::setVisible(bool visible)
 {
   VWindow::setVisible(visible);
@@ -119,6 +111,16 @@ LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, 
   case WM_LBUTTONUP:
     pWindow->releaseButton(wParam, lParam);
     break;
+  case WM_MOUSEMOVE:
+    pWindow->mouseMove(wParam, lParam);
+    break;
+  case WM_RBUTTONUP:
+    pWindow->rightClick(wParam, lParam);
+    break;
+  case WM_CTLCOLORSTATIC:
+  case WM_CTLCOLOREDIT:
+    // for static controls we pass the hwnd of the window itself
+    return pWindow->controlColor(wParam, lParam);
   case WM_CREATE:
     pWindow->create();
     break;
@@ -128,9 +130,6 @@ LRESULT CALLBACK VChildWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, 
   case WM_PAINT:
     pWindow->paint();
     return 0;
-  case WM_CTLCOLORSTATIC:
-    // for static controls we pass the hwnd of the window itself
-    return pWindow->controlColor(wParam, lParam);
   case WM_COMMAND:
     pWindow->command(wParam, lParam);
     break;

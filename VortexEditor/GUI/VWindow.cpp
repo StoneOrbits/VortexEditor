@@ -145,6 +145,14 @@ void VWindow::releaseButton(WPARAM wParam, LPARAM lParam)
 {
 }
 
+void VWindow::mouseMove(WPARAM wParam, LPARAM lParam)
+{
+}
+
+void VWindow::rightClick(WPARAM wParam, LPARAM lParam)
+{
+}
+
 void VWindow::loseFocus(WPARAM wParam, LPARAM lParam)
 {
   VWindow *child = getChild((HWND)wParam);
@@ -346,6 +354,22 @@ LRESULT CALLBACK VWindow::window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
   case WM_LBUTTONUP:
     pWindow->releaseButton(wParam, lParam);
     break;
+  case WM_MOUSEMOVE:
+    pWindow->mouseMove(wParam, lParam);
+    break;
+  case WM_RBUTTONUP:
+    pWindow->rightClick(wParam, lParam);
+    break;
+  case WM_SETCURSOR:
+  {
+    // Only override if cursor is over client area, not over buttons/menus
+    if (LOWORD(lParam) == HTCLIENT) {
+      SetCursor(LoadCursor(NULL, IDC_ARROW));
+      return TRUE; // tell Windows we handled it
+    }
+    break;
+  }
+    
   case WM_CTLCOLORSTATIC:
   case WM_CTLCOLOREDIT:
     // for static controls we pass the hwnd of the window itself

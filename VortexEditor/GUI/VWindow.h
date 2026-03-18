@@ -37,6 +37,8 @@ public:
   virtual void command(WPARAM wParam, LPARAM lParam);
   virtual void pressButton(WPARAM wParam, LPARAM lParam);
   virtual void releaseButton(WPARAM wParam, LPARAM lParam);
+  virtual void mouseMove(WPARAM wParam, LPARAM lParam);
+  virtual void rightClick(WPARAM wParam, LPARAM lParam);
   virtual void loseFocus(WPARAM wParam, LPARAM lParam);
 
   // add/get a child

@@ -1,44 +1,62 @@
-#ifndef VORTEX_BEHAVIOUR_EDITOR_H
-#define VORTEX_BEHAVIOUR_EDITOR_H
+#pragma once
 
-#include <Windows.h>
+#include "GUI/VChildWindow.h"
+#include "GUI/VBehaviourNode.h"
+#include "GUI/VBehaviourLinkOverlay.h"
 
-#include "GUI/VChildwindow.h"
-#include "BehaviourEditor.h"
+#include "Behaviours/Behaviours.h"
+#include "VortexEngine.h"
 
-class VortexEngine;
+#include <windows.h>
+#include <stdint.h>
 
-class VortexBehaviourEditor
+class VortexBehaviourEditor : public VChildWindow
 {
 public:
-
   VortexBehaviourEditor(VortexEngine &engine);
   ~VortexBehaviourEditor();
 
-  bool init(HINSTANCE hInst);
+  bool init(HINSTANCE inst);
 
   void show();
   void hide();
   void run();
+  void redraw();
 
-  HWND hwnd() const { return m_behaviourEditor.hwnd(); }
+  void populateFromBehaviours();
+  VBehaviourNode *findNodeFromBehaviour(BehaviourNode *bn);
+
+  void drawLinks(HDC dc);
+  void showContextMenu(int screenX, int screenY, int clientX, int clientY);
+
+  virtual void paint() override;
+  virtual void mouseMove(WPARAM wParam, LPARAM lParam) override;
+  virtual void pressButton(WPARAM wParam, LPARAM lParam) override;
+  virtual void releaseButton(WPARAM wParam, LPARAM lParam) override;
+  virtual void rightClick(WPARAM wParam, LPARAM lParam) override;
+
+  VBehaviourNode *findOutputSocket(int x, int y);
+  VBehaviourNode *findInputSocket(int x, int y, int &socketIndex);
 
 private:
-
-  static void hideGUICallback(void *arg, VWindow *window);
-  static void loseFocusCallback(void *arg, VWindow *window);
-
-  void loseFocus();
-
-private:
-
   VortexEngine &m_engine;
-  bool m_isOpen;
 
+  VBehaviourLinkOverlay m_behaviourLinkOverlay;
+
+  HINSTANCE m_inst;
+
+  bool m_isOpen;
   HICON m_hIcon;
 
-  VChildWindow m_window;
-  BehaviourEditor m_behaviourEditor;
-};
+  VBehaviourNode *m_nodes[MAX_BEHAVIOUR_NODES];
+  uint32_t m_nodeCount;
 
-#endif
+  bool m_linking;
+  VBehaviourNode *m_linkNode;
+  int m_linkMouseX;
+  int m_linkMouseY;
+
+  VBehaviourNode *m_dragNode;
+  int m_dragOffsetX;
+  int m_dragOffsetY;
+};
